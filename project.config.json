@@ -1,0 +1,9 @@
+{
+  "setting": {
+    "condition": false,
+    "enhance": true,
+    "es6": true,
+    "swc": false,
+    "disableSWC": true
+  }
+}
