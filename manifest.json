@@ -1,8 +1,8 @@
 {
-    "name" : "若依移动端",
-    "appid" : "wxe62c721fa3a02194",
-    "description" : "",
-    "versionName" : "1.2.0",
+    "name" : "台球助教端",
+    "appid" : "__UNI__CUTCOACH",
+    "description" : "台球助教端应用",
+    "versionName" : "1.0.0",
     "versionCode" : "100",
     "transformPx" : false,
     "app-plus" : {
@@ -14,7 +14,9 @@
             "autoclose" : true,
             "delay" : 0
         },
-        "modules" : {},
+        "modules" : {
+            "Location": {}
+        },
         "distribute" : {
             "android" : {
                 "permissions" : [
@@ -32,11 +34,24 @@
                     "<uses-permission android:name=\"android.permission.WAKE_LOCK\"/>",
                     "<uses-permission android:name=\"android.permission.FLASHLIGHT\"/>",
                     "<uses-feature android:name=\"android.hardware.camera\"/>",
-                    "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>"
+                    "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_LOCATION_EXTRA_COMMANDS\"/>"
                 ]
             },
             "ios" : {
-                "dSYMs" : false
+                "dSYMs" : false,
+                "plist" : {
+                    "NSCameraUsageDescription" : "需要访问您的相机进行拍照",
+                    "NSPhotoLibraryUsageDescription" : "需要访问您的相册选择图片",
+                    "NSPhotoLibraryAddUsageDescription" : "需要保存图片到您的相册"
+                },
+                "NSLocationWhenInUseUsageDescription": "需要获取您的位置信息，为您提供导航服务",
+                "LSApplicationQueriesSchemes": [
+                    "iosamap",
+                    "baidumap"
+                ]
             },
             "sdkConfigs" : {}
         }
@@ -53,16 +68,35 @@
         "optimization" : {
             "subPackages" : true
         },
-        "usingComponents" : true
+        "usingComponents" : true,
+        "permission": {
+            "scope.userLocation": {
+                "desc": "您的位置信息将用于导航到服务地点"
+            }
+        },
+        "requiredPrivateInfos": ["getLocation", "chooseLocation"]
+    },
+    "mp-harmony" : {
+        "appid" : "__UNI__CUTCOACH",
+        "usingComponents" : true,
+        "optimization" : {
+            "subPackages" : true
+        },
+        "permission": {
+            "ohos.permission.LOCATION": {
+                "reason": "需要获取您的位置信息，为您提供导航服务"
+            }
+        }
     },
     "vueVersion" : "3",
     "h5" : {
         "template" : "static/index.html",
         "devServer" : {
             "port" : 9090,
-            "https" : false
+            "https" : false,
+            "disableHostCheck" : true
         },
-        "title" : "RuoYi-App",
+        "title" : "台球助教端",
         "router" : {
             "mode" : "hash",
             "base" : "./"

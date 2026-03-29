@@ -59,7 +59,7 @@ const request = config => {
   config.header = config.header || {}
 
   // 添加 tenant-id
-  config.header['tenant-id'] = '1'
+  config.header['tenant-id'] = '122'
 
   if (getAccessToken() && !isToken) {
     config.header['Authorization'] = 'Bearer ' + getAccessToken()

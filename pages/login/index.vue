@@ -1,5 +1,5 @@
 <template>
-  <view class="normal-login-container">
+  <view class="normal-login-container" :style="{ paddingBottom: keyboardHeight + 'px' }">
     <view class="logo-section">
       <view class="logo-box">
         <image class="logo-img" :src="globalConfig.appInfo.logo" mode="aspectFit"></image>
@@ -11,13 +11,13 @@
     <view class="login-form-content">
       <view class="login-tabs">
         <view
-            :class="['tab-item', loginForm.loginType === 'sms' ? 'active' : '']"
-            @click="loginForm.loginType = 'sms'"
-        >短信登录</view>
-        <view
             :class="['tab-item', loginForm.loginType === 'pwd' ? 'active' : '']"
-            @click="loginForm.loginType = 'pwd'"
+            @click="switchLoginType('pwd')"
         >密码登录</view>
+        <view
+            :class="['tab-item', loginForm.loginType === 'sms' ? 'active' : '']"
+            @click="switchLoginType('sms')"
+        >短信登录</view>
       </view>
 
       <view class="input-group">
@@ -28,36 +28,79 @@
               class="input"
               type="text"
               :placeholder="loginForm.loginType === 'sms' ? '请输入手机号' : '请输入账号'"
-              maxlength="30"
+              :maxlength="loginForm.loginType === 'sms' ? 11 : 30"
+              :focus="focusIndex === 0"
+              @focus="onInputFocus(0)"
+              @blur="onInputBlur"
+              confirm-type="next"
+              @confirm="focusNextInput(1)"
           />
         </view>
 
         <view class="input-item flex align-center" v-if="loginForm.loginType === 'pwd'">
           <view class="iconfont icon-password icon"></view>
-          <input v-model="loginForm.password" type="password" class="input" placeholder="请输入密码" maxlength="20" />
+          <input
+              v-model="loginForm.password"
+              :type="showPassword ? 'text' : 'password'"
+              class="input"
+              placeholder="请输入密码"
+              maxlength="20"
+              :focus="focusIndex === 1"
+              @focus="onInputFocus(1)"
+              @blur="onInputBlur"
+              confirm-type="done"
+              @confirm="handleLogin"
+          />
+          <view class="password-toggle" @click="showPassword = !showPassword">
+            <text :class="['iconfont', showPassword ? 'icon-eye-open' : 'icon-eye-close']"></text>
+          </view>
         </view>
 
         <view class="input-item flex align-center" v-if="loginForm.loginType === 'pwd' && captchaEnabled">
           <view class="iconfont icon-code icon"></view>
-          <input v-model="loginForm.code" type="number" class="input" placeholder="验证码" maxlength="4" />
+          <input
+              v-model="loginForm.code"
+              type="number"
+              class="input"
+              placeholder="验证码"
+              maxlength="4"
+              :focus="focusIndex === 2"
+              @focus="onInputFocus(2)"
+              @blur="onInputBlur"
+              confirm-type="done"
+              @confirm="handleLogin"
+          />
           <view class="login-code-wrapper">
-            <image :src="codeUrl" @click="getCode" class="login-code-img"></image>
+            <image :src="codeUrl" @click="getCode" class="login-code-img" mode="aspectFill"></image>
           </view>
         </view>
 
         <view class="input-item flex align-center" v-if="loginForm.loginType === 'sms'">
           <view class="iconfont icon-code icon"></view>
-          <input v-model="loginForm.smsCode" type="number" class="input" placeholder="请输入验证码" maxlength="6" />
+          <input
+              v-model="loginForm.smsCode"
+              type="number"
+              class="input"
+              placeholder="请输入验证码"
+              maxlength="6"
+              :focus="focusIndex === 1"
+              @focus="onInputFocus(1)"
+              @blur="onInputBlur"
+              confirm-type="done"
+              @confirm="handleLogin"
+          />
           <view class="sms-code-btn" :class="{ 'disabled': countdown > 0 }" @click="handleGetSmsCode">
             {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
           </view>
         </view>
       </view>
 
-      <view class="forget-pwd" v-if="loginForm.loginType === 'pwd'">忘记密码？</view>
+      <view class="forget-pwd" v-if="loginForm.loginType === 'pwd'" @click="handleForgetPwd">忘记密码？</view>
 
       <view class="action-btn">
-        <button @click="handleLogin" class="login-btn cu-btn block bg-blue lg round">登录</button>
+        <button @click="handleLogin" :disabled="isLoggingIn" class="login-btn cu-btn block bg-blue lg round">
+          {{ isLoggingIn ? '登录中...' : '登录' }}
+        </button>
       </view>
 
       <view class="xieyi-section">
@@ -76,34 +119,48 @@
     </view>
 
     <view class="bottom-footer">
-      遇到问题？<text class="text-blue">联系客服</text>
+      遇到问题？<text class="text-blue" @click="handleContactService">联系客服</text>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref, getCurrentInstance } from "vue"
-import { getCodeImg } from '@/api/login'
+import { ref, getCurrentInstance, onMounted, onUnmounted } from "vue"
+import { getCodeImg, sendSmsCode } from '@/api/login'
 import { useConfigStore, useUserStore } from '@/store'
 
 const { proxy } = getCurrentInstance()
 const globalConfig = useConfigStore().config
+const userStore = useUserStore()
 
 const codeUrl = ref("")
 const captchaEnabled = ref(false)
 const isAgreed = ref(true)
 const countdown = ref(0)
+const showPassword = ref(false)
+const focusIndex = ref(-1)
+const keyboardHeight = ref(0)
+const isLoggingIn = ref(false)
 
 const loginForm = ref({
-  loginType: 'pwd', // 'sms' 或 'pwd'
-  username: "coach_demo_01",
+  loginType: 'pwd',
+  username: "coach_test",
   password: "admin123",
-  code: "",      // 图形验证码
-  smsCode: "",   // 短信验证码
+  code: "",
+  smsCode: "",
   uuid: ""
 })
 
-// 获取图形验证码（当前禁用，保留接口供后续使用）
+let countdownTimer = null
+let keyboardHeightListener = null
+
+function switchLoginType(type) {
+  loginForm.value.loginType = type
+  loginForm.value.smsCode = ""
+  loginForm.value.code = ""
+  focusIndex.value = -1
+}
+
 function getCode() {
   getCodeImg().then(res => {
     captchaEnabled.value = res.captchaEnabled ?? false
@@ -111,22 +168,58 @@ function getCode() {
       codeUrl.value = 'data:image/gif;base64,' + res.img
       loginForm.value.uuid = res.uuid
     }
+  }).catch(() => {
+    captchaEnabled.value = false
   })
 }
 
-// 模拟获取短信验证码（待后续接入）
-function handleGetSmsCode() {
+async function handleGetSmsCode() {
   if (!/^1[3-9]\d{9}$/.test(loginForm.value.username)) {
     return proxy.$modal.msgError("请输入正确的手机号")
   }
   if (countdown.value > 0) return
 
-  proxy.$modal.msgSuccess("验证码已发送")
+  proxy.$modal.loading("发送中...")
+  try {
+    const res = await sendSmsCode(loginForm.value.username)
+    if (res.code === 0) {
+      proxy.$modal.msgSuccess("验证码已发送")
+      startCountdown()
+    } else {
+      proxy.$modal.msgError(res.msg || '发送失败')
+    }
+  } catch (err) {
+    proxy.$modal.msgError(err?.msg || err || '发送失败')
+  } finally {
+    proxy.$modal.closeLoading()
+  }
+}
+
+function startCountdown() {
   countdown.value = 60
-  const timer = setInterval(() => {
+  if (countdownTimer) clearInterval(countdownTimer)
+  countdownTimer = setInterval(() => {
     countdown.value--
-    if (countdown.value <= 0) clearInterval(timer)
+    if (countdown.value <= 0) {
+      clearInterval(countdownTimer)
+      countdownTimer = null
+    }
   }, 1000)
+}
+
+function onInputFocus(index) {
+  focusIndex.value = index
+}
+
+function onInputBlur() {
+  // 延迟清除，避免点击按钮时输入框失去焦点导致按钮无法点击
+  setTimeout(() => {
+    focusIndex.value = -1
+  }, 100)
+}
+
+function focusNextInput(nextIndex) {
+  focusIndex.value = nextIndex
 }
 
 function onCheckChange(e) {
@@ -142,45 +235,107 @@ async function handleLogin() {
 
   if (username === "") return proxy.$modal.msgError(loginType === 'sms' ? "请输入手机号" : "请输入账号")
 
-  if (loginType === 'pwd') {
-    if (password === "") return proxy.$modal.msgError("请输入密码")
-    if (captchaEnabled.value && !code) return proxy.$modal.msgError("请输入图形验证码")
+  isLoggingIn.value = true
+  proxy.$modal.loading("登录中...")
 
-    proxy.$modal.loading("登录中...")
+  try {
+    if (loginType === 'pwd') {
+      if (password === "") return proxy.$modal.msgError("请输入密码")
+      if (captchaEnabled.value && !code) return proxy.$modal.msgError("请输入图形验证码")
 
-    useUserStore().login(loginForm.value).then(() => {
-      proxy.$modal.closeLoading()
-      loginSuccess()
-    }).catch((err) => {
-      proxy.$modal.closeLoading()
-      proxy.$modal.msgError(err || '登录失败，请重试')
-      if (captchaEnabled.value) getCode()
-    })
-  } else {
-    if (smsCode === "") return proxy.$modal.msgError("请输入短信验证码")
-    proxy.$modal.msgError("短信登录功能待接入")
+      await userStore.login(loginForm.value)
+    } else {
+      if (smsCode === "") return proxy.$modal.msgError("请输入短信验证码")
+
+      await userStore.smsLogin(loginForm.value)
+    }
+
+    proxy.$modal.closeLoading()
+    loginSuccess()
+  } catch (err) {
+    proxy.$modal.closeLoading()
+    proxy.$modal.msgError(err || '登录失败，请重试')
+    if (captchaEnabled.value && loginType === 'pwd') getCode()
+  } finally {
+    isLoggingIn.value = false
   }
 }
 
 function loginSuccess() {
-  useUserStore().getInfo().then(() => {
-    proxy.$tab.reLaunch('/pages/index')
+  userStore.getInfo().then(() => {
+    proxy.$tab.reLaunch('/pages/work/index')
   }).catch(() => {
-    proxy.$tab.reLaunch('/pages/index')
+    proxy.$tab.reLaunch('/pages/work/index')
   })
 }
 
-function handlePrivacy() {}
-function handleUserAgrement() {}
+function handleForgetPwd() {
+  proxy.$modal.msgToast('忘记密码功能开发中')
+}
 
-getCode()
+function handleContactService() {
+  proxy.$modal.msgToast('联系客服功能开发中')
+}
+
+function handlePrivacy() {
+  // #ifdef H5
+  window.open(globalConfig.appInfo.agreements[1].url, '_blank')
+  // #endif
+  // #ifndef H5
+  proxy.$tab.navigateTo('/pages/common/webview/index?url=' + encodeURIComponent(globalConfig.appInfo.agreements[1].url))
+  // #endif
+}
+
+function handleUserAgrement() {
+  // #ifdef H5
+  window.open(globalConfig.appInfo.agreements[0].url, '_blank')
+  // #endif
+  // #ifndef H5
+  proxy.$tab.navigateTo('/pages/common/webview/index?url=' + encodeURIComponent(globalConfig.appInfo.agreements[0].url))
+  // #endif
+}
+
+function onKeyboardHeightChange(e) {
+  // #ifdef APP-PLUS || MP-HARMONY
+  keyboardHeight.value = e.height
+  // #endif
+  // #ifdef MP-WEIXIN
+  keyboardHeight.value = e.height
+  // #endif
+  // #ifdef H5
+  keyboardHeight.value = 0
+  // #endif
+}
+
+onMounted(() => {
+  getCode()
+
+  // 监听键盘高度变化
+  // #ifdef APP-PLUS || MP-HARMONY || MP-WEIXIN
+  keyboardHeightListener = uni.onKeyboardHeightChange(onKeyboardHeightChange)
+  // #endif
+})
+
+onUnmounted(() => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+  // #ifdef APP-PLUS || MP-HARMONY || MP-WEIXIN
+  if (keyboardHeightListener) {
+    keyboardHeightListener.off()
+  }
+  // #endif
+})
 </script>
 
 <style lang="scss" scoped>
 page { background-color: #f8fbff; }
 
 .normal-login-container {
+  min-height: 100vh;
   padding: 0 60rpx;
+  box-sizing: border-box;
 
   .logo-section {
     padding-top: 120rpx;
@@ -220,6 +375,7 @@ page { background-color: #f8fbff; }
       font-size: 28rpx;
       color: #64748b;
       border-radius: 16rpx;
+      transition: all 0.3s ease;
       &.active {
         background-color: #2f6bee;
         color: #fff;
@@ -234,18 +390,35 @@ page { background-color: #f8fbff; }
     margin-bottom: 30rpx;
     padding: 0 30rpx;
     box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.02);
+    position: relative;
 
     .icon { font-size: 38rpx; color: #94a3b8; }
-    .input { flex: 1; padding-left: 20rpx; font-size: 28rpx; }
+    .input {
+      flex: 1;
+      padding-left: 20rpx;
+      font-size: 28rpx;
+      height: 100%;
+      line-height: 100rpx;
+    }
 
-    .login-code-img { width: 160rpx; height: 60rpx; }
+    .password-toggle {
+      padding: 10rpx;
+      .iconfont {
+        font-size: 36rpx;
+        color: #94a3b8;
+      }
+    }
+
+    .login-code-img { width: 160rpx; height: 60rpx; border-radius: 8rpx; }
     .sms-code-btn {
       font-size: 24rpx;
       color: #2f6bee;
       background: #f0f7ff;
-      padding: 10rpx 20rpx;
-      border-radius: 10rpx;
-      &.disabled { color: #cbd5e1; }
+      padding: 12rpx 24rpx;
+      border-radius: 12rpx;
+      white-space: nowrap;
+      flex-shrink: 0;
+      &.disabled { color: #cbd5e1; background: #f1f5f9; }
     }
   }
 
@@ -261,6 +434,10 @@ page { background-color: #f8fbff; }
     background-color: #2f6bee !important;
     border-radius: 20rpx;
     font-size: 32rpx;
+    color: #fff;
+    border: none;
+    &:active { opacity: 0.8; }
+    &:disabled { background-color: #a5c3f0 !important; }
   }
 
   .xieyi-section {

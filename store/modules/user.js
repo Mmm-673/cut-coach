@@ -4,7 +4,7 @@ import config from '@/config'
 import storage from '@/utils/storage'
 import constant from '@/utils/constant'
 import { isHttp, isEmpty } from "@/utils/validate"
-import { getInfo, login, logout } from '@/api/login'
+import { getInfo, login, smsLogin, logout } from '@/api/login'
 import { getAccessToken, setAuthInfo, removeAuthInfo, getUserId } from '@/utils/auth'
 import defAva from '@/static/images/profile.jpg'
 
@@ -42,21 +42,40 @@ export const useUserStore = defineStore('user', () => {
     storage.set(constant.permissions, val)
   }
 
-  // 登录
+  // 处理登录响应
+  const handleLoginResponse = (res) => {
+    if (res.code === 0) {
+      setAuthInfo(res.data)
+      SET_TOKEN(res.data.accessToken)
+      SET_ID(res.data.userId)
+      return Promise.resolve()
+    } else {
+      return Promise.reject(res.msg || '登录失败')
+    }
+  }
+
+  // 账号密码登录
   const loginAction = (userInfo) => {
     return new Promise((resolve, reject) => {
       login({
         username: userInfo.username.trim(),
         password: userInfo.password
       }).then(res => {
-        if (res.code === 0) {
-          setAuthInfo(res.data)
-          SET_TOKEN(res.data.accessToken)
-          SET_ID(res.data.userId)
-          resolve()
-        } else {
-          reject(res.msg || '登录失败')
-        }
+        handleLoginResponse(res).then(resolve).catch(reject)
+      }).catch(error => {
+        reject(error)
+      })
+    })
+  }
+
+  // 短信登录
+  const smsLoginAction = (userInfo) => {
+    return new Promise((resolve, reject) => {
+      smsLogin({
+        mobile: userInfo.username.trim(),
+        code: userInfo.smsCode
+      }).then(res => {
+        handleLoginResponse(res).then(resolve).catch(reject)
       }).catch(error => {
         reject(error)
       })
@@ -121,6 +140,7 @@ export const useUserStore = defineStore('user', () => {
     permissions,
     SET_AVATAR,
     login: loginAction,
+    smsLogin: smsLoginAction,
     getInfo: getInfoAction,
     logOut: logOutAction
   }

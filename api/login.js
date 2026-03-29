@@ -1,9 +1,33 @@
 import request from '@/utils/request'
 
-// 助教登录
+// 账号密码登录
 export function login(data) {
   return request({
     url: '/coach-api/billiard/coach/auth/login',
+    headers: {
+      isToken: false
+    },
+    method: 'post',
+    data: data
+  })
+}
+
+// 发送短信验证码
+export function sendSmsCode(mobile) {
+  return request({
+    url: '/coach-api/billiard/coach/auth/send-sms-code',
+    headers: {
+      isToken: false
+    },
+    method: 'post',
+    data: { mobile }
+  })
+}
+
+// 手机验证码登录
+export function smsLogin(data) {
+  return request({
+    url: '/coach-api/billiard/coach/auth/sms-login',
     headers: {
       isToken: false
     },

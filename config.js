@@ -1,7 +1,7 @@
 // 应用全局配置
 export default {
-  baseUrl: 'https://vue.ruoyi.vip/prod-api',
-  // baseUrl: 'http://114.67.69.228',
+  // baseUrl: 'https://vue.ruoyi.vip/prod-api',
+  baseUrl: 'http://114.67.69.228',
   // 应用信息
   appInfo: {
     // 应用名称

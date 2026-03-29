@@ -1,18 +1,17 @@
 <template>
-  <view class="mine-container" :style="{height: `${windowHeight}px`}">
+  <view class="mine-container">
     <!--顶部个人信息栏-->
-    <view class="header-section">
-      <view class="flex padding justify-between">
-        <view class="flex align-center">
-          <view v-if="!avatar" class="cu-avatar xl round bg-white">
-            <view class="iconfont icon-people text-gray icon"></view>
+    <uni-card :is-shadow="false" :border="false" class="header-card">
+      <view class="header-section">
+        <view class="flex align-center" @click="handleToInfo">
+          <image v-if="avatar" :src="avatar" class="cu-avatar xl round" mode="aspectFill"></image>
+          <view v-else class="cu-avatar xl round bg-blue">
+            <uni-icons type="person" size="40" color="#fff"></uni-icons>
           </view>
-          <image v-if="avatar" @click="handleToAvatar" :src="avatar" class="cu-avatar xl round" mode="widthFix">
-          </image>
           <view v-if="!name" @click="handleToLogin" class="login-tip">
             点击登录
           </view>
-          <view v-if="name" @click="handleToInfo" class="user-info">
+          <view v-if="name" class="user-info">
             <view class="u_title">
               用户名：{{ name }}
             </view>
@@ -20,70 +19,86 @@
         </view>
         <view @click="handleToInfo" class="flex align-center">
           <text>个人信息</text>
-          <view class="iconfont icon-right"></view>
+          <uni-icons type="right" size="16" color="#999"></uni-icons>
         </view>
       </view>
-    </view>
+    </uni-card>
 
     <view class="content-section">
-      <view class="mine-actions grid col-4 text-center">
-        <view class="action-item" @click="handleJiaoLiuQun">
-          <view class="iconfont icon-friendfill text-pink icon"></view>
-          <text class="text">交流群</text>
-        </view>
-        <view class="action-item" @click="handleBuilding">
-          <view class="iconfont icon-service text-blue icon"></view>
-          <text class="text">在线客服</text>
-        </view>
-        <view class="action-item" @click="handleBuilding">
-          <view class="iconfont icon-community text-mauve icon"></view>
-          <text class="text">反馈社区</text>
-        </view>
-        <view class="action-item" @click="handleBuilding">
-          <view class="iconfont icon-dianzan text-green icon"></view>
-          <text class="text">点赞我们</text>
-        </view>
-      </view>
+      <!-- 快捷操作 -->
+      <uni-card :is-shadow="true" :border="false" class="actions-card">
+        <uni-grid :column="4" :showBorder="false">
+          <uni-grid-item @click="handleJiaoLiuQun">
+            <view class="action-item">
+              <view class="icon-wrapper pink">
+                <uni-icons type="chatbubble" size="28" color="#fff"></uni-icons>
+              </view>
+              <text class="text">交流群</text>
+            </view>
+          </uni-grid-item>
+          <uni-grid-item @click="handleBuilding">
+            <view class="action-item">
+              <view class="icon-wrapper blue">
+                <uni-icons type="help" size="28" color="#fff"></uni-icons>
+              </view>
+              <text class="text">在线客服</text>
+            </view>
+          </uni-grid-item>
+          <uni-grid-item @click="handleBuilding">
+            <view class="action-item">
+              <view class="icon-wrapper mauve">
+                <uni-icons type="chatboxes" size="28" color="#fff"></uni-icons>
+              </view>
+              <text class="text">反馈社区</text>
+            </view>
+          </uni-grid-item>
+          <uni-grid-item @click="handleBuilding">
+            <view class="action-item">
+              <view class="icon-wrapper green">
+                <uni-icons type="heart" size="28" color="#fff"></uni-icons>
+              </view>
+              <text class="text">点赞我们</text>
+            </view>
+          </uni-grid-item>
+        </uni-grid>
+      </uni-card>
 
-      <view class="menu-list">
-        <view class="list-cell list-cell-arrow" @click="handleToEditInfo">
-          <view class="menu-item-box">
-            <view class="iconfont icon-user menu-icon"></view>
-            <view>编辑资料</view>
-          </view>
-        </view>
-        <view class="list-cell list-cell-arrow" @click="handleHelp">
-          <view class="menu-item-box">
-            <view class="iconfont icon-help menu-icon"></view>
-            <view>常见问题</view>
-          </view>
-        </view>
-        <view class="list-cell list-cell-arrow" @click="handleAbout">
-          <view class="menu-item-box">
-            <view class="iconfont icon-aixin menu-icon"></view>
-            <view>关于我们</view>
-          </view>
-        </view>
-        <view class="list-cell list-cell-arrow" @click="handleToSetting">
-          <view class="menu-item-box">
-            <view class="iconfont icon-setting menu-icon"></view>
-            <view>应用设置</view>
-          </view>
-        </view>
-      </view>
-
+      <!-- 菜单列表 -->
+      <uni-card :is-shadow="true" :border="false" class="menu-card">
+        <uni-list>
+          <uni-list-item title="编辑资料" @click="handleToEditInfo" thumb="static/images/tabbar/mine.png" clickable>
+            <template #header>
+              <uni-icons type="person" size="20" color="#2F6BEE" style="margin-right: 12px;"></uni-icons>
+            </template>
+          </uni-list-item>
+          <uni-list-item title="常见问题" @click="handleHelp" clickable>
+            <template #header>
+              <uni-icons type="help" size="20" color="#2F6BEE" style="margin-right: 12px;"></uni-icons>
+            </template>
+          </uni-list-item>
+          <uni-list-item title="关于我们" @click="handleAbout" clickable>
+            <template #header>
+              <uni-icons type="info" size="20" color="#2F6BEE" style="margin-right: 12px;"></uni-icons>
+            </template>
+          </uni-list-item>
+          <uni-list-item title="应用设置" @click="handleToSetting" clickable>
+            <template #header>
+              <uni-icons type="gear" size="20" color="#2F6BEE" style="margin-right: 12px;"></uni-icons>
+            </template>
+          </uni-list-item>
+        </uni-list>
+      </uni-card>
     </view>
   </view>
 </template>
 
 <script setup>
   import { useUserStore } from '@/store'
-  import { computed , getCurrentInstance } from "vue"
+  import { computed, getCurrentInstance } from "vue"
 
   const { proxy } = getCurrentInstance()
-  const name = useUserStore().name
+  const name = computed(() => useUserStore().name)
   const avatar = computed(() => useUserStore().avatar)
-  const windowHeight = computed(() => uni.getSystemInfoSync().windowHeight - 50)
 
   function handleToInfo() {
     proxy.$tab.navigateTo('/pages/mine/info/index')
@@ -101,22 +116,18 @@
     proxy.$tab.reLaunch('/pages/login/index')
   }
 
-  function handleToAvatar() {
-    proxy.$tab.navigateTo('/pages/mine/avatar/index')
-  }
-      
   function handleHelp() {
     proxy.$tab.navigateTo('/pages/mine/help/index')
   }
-      
+
   function handleAbout() {
     proxy.$tab.navigateTo('/pages/mine/about/index')
   }
-      
+
   function handleJiaoLiuQun() {
     proxy.$modal.showToast('QQ群：①133713780(满)、②146013835(满)、③189091635')
   }
-      
+
   function handleBuilding() {
     proxy.$modal.showToast('模块建设中~')
   }
@@ -129,58 +140,83 @@
 
   .mine-container {
     width: 100%;
-    height: 100%;
+    min-height: 100vh;
+    background: #F7F8FA;
 
+    .header-card {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #3c96f3 0%, #2F6BEE 100%);
+      border-radius: 0 0 40rpx 40rpx;
 
-    .header-section {
-      padding: 15px 15px 45px 15px;
-      background-color: #3c96f3;
-      color: white;
+      .header-section {
+        padding: 60rpx 30rpx 40rpx;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
 
-      .login-tip {
-        font-size: 18px;
-        margin-left: 10px;
-      }
-
-      .cu-avatar {
-        border: 2px solid #eaeaea;
-
-        .icon {
-          font-size: 40px;
+        .cu-avatar {
+          border: 3px solid rgba(255,255,255,0.3);
+          width: 120rpx;
+          height: 120rpx;
         }
-      }
 
-      .user-info {
-        margin-left: 15px;
+        .login-tip {
+          font-size: 32rpx;
+          margin-left: 20rpx;
+          font-weight: 500;
+        }
 
-        .u_title {
-          font-size: 18px;
-          line-height: 30px;
+        .user-info {
+          margin-left: 20rpx;
+
+          .u_title {
+            font-size: 32rpx;
+            line-height: 44rpx;
+            font-weight: 500;
+          }
         }
       }
     }
 
     .content-section {
+      padding: 20rpx;
+      margin-top: -30rpx;
       position: relative;
-      top: -50px;
 
-      .mine-actions {
-        margin: 15px 15px;
-        padding: 20px 0px;
-        border-radius: 8px;
-        background-color: white;
+      .actions-card {
+        margin-bottom: 20rpx;
+      }
 
-        .action-item {
-          .icon {
-            font-size: 28px;
-          }
+      .menu-card {
+        padding: 0;
+      }
+    }
 
-          .text {
-            display: block;
-            font-size: 13px;
-            margin: 8px 0px;
-          }
-        }
+    .action-item {
+      padding: 20rpx 0;
+      text-align: center;
+
+      .icon-wrapper {
+        width: 80rpx;
+        height: 80rpx;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 12rpx;
+
+        &.pink { background: linear-gradient(135deg, #FF6B81 0%, #F43F50 100%); }
+        &.blue { background: linear-gradient(135deg, #60A5FA 0%, #2F6BEE 100%); }
+        &.mauve { background: linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%); }
+        &.green { background: linear-gradient(135deg, #34D399 0%, #10B981 100%); }
+      }
+
+      .text {
+        display: block;
+        font-size: 24rpx;
+        color: #333;
       }
     }
   }

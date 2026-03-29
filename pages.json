@@ -2,23 +2,43 @@
   "pages": [{
     "path": "pages/login/index",
     "style": {
-      "navigationBarTitleText": "登录"
+      "navigationBarTitleText": "登录",
+      "navigationStyle": "custom"
     }
   }, {
     "path": "pages/register",
     "style": {
       "navigationBarTitleText": "注册"
     }
-  }, {
-    "path": "pages/index",
-    "style": {
-      "navigationBarTitleText": "若依移动端框架",
-      "navigationStyle": "custom"
-    }
-  }, {
+  },{
     "path": "pages/work/index",
     "style": {
-      "navigationBarTitleText": "工作台"
+      "navigationBarTitleText": "裁教工作台",
+      "navigationBarBackgroundColor": "#ffffff",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": "#F7F8FA",
+      "app-plus": {
+        "titleNView": {
+          "backButton": {
+            "title": ""
+          }
+        }
+      }
+    }
+  },
+    {
+      "path": "pages/order/detail",
+      "style": {
+        "navigationBarTitleText": "订单详情",
+        "navigationBarBackgroundColor": "#fff",
+        "navigationBarTextStyle": "black",
+        "backgroundColor": "#F8F9FB"
+      }
+    },{
+    "path": "pages/index",
+    "style": {
+      "navigationBarTitleText": "台球助教端",
+      "navigationStyle": "custom"
     }
   }, {
     "path": "pages/mine/index",
@@ -72,20 +92,21 @@
     }
   }],
   "tabBar": {
-    "color": "#000000",
-    "selectedColor": "#000000",
-    "borderStyle": "white",
+    "color": "#64748b",
+    "selectedColor": "#2f6bee",
+    "borderStyle": "black",
     "backgroundColor": "#ffffff",
-    "list": [{
-        "pagePath": "pages/index",
-        "iconPath": "static/images/tabbar/home.png",
-        "selectedIconPath": "static/images/tabbar/home_.png",
-        "text": "首页"
-      }, {
+    "list": [
+      {
         "pagePath": "pages/work/index",
         "iconPath": "static/images/tabbar/work.png",
         "selectedIconPath": "static/images/tabbar/work_.png",
         "text": "工作台"
+      },{
+        "pagePath": "pages/index",
+        "iconPath": "static/images/tabbar/home.png",
+        "selectedIconPath": "static/images/tabbar/home_.png",
+        "text": "首页"
       }, {
         "pagePath": "pages/mine/index",
         "iconPath": "static/images/tabbar/mine.png",
@@ -96,7 +117,9 @@
   },
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "RuoYi",
-    "navigationBarBackgroundColor": "#FFFFFF"
-  }
+    "navigationBarTitleText": "台球助教端",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#f8fbff"
+  },
+  "uniIdRouter": {}
 }
