@@ -1,11 +1,14 @@
 <template>
-  <view class="order-detail-wrapper">
-    <!-- 状态计时区域 -->
-    <view class="timer-section">
-      <uni-tag text="进行中" type="primary" size="normal" class="status-tag" />
-      <text class="big-time">{{ usedText }}</text>
-      <text class="time-label">已服务时长</text>
-      <text class="left-time">剩余时长：{{ leftText }}</text>
+  <view class="order-detail-wrapper" :class="{ 'order-detail-finished': !isProcessing }">
+    <!-- 状态计时区域：根据状态动态渲染 -->
+    <view class="timer-section" :class="{ 'timer-section-finished': !isProcessing }">
+      <uni-tag :text="statusText" :type="statusType" size="normal" class="status-tag" />
+      <!-- 仅进行中显示已服务/剩余时长，已结束隐藏 -->
+      <template v-if="isProcessing">
+        <text class="big-time">{{ usedText }}</text>
+        <text class="time-label">已服务时长</text>
+        <text class="left-time">剩余时长：{{ leftText }}</text>
+      </template>
     </view>
 
     <!-- 订单信息卡片 -->
@@ -27,6 +30,11 @@
         <text class="label">订单金额</text>
         <text class="value price">¥{{ orderInfo.price }}</text>
       </view>
+      <!-- 已结束可以显示最终服务时长，需要的话打开注释即可 -->
+      <!-- <view class="info-row" v-if="!isProcessing">
+        <text class="label">实际服务时长</text>
+        <text class="value">{{ usedText }}</text>
+      </view> -->
       <view class="info-row">
         <text class="label">预约时间</text>
         <text class="value">{{ orderInfo.appointTime || '2026-03-22 14:30' }}</text>
@@ -47,7 +55,12 @@
           <text class="shop-address">{{ orderInfo.address || '上海市浦东新区XX路123号' }}</text>
           <text class="distance">距离您{{ orderInfo.distance || '2.3公里' }}，驾车约{{ orderInfo.driveTime || '10分钟' }}</text>
         </view>
-        <button class="nav-btn" @click="navigate">
+        <!-- 导航按钮：已结束自动加禁用样式，点击失效 -->
+        <button
+            class="nav-btn"
+
+            @click="navigate"
+        >
           <uni-icons type="location-filled" size="20" color="#fff" />
         </button>
       </view>
@@ -70,16 +83,25 @@
 
     <!-- 底部操作区 -->
     <view class="footer">
-      <button class="btn-end" @click="endService">结束服务</button>
+      <!-- 仅进行中显示结束服务按钮，已结束自动隐藏 -->
+      <button v-if="isProcessing" class="btn-end" @click="endService">结束服务</button>
       <button class="btn-service" @click="contactService">联系客服</button>
     </view>
   </view>
 </template>
 
 <script setup>
-// 👇 这里改：ref从vue导，onLoad/onUnload是uni的生命周期，从@dcloudio/uni-app导
-import { ref } from 'vue'
-import { onLoad, onUnload } from '@dcloudio/uni-app' // ✅ 正确导入方式
+import { ref, computed } from 'vue'
+import { onLoad, onUnload } from '@dcloudio/uni-app'
+import { openMapNavigation } from '@/utils/platform'
+
+// 订单状态枚举（可根据你的业务修改状态值）
+const ORDER_STATUS = {
+  // 进行中
+  PROCESSING: 1,
+  // 已结束
+  FINISHED: 2
+}
 
 // 接收路由参数
 const orderInfo = ref({})
@@ -89,6 +111,11 @@ const leftSec = ref(0)
 // 计时显示文本
 const usedText = ref('00:00')
 const leftText = ref('00:00:00')
+
+// 状态计算属性（自动判断）
+const isProcessing = computed(() => orderInfo.value.status === ORDER_STATUS.PROCESSING)
+const statusText = computed(() => isProcessing.value ? '进行中' : '已结束')
+const statusType = computed(() => isProcessing.value ? 'primary' : 'grey')
 
 // 计时器实例
 let usedTimer = null
@@ -109,6 +136,9 @@ const fmtHHMMSS = (s) => {
 
 // 启动计时
 const startTimer = () => {
+  // 只有进行中才启动计时
+  if (!isProcessing.value) return
+
   // 初始化显示
   usedText.value = fmtMMSS(usedSec.value)
   leftText.value = fmtHHMMSS(leftSec.value)
@@ -132,126 +162,52 @@ const startTimer = () => {
 }
 
 // 页面加载时接收参数
-// 找到onLoad方法，补充默认经纬度
 onLoad((options) => {
   if (options.orderInfo) {
     orderInfo.value = JSON.parse(decodeURIComponent(options.orderInfo))
   }
   usedSec.value = parseInt(options.usedSec || 0)
   leftSec.value = parseInt(options.leftSec || 3600)
-  // 👇 新增：mock商家经纬度，真实场景从orderInfo里取
-  orderInfo.value.lat = orderInfo.value.lat || 31.230416 // 维度，示例为上海坐标
-  orderInfo.value.lon = orderInfo.value.lon || 121.473701 // 经度
+
+  // 默认参数补全
+  orderInfo.value.status = orderInfo.value.status || ORDER_STATUS.PROCESSING
+  orderInfo.value.lat = orderInfo.value.lat || 31.230416
+  orderInfo.value.lon = orderInfo.value.lon || 121.473701
   orderInfo.value.address = orderInfo.value.address || '上海市浦东新区XX路123号'
   orderInfo.value.shopName = orderInfo.value.shopName || 'XX台球厅（XX路店）'
+  orderInfo.value.serviceName = orderInfo.value.serviceName || '台球助教'
+  orderInfo.value.price = orderInfo.value.price || 128
 
   startTimer()
 })
 
-// 返回上一页
-const goBack = () => {
-  uni.navigateBack()
-}
-
-// ====================== 新增：全端适配导航逻辑 ======================
+// ====================== 导航逻辑 ======================
 const navigate = () => {
+  // 已结束直接拦截
+  if (!isProcessing.value) {
+    return uni.showToast({ title: '服务已结束，无需导航', icon: 'none' })
+  }
+
   const { lat, lon, shopName, address } = orderInfo.value
   if (!lat || !lon) {
     return uni.showToast({ title: '地址信息有误', icon: 'none' })
   }
 
-  // 1. 先判断环境：微信小程序直接走小程序内置地图
-  // #ifdef MP-WEIXIN
-  uni.openLocation({
-    latitude: parseFloat(lat),
-    longitude: parseFloat(lon),
+  // 使用多端兼容的导航函数
+  openMapNavigation({
+    latitude: lat,
+    longitude: lon,
     name: shopName,
     address: address,
-    scale: 18,
-    success: () => console.log('打开地图成功'),
-    fail: (err) => uni.showToast({ title: '打开地图失败：' + err.errMsg, icon: 'none' })
+    mode: 'driving'
   })
-  // #endif
-
-  // 2. APP端（安卓/鸿蒙/iOS）：检测已安装地图，弹出选择
-  // #ifdef APP-PLUS
-  uni.showLoading({ title: '检测地图应用中...' })
-  // 检测已安装的地图
-  const hasAmap = plus.runtime.isApplicationExist({ pname: 'com.autonavi.minimap', action: 'iosamap://' }) // 高德
-  const hasBaidumap = plus.runtime.isApplicationExist({ pname: 'com.baidu.BaiduMap', action: 'baidumap://' }) // 百度
-
-  uni.hideLoading()
-
-  const mapList = []
-  if (hasAmap) mapList.push('高德地图')
-  if (hasBaidumap) mapList.push('百度地图')
-
-  if (mapList.length === 0) {
-    return uni.showModal({
-      title: '提示',
-      content: '您未安装地图应用，请先安装高德或百度地图',
-      showCancel: false
-    })
-  }
-
-  // 弹出选择框
-  uni.showActionSheet({
-    itemList: mapList,
-    success: (res) => {
-      const selectMap = mapList[res.tapIndex]
-      if (selectMap === '高德地图') {
-        openAmap(lat, lon, shopName)
-      } else if (selectMap === '百度地图') {
-        // 百度坐标需要把GCJ02转成BD09，避免偏移
-        const [bdLat, bdLon] = gcj02ToBd09(parseFloat(lat), parseFloat(lon))
-        openBaidumap(bdLat, bdLon, shopName)
-      }
-    }
-  })
-  // #endif
-
-  // H5端备用方案（可选）
-  // #ifdef H5
-  window.open(`https://uri.amap.com/navigation?to=${lon},${lat},${shopName}&mode=car`)
-  // #endif
-}
-
-// 打开高德地图导航
-const openAmap = (lat, lon, name) => {
-  // #ifdef APP-PLUS
-  const url = plus.os.name === 'iOS'
-      ? `iosamap://route/plan/?dlat=${lat}&dlon=${lon}&dname=${encodeURIComponent(name)}&dev=0&t=0`
-      : `amapuri://route/plan/?dlat=${lat}&dlon=${lon}&dname=${encodeURIComponent(name)}&dev=0&t=0`
-  plus.runtime.openURL(url, (err) => {
-    uni.showToast({ title: '打开高德地图失败', icon: 'none' })
-  })
-  // #endif
-}
-
-// 打开百度地图导航
-const openBaidumap = (lat, lon, name) => {
-  // #ifdef APP-PLUS
-  const url = `baidumap://map/direction?origin=我的位置&destination=latlng:${lat},${lon}|name:${encodeURIComponent(name)}&mode=driving&src=你的应用名称`
-  plus.runtime.openURL(url, (err) => {
-    uni.showToast({ title: '打开百度地图失败', icon: 'none' })
-  })
-  // #endif
-}
-
-// 坐标转换：GCJ02(高德/微信) 转 BD09(百度)，解决百度地图偏移问题
-const gcj02ToBd09 = (ggLat, ggLon) => {
-  const xPI = 3.14159265358979324 * 3000.0 / 180.0
-  const z = Math.sqrt(ggLon * ggLon + ggLat * ggLat) + 0.00002 * Math.sin(ggLat * xPI)
-  const theta = Math.atan2(ggLat, ggLon) + 0.000003 * Math.cos(ggLon * xPI)
-  const bdLon = z * Math.cos(theta) + 0.0065
-  const bdLat = z * Math.sin(theta) + 0.006
-  return [bdLat, bdLon]
 }
 // ====================== 导航逻辑结束 ======================
 
 // 打电话
 const makeCall = () => {
-  uni.makePhoneCall({ phoneNumber: '13800008888' })
+  const phone = orderInfo.value.customerPhone?.replace(/\*/g, '') || '13800008888'
+  uni.makePhoneCall({ phoneNumber: phone })
 }
 
 // 联系客服
@@ -269,13 +225,15 @@ const endService = () => {
         // 清空计时器
         clearInterval(usedTimer)
         clearInterval(leftTimer)
+        // ✅ 本地立即更新状态，页面自动切换成已结束样式，不用返回也能看到变化
+        orderInfo.value.status = ORDER_STATUS.FINISHED
         // 通知工作台服务已结束
         uni.$emit('serviceEnded', {
           order: orderInfo.value,
           usedTime: usedText.value
         })
         uni.showToast({ title: '服务已结束', icon: 'success' })
-        // 延迟返回，让用户看到提示
+        // 延迟返回
         setTimeout(() => {
           uni.navigateBack()
         }, 1000)
@@ -295,12 +253,14 @@ onUnload(() => {
 .order-detail-wrapper {
   min-height: 100vh;
   background: #F8F9FB;
-  /* 1. 调大底部内边距：计算公式 = 底部按钮区高度 + 额外的呼吸空间 */
-  /* 这里增加到 320rpx 左右，确保客户信息卡片不会被遮挡 */
   padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
-/* 覆盖导航栏样式 */
+/* 已结束状态：调小底部padding，避免空白 */
+.order-detail-finished {
+  padding-bottom: calc(100rpx + env(safe-area-inset-bottom));
+}
+
 :deep(.uni-nav-bar) {
   background: #fff !important;
   border-bottom: 1rpx solid #F0F0F0 !important;
@@ -314,12 +274,6 @@ onUnload(() => {
   margin-bottom: 24rpx;
   .status-tag {
     margin-bottom: 16rpx;
-  }
-  .tip-text {
-    font-size: 26rpx;
-    color: #666;
-    display: block;
-    margin-bottom: 32rpx;
   }
   .big-time {
     font-size: 96rpx;
@@ -340,6 +294,10 @@ onUnload(() => {
     color: #F53F3F;
     font-weight: bold;
   }
+}
+/* 已结束计时区域：压缩高度，布局更紧凑 */
+.timer-section-finished {
+  padding-bottom: 32rpx;
 }
 
 /* 通用卡片样式 */
@@ -421,6 +379,13 @@ onUnload(() => {
     justify-content: center;
     padding: 0;
     margin: 0;
+    transition: all 0.3s;
+  }
+  /* 导航禁用样式：置灰+不可点击 */
+  .nav-btn-disabled {
+    background: #ccc !important;
+    opacity: 0.5;
+    pointer-events: none;
   }
 }
 
@@ -461,7 +426,6 @@ onUnload(() => {
     margin: 0;
   }
 }
-/* 客户信息卡片（增加底部间距，防止贴着底部栏） */
 .card:last-of-type {
   margin-bottom: 20rpx;
 }
@@ -472,15 +436,14 @@ onUnload(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(255, 255, 255, 0.98); // 略微透明增加高级感
-  backdrop-filter: blur(10px); // 毛玻璃效果
-  padding: 20rpx 30rpx; // 左右加宽，上下收紧
-  /* 2. 优化安全区距离，让按钮“往下走”一点但保持在安全线内 */
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  padding: 20rpx 30rpx;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
   border-top: 1rpx solid rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  gap: 16rpx; // 按钮之间的间距
+  gap: 16rpx;
   z-index: 99;
 
   .btn-end {
@@ -489,7 +452,7 @@ onUnload(() => {
     line-height: 90rpx;
     background: #F53F3F;
     color: #fff;
-    border-radius: 45rpx; // 改为圆角胶囊形更美观
+    border-radius: 45rpx;
     font-size: 30rpx;
     font-weight: bold;
     box-shadow: 0 8rpx 20rpx rgba(245, 63, 63, 0.2);
@@ -503,13 +466,13 @@ onUnload(() => {
     line-height: 72rpx;
     background: transparent;
     color: #888;
-    border: none; // 去掉边框，改为纯文本感，更干净
+    border: none;
     font-size: 26rpx;
-    text-decoration: underline; // 增加下划线提示可点击
+    text-decoration: underline;
     &::after { border: none; }
   }
 }
-/* 去掉按钮默认样式 */
+
 :deep(.uni-button) {
   border: none;
   box-shadow: none;

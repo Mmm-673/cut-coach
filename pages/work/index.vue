@@ -7,7 +7,6 @@
         <text class="status-label">当前状态</text>
         <view class="switch-wrapper">
           <text class="label-off" :class="{ active: !isOnline }">下线</text>
-          <!-- 替换为自定义滑动开关，完全替代原来的uni-data-checkbox -->
           <view
               class="custom-switch"
               :class="{ 'is-checked': isOnline, 'is-disabled': switchLoading }"
@@ -40,22 +39,91 @@
         <view class="pending-header">
           <view class="location">
             <uni-icons type="location" size="18" color="#2F6BEE"></uni-icons>
-            <text class="location-text">{{ pendingOrder.shopName }}</text>
+            <text class="location-text">{{ pendingOrder.venueName }}</text>
           </view>
-          <view class="countdown">
+          <view class="countdown" v-if="pendingOrder.expireAt">
             <uni-tag text="剩余" type="warning" size="small" />
             <text class="time-text">{{ pendingCountdownText }}</text>
           </view>
         </view>
 
         <view class="order-info">
-          <text class="order-name">{{ pendingOrder.serviceName }}</text>
-          <text class="order-price">¥{{ pendingOrder.price }}</text>
+          <text class="order-name">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '陪游' }} {{ Math.round(pendingOrder.serviceDuration / 60) }}分钟</text>
+          <text class="order-price">¥{{ (pendingOrder.totalAmount / 100).toFixed(2) }}</text>
+        </view>
+
+        <view class="order-detail-row">
+          <text class="detail-label">预约时间：</text>
+          <text class="detail-value">{{ formatTime(pendingOrder.bookingTime) }}</text>
+        </view>
+        <view class="order-detail-row">
+          <text class="detail-label">球厅地址：</text>
+          <text class="detail-value">{{ pendingOrder.venueAddress }}</text>
+        </view>
+        <view class="order-detail-row">
+          <text class="detail-label">下单时间：</text>
+          <text class="detail-value">{{ formatTime(pendingOrder.createTime) }}</text>
         </view>
 
         <view class="btn-group">
           <button class="btn btn-reject" @click="rejectOrder">拒绝</button>
           <button class="btn btn-accept" @click="acceptOrder">接单</button>
+        </view>
+      </view>
+    </uni-card>
+
+    <!-- 已接单待出发状态 -->
+    <uni-card v-else-if="orderStatus === 'accepted'" title="已接单" :is-shadow="true" :border="false">
+      <view class="accepted-order">
+        <view class="order-info-header">
+          <text class="order-title">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '陪游' }}</text>
+          <uni-tag text="待出发" type="warning" size="small" />
+        </view>
+
+        <view class="order-detail-row">
+          <text class="detail-label">预约时间：</text>
+          <text class="detail-value">{{ formatTime(pendingOrder.bookingTime) }}</text>
+        </view>
+        <view class="order-detail-row">
+          <text class="detail-label">球厅：</text>
+          <text class="detail-value">{{ pendingOrder.venueName }}</text>
+        </view>
+        <view class="order-detail-row">
+          <text class="detail-label">地址：</text>
+          <text class="detail-value">{{ pendingOrder.venueAddress }}</text>
+        </view>
+
+        <view class="btn-group" v-if="!pendingOrder.departureConfirmTime">
+          <button class="btn btn-confirm-depart" @click="confirmDeparture">确认出发</button>
+        </view>
+
+        <view class="status-hint" v-else>
+          <uni-icons type="checkmarkempty" size="20" color="#10B981"></uni-icons>
+          <text class="hint-text">已确认出发，请尽快前往服务地点</text>
+        </view>
+
+        <view class="btn-group" v-if="pendingOrder.departureConfirmTime && !pendingOrder.arriveTime">
+          <button class="btn btn-arrive" @click="arrive">到达服务地址</button>
+        </view>
+
+        <view class="status-hint" v-if="pendingOrder.arriveTime">
+          <uni-icons type="checkmarkempty" size="20" color="#10B981"></uni-icons>
+          <text class="hint-text">已到达服务地点，请等待用户确认</text>
+        </view>
+
+        <view class="btn-group" v-if="pendingOrder.arriveTime">
+          <button class="btn btn-accept" @click="startService">开始服务</button>
+        </view>
+
+        <view class="nav-row">
+          <button class="nav-btn" @click="navigate">
+            <uni-icons type="location" size="16" color="#fff"></uni-icons>
+            <text>导航</text>
+          </button>
+          <button class="call-btn" @click="makeCall">
+            <uni-icons type="phone" size="16" color="#10B981"></uni-icons>
+            <text>联系客户</text>
+          </button>
         </view>
       </view>
     </uni-card>
@@ -74,20 +142,19 @@
 
         <button class="btn-end" @click="endService">结束服务</button>
 
-        <!-- 点击整个订单详情区域跳转 -->
         <uni-section title="订单详情" type="line" margin-top="20rpx" >
           <view class="detail-box" @click="goToDetail">
-            <image class="shop-img" :src="pendingOrder.shopImg" mode="aspectFill"></image>
+            <image class="shop-img" :src="pendingOrder.shopImg || 'https://picsum.photos/120/120'" mode="aspectFill"></image>
             <view class="info">
-              <text class="shop-name">{{ pendingOrder.shopName }}</text>
+              <text class="shop-name">{{ pendingOrder.venueName }}</text>
               <view class="contact-row">
-                <text>客户：{{ pendingOrder.customerPhone }}</text>
+                <text>客户：{{ pendingOrder.userPhone }}</text>
                 <button class="call-btn" @click.stop="makeCall">
                   <uni-icons type="phone" size="16" color="#10B981"></uni-icons>
                 </button>
               </view>
-              <text class="service-name">{{ pendingOrder.serviceName }}</text>
-              <text class="service-price">¥{{ pendingOrder.price }}</text>
+              <text class="service-name">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '陪游' }}</text>
+              <text class="service-price">¥{{ (pendingOrder.totalAmount / 100).toFixed(2) }}</text>
               <view class="tip-box">
                 <uni-icons type="info" size="14" color="#F59E0B"></uni-icons>
                 <text>支持客户加钟，时长自动更新</text>
@@ -152,44 +219,53 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, getCurrentInstance } from 'vue'
+import {
+  updateWorkStatus,
+  updateLocation
+} from '@/api/billiard/coach'
+import {
+  getPendingOrders,
+  acceptOrder as acceptOrderApi,
+  confirmDeparture as confirmDepartureApi,
+  arrive as arriveApi,
+  rejectOrder as rejectOrderApi,
+  startService as startServiceApi,
+  finishService as finishServiceApi
+} from '@/api/billiard/order'
+import {
+  getLocation,
+  openMapNavigation,
+  makePhoneCall as makePhoneCallUtil,
+  showLocationPermissionGuide,
+  getPlatform
+} from '@/utils/platform'
+
+const { proxy } = getCurrentInstance()
 
 // ====================== 基础状态 ======================
 const isOnline = ref(false)
-const orderStatus = ref('idle')
+const orderStatus = ref('idle') // idle, pending, accepted, serving
 const currentTab = ref(0)
 const tabs = ref(['已完成', '已取消'])
-const switchLoading = ref(false) // 开关操作loading，防止重复点击
+const switchLoading = ref(false)
 
-// ====================== 新增：订单mock数据（和详情页字段完全对齐） ======================
-const pendingOrder = ref({
-  id: '20260601001',
-  orderNo: '202603221430001',
-  shopName: 'XX台球厅（XX路店）',
-  shopImg: 'https://picsum.photos/120/120',
-  address: '上海市浦东新区XX路123号',
-  serviceName: '中式八球陪练 1小时',
-  price: 120,
-  duration: 3600, // 总服务时长（秒）
-  customerName: '李先生',
-  customerPhone: '138****8888',
-  appointTime: '2026-03-22 14:30',
-  createTime: '2026-03-22 14:25:12',
-  remainAcceptTime: 150 // 待接单倒计时
-})
-
-// 倒计时
+// 轮询相关
+let pollTimer = null
 let pendingTimer = null
-const pendingCountdown = ref(pendingOrder.value.remainAcceptTime)
-const pendingCountdownText = ref('2分30秒')
-
-// 服务计时
 let usedTimer = null
 let leftTimer = null
+
+// 待接单数据
+const pendingOrder = ref({})
+const pendingCountdown = ref(0)
+const pendingCountdownText = ref('0分0秒')
+
+// 服务计时
 const usedSec = ref(0)
 const servingUsedTimeText = ref('00:00')
-const leftSec = ref(2112)
-const servingLeftTimeText = ref('00:35:12')
+const leftSec = ref(3600)
+const servingLeftTimeText = ref('01:00:00')
 
 // 数据 - 已完成订单
 const completedOrders = ref([
@@ -203,7 +279,6 @@ const cancelledOrders = ref([
   { name: '斯诺克陪练 1小时', time: '昨天 11:30 · XX俱乐部', price: '150' }
 ])
 
-// 当前显示的订单列表
 const displayOrders = ref(completedOrders.value)
 
 const todayData = ref([
@@ -225,44 +300,275 @@ const fmtHHMMSS = (s) => {
   return `${String(h).padStart(2,0)}:${String(m).padStart(2,0)}:${String(sec).padStart(2,0)}`
 }
 
+const formatTime = (timeStr) => {
+  if (!timeStr) return ''
+  const date = new Date(timeStr)
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
+}
+
+// 获取位置（使用多端兼容工具）
+const getPlatformLocation = () => {
+  return getLocation({
+    type: 'gcj02',
+    highAccuracy: true,
+    timeout: 10000
+  })
+}
+
+// 开关点击+下线二次确认逻辑
+const handleSwitchClick = () => {
+  if (switchLoading.value) return
+  const targetStatus = !isOnline.value
+
+  if (targetStatus) {
+    onSwitchChange(targetStatus)
+    return
+  }
+
+  let confirmText = '确认下线吗？下线后将无法接收新订单'
+  if (orderStatus.value === 'serving') {
+    confirmText = '您当前有正在进行中的服务，确认下线将强制结束服务，是否继续？'
+  }
+
+  uni.showModal({
+    title: '确认下线',
+    content: confirmText,
+    success: (res) => {
+      if (res.confirm) {
+        onSwitchChange(targetStatus)
+      }
+    }
+  })
+}
+
+// 开关切换逻辑 - 对接API
+const onSwitchChange = async (targetStatus) => {
+  switchLoading.value = true
+
+  try {
+    let locationData = {}
+    if (targetStatus) {
+      try {
+        const loc = await getPlatformLocation()
+        locationData = {
+          longitude: loc.longitude,
+          latitude: loc.latitude
+        }
+      } catch (err) {
+        console.warn('获取位置失败', err)
+        // 显示权限引导
+        uni.showModal({
+          title: '需要位置权限',
+          content: '上线需要获取位置信息，请授权位置权限',
+          confirmText: '去设置',
+          cancelText: '取消',
+          success: (res) => {
+            if (res.confirm) {
+              showLocationPermissionGuide()
+            }
+          }
+        })
+        switchLoading.value = false
+        return
+      }
+    }
+
+    await updateWorkStatus({
+      workStatus: targetStatus ? 1 : 0,
+      ...locationData
+    })
+
+    isOnline.value = targetStatus
+
+    if (isOnline.value) {
+      // 上线后开始轮询
+      startPolling()
+    } else {
+      // 下线，停止轮询，清空所有状态
+      stopPolling()
+      orderStatus.value = 'idle'
+      clearInterval(pendingTimer)
+      clearInterval(usedTimer)
+      clearInterval(leftTimer)
+    }
+
+    proxy.$modal.msgSuccess(targetStatus ? '已上线' : '已下线')
+  } catch (err) {
+    console.error('切换状态失败', err)
+    proxy.$modal.msgError(err?.msg || '操作失败')
+  } finally {
+    switchLoading.value = false
+  }
+}
+
+// 开始轮询待接单列表
+const startPolling = () => {
+  stopPolling()
+  // 立即查询一次
+  fetchPendingOrders()
+  // 5秒轮询
+  pollTimer = setInterval(() => {
+    if (orderStatus.value === 'idle') {
+      fetchPendingOrders()
+    }
+  }, 5000)
+}
+
+const stopPolling = () => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
+// 查询待接单列表
+const fetchPendingOrders = async () => {
+  try {
+    // const res = await getPendingOrders()
+    const res  = {"code":0,"msg":"","data":{"total":1,"list":[{"orderId":22,"orderNo":"20260331141626630416","userPhone":"138****8000","venueName":"Mock球厅-9","venueAddress":"Mock地址-9","venueLongitude":116.397128,"venueLatitude":39.916527,"serviceType":1,"bookingTime":0,"serviceDuration":120,"totalAmount":20000,"expireAt":1874938103000,"createTime":1774937787000}]}}
+    if (res.data && res.data?.list?.length > 0) {
+      // 有待接单，停止轮询
+      stopPolling()
+      pendingOrder.value = res.data.list[0]
+      orderStatus.value = 'pending'
+
+      // 计算倒计时
+      if (pendingOrder.value.expireAt) {
+        const now = Date.now()
+        const expire = new Date(pendingOrder.value.expireAt).getTime()
+        pendingCountdown.value = Math.max(0, Math.floor((expire - now) / 1000))
+        startPendingCountdown()
+      }
+    }
+  } catch (err) {
+    console.error('查询待接单失败', err)
+  }
+}
+
 // 待接单倒计时
-const startPending = () => {
+const startPendingCountdown = () => {
   clearInterval(pendingTimer)
-  pendingCountdown.value = pendingOrder.value.remainAcceptTime
   pendingTimer = setInterval(() => {
     pendingCountdown.value--
     if (pendingCountdown.value <= 0) {
       clearInterval(pendingTimer)
       orderStatus.value = 'idle'
+      // 恢复轮询
+      startPolling()
       uni.showToast({ title: '订单已超时', icon: 'none' })
       return
     }
     const m = Math.floor(pendingCountdown.value / 60)
     const s = pendingCountdown.value % 60
     pendingCountdownText.value = `${m}分${s}秒`
-  },1000)
+  }, 1000)
 }
 
-// 跳转到订单详情页
-const goToDetail = () => {
-  // 参数编码，防止特殊字符报错
-  const params = encodeURIComponent(JSON.stringify(pendingOrder.value))
-  uni.navigateTo({
-    url: `/pages/order/detail?orderInfo=${params}&usedSec=${usedSec.value}&leftSec=${leftSec.value}`
+// 拒单
+const rejectOrder = () => {
+  uni.showModal({
+    title: '确认拒绝',
+    content: '确定要拒绝此订单吗？',
+    editable: true,
+    placeholderText: '请输入拒单原因（可选）',
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          await rejectOrderApi({
+            orderId: pendingOrder.value.orderId,
+            rejectReason: res.content || ''
+          })
+          clearInterval(pendingTimer)
+          orderStatus.value = 'idle'
+          cancelledOrders.value.unshift({
+            name: pendingOrder.value.serviceType === 1 ? '台球陪练' : '陪游',
+            time: `${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')} · ${pendingOrder.value.venueName}`,
+            price: (pendingOrder.value.totalAmount / 100).toFixed(2)
+          })
+          // 恢复轮询
+          startPolling()
+          uni.showToast({ title:'已拒绝' })
+        } catch (err) {
+          console.error('拒单失败', err)
+          proxy.$modal.msgError(err?.msg || '拒单失败')
+        }
+      }
+    }
   })
 }
 
+// 接单
+const acceptOrder = async () => {
+  uni.showLoading({ title:'接单中...' })
+  try {
+    await acceptOrderApi({
+      orderId: pendingOrder.value.orderId
+    })
+    uni.hideLoading()
+    clearInterval(pendingTimer)
+    orderStatus.value = 'accepted'
+    uni.showToast({ title: '接单成功', icon: 'success' })
+  } catch (err) {
+    uni.hideLoading()
+    console.error('接单失败', err)
+    proxy.$modal.msgError(err?.msg || '接单失败')
+  }
+}
+
+// 确认出发
+const confirmDeparture = async () => {
+  try {
+    await confirmDepartureApi({
+      orderId: pendingOrder.value.orderId
+    })
+    pendingOrder.value.departureConfirmTime = new Date().toISOString()
+    uni.showToast({ title: '已确认出发', icon: 'success' })
+  } catch (err) {
+    console.error('确认出发失败', err)
+    proxy.$modal.msgError(err?.msg || '操作失败')
+  }
+}
+
+// 到达服务地址
+const arrive = async () => {
+  try {
+    await arriveApi({
+      orderId: pendingOrder.value.orderId
+    })
+    pendingOrder.value.arriveTime = new Date().toISOString()
+    uni.showToast({ title: '已到达', icon: 'success' })
+  } catch (err) {
+    console.error('确认到达失败', err)
+    proxy.$modal.msgError(err?.msg || '操作失败')
+  }
+}
+
+// 开始服务
+const startService = async () => {
+  try {
+    await startServiceApi({
+      orderId: pendingOrder.value.orderId
+    })
+    orderStatus.value = 'serving'
+    startServeTimer()
+    uni.showToast({ title: '服务已开始', icon: 'success' })
+  } catch (err) {
+    console.error('开始服务失败', err)
+    proxy.$modal.msgError(err?.msg || '操作失败')
+  }
+}
+
 // 服务计时
-const startServe = () => {
+const startServeTimer = () => {
   clearInterval(usedTimer)
   clearInterval(leftTimer)
   usedSec.value = 0
-  leftSec.value = pendingOrder.value.duration
+  leftSec.value = pendingOrder.value.serviceDuration || 3600
 
   usedTimer = setInterval(()=>{
     usedSec.value++
     servingUsedTimeText.value = fmtMMSS(usedSec.value)
-  },1000)
+  }, 1000)
 
   leftTimer = setInterval(()=>{
     if(leftSec.value <=0){
@@ -273,97 +579,15 @@ const startServe = () => {
     }
     leftSec.value--
     servingLeftTimeText.value = fmtHHMMSS(leftSec.value)
-  },1000)
+  }, 1000)
 }
 
-// ====================== 新增：开关点击+下线二次确认逻辑 ======================
-const handleSwitchClick = () => {
-  if (switchLoading.value) return
-  const targetStatus = !isOnline.value
-
-  // 情况1：要切到上线，直接走逻辑
-  if (targetStatus) {
-    onSwitchChange(targetStatus)
-    return
-  }
-
-  // 情况2：要切到下线，弹二次确认
-  let confirmText = '确认下线吗？下线后将无法接收新订单'
-  // 如果当前有正在服务的订单，增加风险提示
-  if (orderStatus.value === 'serving') {
-    confirmText = '您当前有正在进行中的服务，确认下线将强制结束服务，是否继续？'
-  }
-
-  uni.showModal({
-    title: '确认下线',
-    content: confirmText,
-    success: (res) => {
-      if (res.confirm) {
-        // 用户确认，执行下线逻辑
-        onSwitchChange(targetStatus)
-      }
-      // 用户取消，不做任何操作，开关状态不变
-    }
+// 跳转到订单详情页
+const goToDetail = () => {
+  const params = encodeURIComponent(JSON.stringify(pendingOrder.value))
+  uni.navigateTo({
+    url: `/pages/order/detail?orderInfo=${params}&usedSec=${usedSec.value}&leftSec=${leftSec.value}`
   })
-}
-
-// 开关切换逻辑
-const onSwitchChange = (targetStatus) => {
-  switchLoading.value = true
-  isOnline.value = targetStatus
-
-  if(isOnline.value){
-    // 上线，加载待接单
-    orderStatus.value = 'pending'
-    startPending()
-  }else{
-    // 下线，清空所有状态
-    orderStatus.value = 'idle'
-    clearInterval(pendingTimer)
-    clearInterval(usedTimer)
-    clearInterval(leftTimer)
-  }
-
-  setTimeout(() => {
-    switchLoading.value = false
-  }, 500)
-}
-
-// 拒绝订单
-const rejectOrder = () => {
-  uni.showModal({
-    title: '确认拒绝',
-    content: '确定要拒绝此订单吗？',
-    success: (res)=>{
-      if(res.confirm){
-        clearInterval(pendingTimer)
-        orderStatus.value = 'idle'
-        // 加入取消列表
-        cancelledOrders.value.unshift({
-          name: pendingOrder.value.serviceName,
-          time: `${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')} · ${pendingOrder.value.shopName}`,
-          price: pendingOrder.value.price
-        })
-        uni.showToast({ title:'已拒绝' })
-      }
-    }
-  })
-}
-
-// ====================== 修改：接单成功后自动跳详情页 ======================
-const acceptOrder = () => {
-  uni.showLoading({ title:'接单中...' })
-  setTimeout(()=>{
-    uni.hideLoading()
-    clearInterval(pendingTimer)
-    orderStatus.value = 'serving'
-    startServe()
-    uni.showToast({ title: '接单成功', icon: 'success' })
-    // 延迟1秒跳详情，让用户看到成功提示
-    // setTimeout(() => {
-    //   goToDetail()
-    // }, 1000)
-  },800)
 }
 
 // 结束服务
@@ -371,92 +595,56 @@ const endService = () => {
   uni.showModal({
     title: '确认结束',
     content: '确定要结束当前服务吗？',
-    success: (res) => {
+    success: async (res) => {
       if(res.confirm){
-        clearInterval(usedTimer)
-        clearInterval(leftTimer)
-        orderStatus.value = 'idle'
-        // 加入完成列表
-        completedOrders.value.unshift({
-          name: pendingOrder.value.serviceName,
-          time: `${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')} · ${pendingOrder.value.shopName}`,
-          price: pendingOrder.value.price
-        })
-        // 更新今日数据
-        todayData.value[0].value = '3小时30分'
-        todayData.value[1].value = '4单'
-        todayData.value[2].value = '¥480'
-        uni.showToast({ title:'服务已结束', icon:'success' })
+        try {
+          await finishServiceApi({
+            orderId: pendingOrder.value.orderId
+          })
+          clearInterval(usedTimer)
+          clearInterval(leftTimer)
+          orderStatus.value = 'idle'
+          completedOrders.value.unshift({
+            name: pendingOrder.value.serviceType === 1 ? '台球陪练' : '陪游',
+            time: `${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')} · ${pendingOrder.value.venueName}`,
+            price: (pendingOrder.value.totalAmount / 100).toFixed(2)
+          })
+          todayData.value[0].value = '3小时30分'
+          todayData.value[1].value = '4单'
+          todayData.value[2].value = '¥480'
+          // 恢复轮询
+          startPolling()
+          uni.showToast({ title:'服务已结束', icon:'success' })
+        } catch (err) {
+          console.error('结束服务失败', err)
+          proxy.$modal.msgError(err?.msg || '操作失败')
+        }
       }
     }
   })
 }
 
-// 导航
+// 导航（多端兼容）
 const navigate = () => {
-  const { lat, lon, shopName, address } = orderInfo.value
-  if (!lat || !lon) {
-    return uni.showToast({ title: '地址信息有误', icon: 'none' })
-  }
+  const lat = pendingOrder.value.venueLatitude
+  const lon = pendingOrder.value.venueLongitude
+  const shopName = pendingOrder.value.venueName
+  const address = pendingOrder.value.venueAddress
 
-  // 1. 先判断环境：微信小程序直接走小程序内置地图
-  // #ifdef MP-WEIXIN
-  uni.openLocation({
-    latitude: parseFloat(lat),
-    longitude: parseFloat(lon),
+  openMapNavigation({
+    latitude: lat,
+    longitude: lon,
     name: shopName,
     address: address,
-    scale: 18,
-    success: () => console.log('打开地图成功'),
-    fail: (err) => uni.showToast({ title: '打开地图失败：' + err.errMsg, icon: 'none' })
+    mode: 'driving'
   })
-  // #endif
-
-  // 2. APP端（安卓/鸿蒙/iOS）：检测已安装地图，弹出选择
-  // #ifdef APP-PLUS
-  uni.showLoading({ title: '检测地图应用中...' })
-  // 检测已安装的地图
-  const hasAmap = plus.runtime.isApplicationExist({ pname: 'com.autonavi.minimap', action: 'iosamap://' }) // 高德
-  const hasBaidumap = plus.runtime.isApplicationExist({ pname: 'com.baidu.BaiduMap', action: 'baidumap://' }) // 百度
-
-  uni.hideLoading()
-
-  const mapList = []
-  if (hasAmap) mapList.push('高德地图')
-  if (hasBaidumap) mapList.push('百度地图')
-
-  if (mapList.length === 0) {
-    return uni.showModal({
-      title: '提示',
-      content: '您未安装地图应用，请先安装高德或百度地图',
-      showCancel: false
-    })
-  }
-
-  // 弹出选择框
-  uni.showActionSheet({
-    itemList: mapList,
-    success: (res) => {
-      const selectMap = mapList[res.tapIndex]
-      if (selectMap === '高德地图') {
-        openAmap(lat, lon, shopName)
-      } else if (selectMap === '百度地图') {
-        // 百度坐标需要把GCJ02转成BD09，避免偏移
-        const [bdLat, bdLon] = gcj02ToBd09(parseFloat(lat), parseFloat(lon))
-        openBaidumap(bdLat, bdLon, shopName)
-      }
-    }
-  })
-  // #endif
-
-  // H5端备用方案（可选）
-  // #ifdef H5
-  window.open(`https://uri.amap.com/navigation?to=${lon},${lat},${shopName}&mode=car`)
-  // #endif
 }
 
-// 打电话
-const makeCall = () => uni.makePhoneCall({ phoneNumber:'13800008888' })
+// 打电话（多端兼容）
+const makeCall = () => {
+  const phoneNumber = pendingOrder.value.userPhone || '13800008888'
+  makePhoneCallUtil(phoneNumber)
+}
 
 // 标签切换
 const onTabClick = (e) => {
@@ -467,10 +655,17 @@ const onTabClick = (e) => {
 // 查看全部订单
 const goToAllOrder = () => {
   uni.showToast({ title:'跳转到全部订单页', icon:'none' })
-  // uni.navigateTo({ url:'/pages/order/list' })
 }
 
-onUnmounted(()=>{
+onMounted(() => {
+  // 上线状态下进入页面时开始轮询
+  if (isOnline.value) {
+    startPolling()
+  }
+})
+
+onUnmounted(() => {
+  stopPolling()
   clearInterval(pendingTimer)
   clearInterval(usedTimer)
   clearInterval(leftTimer)
@@ -478,7 +673,6 @@ onUnmounted(()=>{
 </script>
 
 <style lang="scss" scoped>
-/* 全局样式重置 */
 :deep(.uni-button) {
   border: none;
   box-shadow: none;
@@ -488,13 +682,11 @@ onUnmounted(()=>{
   margin: 0 !important;
   border-radius: 16rpx !important;
 }
-/* 卡片头部样式 */
 :deep(.uni-card .uni-card__header) {
   padding: 20rpx 24rpx !important;
   border-bottom: 1rpx solid #F0F0F0;
   font-weight: bold;
 }
-/* 卡片内容样式 */
 :deep(.uni-card .uni-card__content) {
   padding: 24rpx !important;
 }
@@ -511,7 +703,6 @@ onUnmounted(()=>{
   gap: 24rpx;
 }
 
-/* 工作状态卡片内部 */
 .status-row {
   display: flex;
   justify-content: space-between;
@@ -542,18 +733,16 @@ onUnmounted(()=>{
   }
 }
 
-/* ====================== 新增：自定义滑动开关样式 ====================== */
 .custom-switch {
   width: 88rpx;
   height: 48rpx;
   border-radius: 24rpx;
-  background: #CDD0D6; /* 关闭时灰色 */
+  background: #CDD0D6;
   position: relative;
   transition: all 0.3s ease;
   flex-shrink: 0;
   cursor: pointer;
 
-  /* 滑动圆点 */
   .switch-knob {
     position: absolute;
     top: 4rpx;
@@ -566,22 +755,19 @@ onUnmounted(()=>{
     box-shadow: 0 2rpx 4rpx rgba(0,0,0,0.1);
   }
 
-  /* 开启状态：绿色和需求一致 */
   &.is-checked {
     background: #00C531;
     .switch-knob {
-      left: calc(100% - 44rpx); /* 平滑滑到右侧 */
+      left: calc(100% - 44rpx);
     }
   }
 
-  /* 禁用状态 */
   &.is-disabled {
     opacity: 0.6;
     pointer-events: none;
   }
 }
 
-/* 空订单居中处理 */
 .empty-order {
   min-height: 320rpx;
   display: flex;
@@ -595,8 +781,7 @@ onUnmounted(()=>{
   }
 }
 
-/* 待接单样式 */
-.pending-header {
+.pending-header, .order-info-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -620,7 +805,13 @@ onUnmounted(()=>{
       font-weight: bold;
     }
   }
+  .order-title {
+    font-size: 30rpx;
+    font-weight: bold;
+    color: #333;
+  }
 }
+
 .order-info {
   margin-bottom: 24rpx;
   .order-name {
@@ -635,10 +826,27 @@ onUnmounted(()=>{
     font-weight: bold;
   }
 }
-/* 接单按钮组样式 */
+
+.order-detail-row {
+  display: flex;
+  padding: 8rpx 0;
+  .detail-label {
+    font-size: 24rpx;
+    color: #999;
+    width: 160rpx;
+    flex-shrink: 0;
+  }
+  .detail-value {
+    font-size: 24rpx;
+    color: #333;
+    flex: 1;
+  }
+}
+
 .btn-group {
   display: flex;
   gap: 16rpx;
+  margin-top: 24rpx;
   .btn {
     height: 72rpx;
     line-height: 72rpx;
@@ -654,9 +862,59 @@ onUnmounted(()=>{
     background: #2F6BEE;
     color: #fff;
   }
+  .btn-confirm-depart, .btn-arrive {
+    background: #10B981;
+    color: #fff;
+  }
 }
 
-/* 服务中样式 */
+.status-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 20rpx;
+  background: #ECFDF5;
+  border-radius: 12rpx;
+  margin-top: 24rpx;
+  .hint-text {
+    font-size: 26rpx;
+    color: #10B981;
+  }
+}
+
+.nav-row {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 24rpx;
+  .nav-btn, .call-btn {
+    flex: 1;
+    height: 72rpx;
+    border-radius: 12rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    font-size: 26rpx;
+    padding: 0;
+    margin: 0;
+  }
+  .nav-btn {
+    background: #2F6BEE;
+    color: #fff;
+  }
+  .call-btn {
+    background: #ECFDF5;
+    color: #10B981;
+  }
+}
+
+.accepted-order {
+  .order-info-header {
+    margin-bottom: 16rpx;
+  }
+}
+
 .serve-top {
   .left-time {
     font-size: 26rpx;
@@ -691,7 +949,6 @@ onUnmounted(()=>{
   border-radius: 12rpx;
   font-size: 28rpx;
 }
-/* 订单详情样式 */
 .detail-box {
   display: flex;
   align-items: center;
@@ -760,7 +1017,6 @@ onUnmounted(()=>{
   }
 }
 
-/* 今日数据卡片优化 */
 .data-grid {
   display: flex;
   gap: 16rpx;
@@ -802,7 +1058,6 @@ onUnmounted(()=>{
   }
 }
 
-/* 自定义卡片标题栏 */
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -817,7 +1072,6 @@ onUnmounted(()=>{
   color: #333;
 }
 
-/* 查看全部样式 */
 .view-all-text {
   font-size: 26rpx;
   color: #2F6BEE;
@@ -827,7 +1081,6 @@ onUnmounted(()=>{
   }
 }
 
-/* 历史订单优化样式 */
 .history-tabs {
   margin: 20rpx 0;
 }

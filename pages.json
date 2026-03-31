@@ -25,6 +25,21 @@
         }
       }
     }
+  },{
+    "path": "pages/order/index",
+    "style": {
+      "navigationBarTitleText": "历史订单",
+      "navigationBarBackgroundColor": "#ffffff",
+      "navigationBarTextStyle": "black",
+      "backgroundColor": "#F7F8FA",
+      "app-plus": {
+        "titleNView": {
+          "backButton": {
+            "title": ""
+          }
+        }
+      }
+    }
   },
     {
       "path": "pages/order/detail",
@@ -40,7 +55,15 @@
       "navigationBarTitleText": "台球助教端",
       "navigationStyle": "custom"
     }
-  }, {
+  },
+    {
+      "path": "pages/map/navigation",
+      "style": {
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
     "path": "pages/mine/index",
     "style": {
       "navigationBarTitleText": "我的"
@@ -92,7 +115,7 @@
     }
   }],
   "tabBar": {
-    "color": "#64748b",
+    "color": "#707070",
     "selectedColor": "#2f6bee",
     "borderStyle": "black",
     "backgroundColor": "#ffffff",
@@ -103,10 +126,10 @@
         "selectedIconPath": "static/images/tabbar/work_.png",
         "text": "工作台"
       },{
-        "pagePath": "pages/index",
-        "iconPath": "static/images/tabbar/home.png",
-        "selectedIconPath": "static/images/tabbar/home_.png",
-        "text": "首页"
+        "pagePath": "pages/order/index",
+        "iconPath": "static/images/tabbar/order.png",
+        "selectedIconPath": "static/images/tabbar/order_.png",
+        "text": "订单"
       }, {
         "pagePath": "pages/mine/index",
         "iconPath": "static/images/tabbar/mine.png",
