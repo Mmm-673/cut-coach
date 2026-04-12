@@ -383,170 +383,187 @@
 </script>
 
 <style lang="scss" scoped>
-	page {
-		background-color: #f8fbff;
-	}
+page {
+  background: linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%);
+}
 
-	.normal-login-container {
-		min-height: 100vh;
-		padding: 0 60rpx;
-		box-sizing: border-box;
+.normal-login-container {
+  min-height: 100vh;
+  padding: 0 60rpx;
+  box-sizing: border-box;
 
-		.logo-section {
-			padding-top: 120rpx;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			margin-bottom: 80rpx;
+  .logo-section {
+    padding-top: 120rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 80rpx;
 
-			.logo-box {
-				width: 140rpx;
-				height: 140rpx;
-				background: #edf4ff;
-				border-radius: 36rpx;
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				margin-bottom: 30rpx;
+    .logo-box {
+      width: 140rpx;
+      height: 140rpx;
+      background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+      border-radius: 36rpx;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 30rpx;
+      box-shadow: 0 8rpx 24rpx rgba(47, 107, 238, 0.1);
 
-				.logo-img {
-					width: 80rpx;
-					height: 80rpx;
-				}
-			}
+      .logo-img {
+        width: 80rpx;
+        height: 80rpx;
+      }
+    }
 
-			.app-title {
-				font-size: 48rpx;
-				font-weight: bold;
-				color: #1e293b;
-			}
+    .app-title {
+      font-size: 48rpx;
+      font-weight: bold;
+      color: $text-primary;
+    }
 
-			.app-subtitle {
-				font-size: 26rpx;
-				color: #94a3b8;
-				margin-top: 10rpx;
-			}
-		}
+    .app-subtitle {
+      font-size: 26rpx;
+      color: $text-tertiary;
+      margin-top: 10rpx;
+    }
+  }
 
-		.login-tabs {
-			display: flex;
-			background: #fff;
-			border: 1px solid #f1f5f9;
-			padding: 8rpx;
-			border-radius: 20rpx;
-			margin-bottom: 40rpx;
+  .login-tabs {
+    display: flex;
+    background: #fff;
+    border: 1rpx solid $border-light;
+    padding: 8rpx;
+    border-radius: $radius-xl;
+    margin-bottom: 40rpx;
+    box-shadow: $shadow-sm;
 
-			.tab-item {
-				flex: 1;
-				text-align: center;
-				height: 80rpx;
-				line-height: 80rpx;
-				font-size: 28rpx;
-				color: #64748b;
-				border-radius: 16rpx;
-				transition: all 0.3s ease;
+    .tab-item {
+      flex: 1;
+      text-align: center;
+      height: 80rpx;
+      line-height: 80rpx;
+      font-size: 28rpx;
+      color: $text-secondary;
+      border-radius: $radius-lg;
+      transition: all $duration-base $ease-out;
 
-				&.active {
-					background-color: #2f6bee;
-					color: #fff;
-				}
-			}
-		}
+      &.active {
+        background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+        color: #fff;
+        box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+      }
+    }
+  }
 
-		.input-item {
-			background-color: #ffffff;
-			height: 100rpx;
-			border-radius: 20rpx;
-			margin-bottom: 30rpx;
-			padding: 0 30rpx;
-			box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.02);
-			position: relative;
+  .input-item {
+    background-color: $bg-card;
+    height: 100rpx;
+    border-radius: $radius-xl;
+    margin-bottom: 30rpx;
+    padding: 0 30rpx;
+    box-shadow: $shadow-sm;
+    border: 2rpx solid transparent;
+    position: relative;
+    transition: border-color $duration-fast, box-shadow $duration-fast;
 
-			.icon {
-				font-size: 38rpx;
-				color: #94a3b8;
-			}
+    &:focus-within {
+      border-color: $primary;
+      box-shadow: 0 0 0 6rpx $primary-light;
+    }
 
-			.input {
-				flex: 1;
-				padding-left: 20rpx;
-				font-size: 28rpx;
-				height: 100%;
-				line-height: 100rpx;
-			}
+    .icon {
+      font-size: 38rpx;
+      color: $text-tertiary;
+    }
 
-			.password-toggle {
-				padding: 10rpx;
+    .input {
+      flex: 1;
+      padding-left: 20rpx;
+      font-size: 28rpx;
+      height: 100%;
+      line-height: 100rpx;
+      color: $text-primary;
+    }
 
-				.iconfont {
-					font-size: 36rpx;
-					color: #94a3b8;
-				}
-			}
+    .password-toggle {
+      padding: 10rpx;
 
-			.login-code-img {
-				width: 160rpx;
-				height: 60rpx;
-				border-radius: 8rpx;
-			}
+      .iconfont {
+        font-size: 36rpx;
+        color: $text-tertiary;
+      }
+    }
 
-			.sms-code-btn {
-				font-size: 24rpx;
-				color: #2f6bee;
-				background: #f0f7ff;
-				padding: 12rpx 24rpx;
-				border-radius: 12rpx;
-				white-space: nowrap;
-				flex-shrink: 0;
+    .login-code-img {
+      width: 160rpx;
+      height: 60rpx;
+      border-radius: $radius-sm;
+    }
 
-				&.disabled {
-					color: #cbd5e1;
-					background: #f1f5f9;
-				}
-			}
-		}
+    .sms-code-btn {
+      font-size: 24rpx;
+      color: $primary;
+      background: $primary-light;
+      padding: 12rpx 24rpx;
+      border-radius: $radius-base;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all $duration-fast;
 
-		.forget-pwd {
-			text-align: right;
-			color: #2f6bee;
-			font-size: 24rpx;
-			margin-bottom: 40rpx;
-		}
+      &.disabled {
+        color: $text-tertiary;
+        background: $border-light;
+      }
+    }
+  }
 
-		.login-btn {
-			height: 100rpx;
-			background-color: #2f6bee !important;
-			border-radius: 20rpx;
-			font-size: 32rpx;
-			color: #fff;
-			border: none;
+  .forget-pwd {
+    text-align: right;
+    color: $primary;
+    font-size: 24rpx;
+    margin-bottom: 40rpx;
+  }
 
-			&:active {
-				opacity: 0.8;
-			}
+  .login-btn {
+    height: 100rpx;
+    background: linear-gradient(135deg, $primary 0%, $primary-dark 100%) !important;
+    border-radius: $radius-xl;
+    font-size: 32rpx;
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+    transition: transform $duration-fast, box-shadow $duration-fast, opacity $duration-fast;
 
-			&:disabled {
-				background-color: #a5c3f0 !important;
-			}
-		}
+    &:active {
+      transform: scale(0.97);
+      box-shadow: 0 2rpx 6rpx rgba(47, 107, 238, 0.2);
+    }
 
-		.xieyi-section {
-			margin-top: 40rpx;
-			font-size: 24rpx;
+    &:disabled {
+      background: #A5C3F0 !important;
+      box-shadow: none;
+    }
+  }
 
-			.text-grey-dark {
-				color: #64748b;
-			}
-		}
+  .xieyi-section {
+    margin-top: 40rpx;
+    font-size: 24rpx;
 
-		.bottom-footer {
-			position: fixed;
-			bottom: 60rpx;
-			left: 0;
-			width: 100%;
-			text-align: center;
-			font-size: 26rpx;
-			color: #94a3b8;
-		}
-	}
+    .text-grey-dark {
+      color: $text-secondary;
+    }
+  }
+
+  .bottom-footer {
+    position: fixed;
+    bottom: 60rpx;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 26rpx;
+    color: $text-tertiary;
+  }
+}
 </style>

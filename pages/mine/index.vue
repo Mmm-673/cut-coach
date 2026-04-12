@@ -1,223 +1,329 @@
 <template>
-  <view class="mine-container">
-    <!--顶部个人信息栏-->
-    <uni-card :is-shadow="false" :border="false" class="header-card">
-      <view class="header-section">
-        <view class="flex align-center" @click="handleToInfo">
-          <image v-if="avatar" :src="avatar" class="cu-avatar xl round" mode="aspectFill"></image>
-          <view v-else class="cu-avatar xl round bg-blue">
-            <uni-icons type="person" size="40" color="#fff"></uni-icons>
+  <view class="my-page">
+    <!-- 顶部用户信息栏 -->
+    <view class="user-header">
+      <view class="user-info">
+        <image class="avatar" src="/static/avatar.jpg" mode="aspectFill"></image>
+        <view class="user-detail">
+          <view class="user-name">
+            <text class="name">张助教</text>
+            <text class="badge">金牌助教</text>
           </view>
-          <view v-if="!name" @click="handleToLogin" class="login-tip">
-            点击登录
-          </view>
-          <view v-if="name" class="user-info">
-            <view class="u_title">
-              用户名：{{ name }}
-            </view>
-          </view>
-        </view>
-        <view @click="handleToInfo" class="flex align-center">
-          <text>个人信息</text>
-          <uni-icons type="right" size="16" color="#999"></uni-icons>
+          <view class="user-id">ID: 123456</view>
         </view>
       </view>
-    </uni-card>
+      <view class="edit-icon" @click="handleEdit">
+        <uni-icons type="compose" size="20" color="#fff"></uni-icons>
+      </view>
+    </view>
 
-    <view class="content-section">
-      <!-- 快捷操作 -->
-      <uni-card :is-shadow="true" :border="false" class="actions-card">
-        <uni-grid :column="4" :showBorder="false">
-          <uni-grid-item @click="handleJiaoLiuQun">
-            <view class="action-item">
-              <view class="icon-wrapper pink">
-                <uni-icons type="chatbubble" size="28" color="#fff"></uni-icons>
-              </view>
-              <text class="text">交流群</text>
-            </view>
-          </uni-grid-item>
-          <uni-grid-item @click="handleBuilding">
-            <view class="action-item">
-              <view class="icon-wrapper blue">
-                <uni-icons type="help" size="28" color="#fff"></uni-icons>
-              </view>
-              <text class="text">在线客服</text>
-            </view>
-          </uni-grid-item>
-          <uni-grid-item @click="handleBuilding">
-            <view class="action-item">
-              <view class="icon-wrapper mauve">
-                <uni-icons type="chatboxes" size="28" color="#fff"></uni-icons>
-              </view>
-              <text class="text">反馈社区</text>
-            </view>
-          </uni-grid-item>
-          <uni-grid-item @click="handleBuilding">
-            <view class="action-item">
-              <view class="icon-wrapper green">
-                <uni-icons type="heart" size="28" color="#fff"></uni-icons>
-              </view>
-              <text class="text">点赞我们</text>
-            </view>
-          </uni-grid-item>
-        </uni-grid>
-      </uni-card>
+    <!-- 钱包模块 -->
+    <view class="wallet-card">
+      <view class="wallet-title">我的钱包</view>
+      <view class="balance-wrap">
+        <view class="balance">¥2580.00</view>
+        <view class="balance-tip">可提现余额</view>
+      </view>
+      <view class="pending-audit">
+        待审核：¥500，预计3个工作日到账
+      </view>
+      <button class="withdraw-btn" @click="handleWithdraw">去提现</button>
+      <view class="wallet-links">
+        <view class="link-item" @click="navToDeduct">
+          <text>扣款明细</text>
+          <uni-icons type="right" size="14" color="#ccc"></uni-icons>
+        </view>
+        <view class="link-item" @click="navToWithdrawRecord">
+          <text>提现记录</text>
+          <uni-icons type="right" size="14" color="#ccc"></uni-icons>
+        </view>
+      </view>
+    </view>
 
-      <!-- 菜单列表 -->
-      <uni-card :is-shadow="true" :border="false" class="menu-card">
-        <uni-list>
-          <uni-list-item title="编辑资料" @click="handleToEditInfo" thumb="static/images/tabbar/mine.png" clickable>
-            <template #header>
-              <uni-icons type="person" size="20" color="#2F6BEE" style="margin-right: 12px;"></uni-icons>
-            </template>
-          </uni-list-item>
-          <uni-list-item title="常见问题" @click="handleHelp" clickable>
-            <template #header>
-              <uni-icons type="help" size="20" color="#2F6BEE" style="margin-right: 12px;"></uni-icons>
-            </template>
-          </uni-list-item>
-          <uni-list-item title="关于我们" @click="handleAbout" clickable>
-            <template #header>
-              <uni-icons type="info" size="20" color="#2F6BEE" style="margin-right: 12px;"></uni-icons>
-            </template>
-          </uni-list-item>
-          <uni-list-item title="应用设置" @click="handleToSetting" clickable>
-            <template #header>
-              <uni-icons type="gear" size="20" color="#2F6BEE" style="margin-right: 12px;"></uni-icons>
-            </template>
-          </uni-list-item>
-        </uni-list>
-      </uni-card>
+    <!-- 功能列表 -->
+    <view class="func-list">
+      <view class="func-item" @click="navToOrder">
+        <view class="func-icon icon-blue">
+          <uni-icons type="list" size="20" color="#007aff"></uni-icons>
+        </view>
+        <text class="func-name">我的订单</text>
+        <uni-icons type="right" size="16" color="#ccc"></uni-icons>
+      </view>
+
+      <view class="func-item" @click="navToEvaluate">
+        <view class="func-icon icon-green">
+          <uni-icons type="star" size="20" color="#34c759"></uni-icons>
+        </view>
+        <text class="func-name">我的评价</text>
+        <uni-icons type="right" size="16" color="#ccc"></uni-icons>
+      </view>
+
+      <view class="func-item" @click="navToBankCard">
+        <view class="func-icon icon-orange">
+          <uni-icons type="creditcard" size="20" color="#ff9500"></uni-icons>
+        </view>
+        <text class="func-name">银行卡管理</text>
+        <uni-icons type="right" size="16" color="#ccc"></uni-icons>
+      </view>
+
+      <view class="func-item" @click="navToService">
+        <view class="func-icon icon-purple">
+          <uni-icons type="headphones" size="20" color="#af52de"></uni-icons>
+        </view>
+        <text class="func-name">客服中心</text>
+        <uni-icons type="right" size="16" color="#ccc"></uni-icons>
+      </view>
+
+      <view class="func-item" @click="navToSetting">
+        <view class="func-icon icon-lightblue">
+          <uni-icons type="gear" size="20" color="#00aaff"></uni-icons>
+        </view>
+        <text class="func-name">设置</text>
+        <uni-icons type="right" size="16" color="#ccc"></uni-icons>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup>
-  import { useUserStore } from '@/store'
-  import { computed, getCurrentInstance } from "vue"
+import { ref } from 'vue'
+// 自动引入uni-icons（uni-app 3.x + Vue3 自动导入，无需手动import）
 
-  const { proxy } = getCurrentInstance()
-  const name = computed(() => useUserStore().name)
-  const avatar = computed(() => useUserStore().avatar)
+// 页面交互逻辑
+const handleEdit = () => {
+  uni.showToast({
+    title: '编辑个人信息',
+    icon: 'none'
+  })
+  // 实际开发中跳转到编辑页：uni.navigateTo({ url: '/pages/my/edit' })
+}
 
-  function handleToInfo() {
-    proxy.$tab.navigateTo('/pages/mine/info/index')
-  }
+const handleWithdraw = () => {
 
-  function handleToEditInfo() {
-    proxy.$tab.navigateTo('/pages/mine/info/edit')
-  }
 
-  function handleToSetting() {
-    proxy.$tab.navigateTo('/pages/mine/setting/index')
-  }
+  uni.showModal({
+    title: '提现',
+    content: `当前可提现余额：¥2580.00`,
+    success: (res) => {
+      if (res.confirm) {
+        uni.showLoading({ title: '跳转提现页...' })
+        setTimeout(() => {
+          uni.hideLoading()
+          // 实际开发中跳转到提现页
+          uni.navigateTo({ url: '/pages/mine/wallet/withdraw/index' })
+        }, 800)
+      }
+    }
+  })
+}
 
-  function handleToLogin() {
-    proxy.$tab.reLaunch('/pages/login/index')
-  }
+// 页面跳转逻辑
+const navToDeduct = () => {
+  uni.navigateTo({ url: '/pages/mine/wallet/deduct/index' })
+}
 
-  function handleHelp() {
-    proxy.$tab.navigateTo('/pages/mine/help/index')
-  }
+const navToWithdrawRecord = () => {
+  uni.navigateTo({ url: '/pages/mine/wallet/withdraw-record/index' })
+}
 
-  function handleAbout() {
-    proxy.$tab.navigateTo('/pages/mine/about/index')
-  }
+const navToOrder = () => {
+  uni.navigateTo({ url: '/pages/order/list' })
+}
 
-  function handleJiaoLiuQun() {
-    proxy.$modal.showToast('QQ群：①133713780(满)、②146013835(满)、③189091635')
-  }
+const navToEvaluate = () => {
+  uni.navigateTo({ url: '/pages/mine/evaluate/index' })
+}
 
-  function handleBuilding() {
-    proxy.$modal.showToast('模块建设中~')
-  }
+const navToBankCard = () => {
+  uni.navigateTo({ url: '/pages/wallet/bank-card' })
+}
+
+const navToService = () => {
+  uni.navigateTo({ url: '/pages/service/index' })
+}
+
+const navToSetting = () => {
+  uni.navigateTo({ url: '/pages/setting/index' })
+}
 </script>
 
-<style lang="scss" scoped>
-  page {
-    background-color: #f5f6f7;
-  }
+<style scoped lang="scss">
+.my-page {
+  min-height: 100vh;
+  background-color: #f7f8fa;
+  padding-bottom: 40rpx;
+}
 
-  .mine-container {
-    width: 100%;
-    min-height: 100vh;
-    background: #F7F8FA;
+/* 顶部用户栏 */
+.user-header {
+  background-color: #66b3ff;
+  padding: 40rpx 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+}
 
-    .header-card {
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(135deg, #3c96f3 0%, #2F6BEE 100%);
-      border-radius: 0 0 40rpx 40rpx;
+.user-info {
+  display: flex;
+  align-items: center;
+}
 
-      .header-section {
-        padding: 60rpx 30rpx 40rpx;
-        color: white;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  margin-right: 24rpx;
+}
 
-        .cu-avatar {
-          border: 3px solid rgba(255,255,255,0.3);
-          width: 120rpx;
-          height: 120rpx;
-        }
+.user-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
 
-        .login-tip {
-          font-size: 32rpx;
-          margin-left: 20rpx;
-          font-weight: 500;
-        }
+.user-name {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
 
-        .user-info {
-          margin-left: 20rpx;
+.name {
+  font-size: 40rpx;
+  font-weight: bold;
+}
 
-          .u_title {
-            font-size: 32rpx;
-            line-height: 44rpx;
-            font-weight: 500;
-          }
-        }
-      }
-    }
+.badge {
+  background-color: rgba(255, 255, 255, 0.3);
+  padding: 6rpx 20rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+}
 
-    .content-section {
-      padding: 20rpx;
-      margin-top: -30rpx;
-      position: relative;
+.user-id {
+  font-size: 30rpx;
+  opacity: 0.9;
+}
 
-      .actions-card {
-        margin-bottom: 20rpx;
-      }
+.edit-icon {
+  font-size: 40rpx;
+}
 
-      .menu-card {
-        padding: 0;
-      }
-    }
+/* 钱包卡片 */
+.wallet-card {
+  background-color: #fff;
+  margin: 30rpx;
+  border-radius: 20rpx;
+  padding: 40rpx 30rpx;
+}
 
-    .action-item {
-      padding: 20rpx 0;
-      text-align: center;
+.wallet-title {
+  font-size: 34rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 30rpx;
+}
 
-      .icon-wrapper {
-        width: 80rpx;
-        height: 80rpx;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 12rpx;
+.balance-wrap {
+  text-align: center;
+  margin-bottom: 30rpx;
+}
 
-        &.pink { background: linear-gradient(135deg, #FF6B81 0%, #F43F50 100%); }
-        &.blue { background: linear-gradient(135deg, #60A5FA 0%, #2F6BEE 100%); }
-        &.mauve { background: linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%); }
-        &.green { background: linear-gradient(135deg, #34D399 0%, #10B981 100%); }
-      }
+.balance {
+  font-size: 80rpx;
+  font-weight: bold;
+  color: #333;
+  line-height: 1.2;
+}
 
-      .text {
-        display: block;
-        font-size: 24rpx;
-        color: #333;
-      }
-    }
-  }
+.balance-tip {
+  font-size: 30rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+.pending-audit {
+  background-color: #f7f8fa;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  font-size: 30rpx;
+  color: #666;
+  margin-bottom: 30rpx;
+}
+
+.withdraw-btn {
+  width: 100%;
+  height: 90rpx;
+  line-height: 90rpx;
+  background-color: #007aff;
+  color: #fff;
+  border-radius: 16rpx;
+  border: none;
+  font-size: 34rpx;
+  font-weight: 500;
+  margin-bottom: 30rpx;
+}
+
+.wallet-links {
+  display: flex;
+  justify-content: space-between;
+}
+
+.link-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 32rpx;
+  color: #333;
+}
+
+/* 功能列表 */
+.func-list {
+  background-color: #fff;
+  margin: 0 30rpx;
+  border-radius: 20rpx;
+  padding: 20rpx 0;
+}
+
+.func-item {
+  display: flex;
+  align-items: center;
+  padding: 30rpx;
+  gap: 20rpx;
+}
+
+.func-icon {
+  width: 70rpx;
+  height: 70rpx;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-blue {
+  background-color: #e6f0ff;
+}
+
+.icon-green {
+  background-color: #e6ffe6;
+}
+
+.icon-orange {
+  background-color: #fff2e6;
+}
+
+.icon-purple {
+  background-color: #f3e6ff;
+}
+
+.icon-lightblue {
+  background-color: #e6f7ff;
+}
+
+.func-name {
+  flex: 1;
+  font-size: 34rpx;
+  color: #333;
+}
 </style>

@@ -107,19 +107,21 @@ const goToDetail = (order) => {
 <style lang="scss" scoped>
 .order-list-wrapper {
   min-height: 100vh;
-  background: #F8F9FB;
+  background: $bg-page;
 }
 .tab-bar {
   display: flex;
-  background: #fff;
+  background: $bg-card;
   padding: 0 24rpx;
+  box-shadow: $shadow-sm;
   .tab-item {
     font-size: 28rpx;
-    color: #666;
+    color: $text-secondary;
     padding: 24rpx 32rpx;
     position: relative;
+    transition: color $duration-fast;
     &.active {
-      color: #2F6BEE;
+      color: $primary;
       font-weight: bold;
       &::after {
         content: '';
@@ -129,7 +131,7 @@ const goToDetail = (order) => {
         transform: translateX(-50%);
         width: 40rpx;
         height: 6rpx;
-        background: #2F6BEE;
+        background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
         border-radius: 3rpx;
       }
     }
@@ -139,20 +141,25 @@ const goToDetail = (order) => {
   padding: 24rpx;
 }
 .order-item {
-  background: #fff;
-  border-radius: 16rpx;
+  background: $bg-card;
+  border-radius: $radius-xl;
   padding: 24rpx;
   margin-bottom: 20rpx;
+  box-shadow: $shadow-sm;
+  transition: transform $duration-base, box-shadow $duration-base;
+  &:active {
+    transform: scale(0.98);
+  }
   .order-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding-bottom: 16rpx;
-    border-bottom: 1rpx solid #F0F0F0;
+    border-bottom: 1rpx solid $border-light;
     margin-bottom: 16rpx;
     .order-no {
       font-size: 26rpx;
-      color: #333;
+      color: $text-primary;
     }
   }
   .order-info-row {
@@ -161,14 +168,14 @@ const goToDetail = (order) => {
     margin-bottom: 12rpx;
     .label {
       font-size: 26rpx;
-      color: #666;
+      color: $text-tertiary;
     }
     .value {
       font-size: 26rpx;
-      color: #333;
+      color: $text-secondary;
     }
     .price {
-      color: #2F6BEE;
+      color: $primary;
       font-weight: bold;
     }
   }
@@ -177,14 +184,14 @@ const goToDetail = (order) => {
     padding-top: 12rpx;
     .arrow {
       font-size: 26rpx;
-      color: #999;
+      color: $text-tertiary;
     }
   }
 }
 .empty-tip {
   text-align: center;
   font-size: 26rpx;
-  color: #999;
+  color: $text-tertiary;
   padding-top: 100rpx;
 }
 </style>

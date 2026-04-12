@@ -680,12 +680,14 @@ onUnmounted(() => {
 }
 :deep(.uni-card) {
   margin: 0 !important;
-  border-radius: 16rpx !important;
+  border-radius: $radius-xl !important;
+  box-shadow: $shadow-base;
 }
 :deep(.uni-card .uni-card__header) {
   padding: 20rpx 24rpx !important;
-  border-bottom: 1rpx solid #F0F0F0;
+  border-bottom: 1rpx solid $border-light;
   font-weight: bold;
+  color: $text-primary;
 }
 :deep(.uni-card .uni-card__content) {
   padding: 24rpx !important;
@@ -696,7 +698,7 @@ onUnmounted(() => {
 
 .workbench-wrapper {
   min-height: 100vh;
-  background: #F8F9FB;
+  background: $bg-page;
   padding: 32rpx;
   display: flex;
   flex-direction: column;
@@ -708,11 +710,11 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 0 0 20rpx 0;
-  border-bottom: 1rpx solid #F0F0F0;
+  border-bottom: 1rpx solid $border-light;
   .status-label {
     font-size: 28rpx;
     font-weight: bold;
-    color: #333;
+    color: $text-primary;
   }
 }
 .status-tag {
@@ -725,10 +727,10 @@ onUnmounted(() => {
   gap: 16rpx;
   .label-off, .label-on {
     font-size: 26rpx;
-    color: #999;
+    color: $text-tertiary;
   }
   .active {
-    color: #00C531;
+    color: $success;
     font-weight: bold;
   }
 }
@@ -737,9 +739,9 @@ onUnmounted(() => {
   width: 88rpx;
   height: 48rpx;
   border-radius: 24rpx;
-  background: #CDD0D6;
+  background: $border;
   position: relative;
-  transition: all 0.3s ease;
+  transition: all $duration-base $ease-out;
   flex-shrink: 0;
   cursor: pointer;
 
@@ -751,12 +753,12 @@ onUnmounted(() => {
     height: 40rpx;
     border-radius: 50%;
     background: #fff;
-    transition: all 0.3s ease;
+    transition: all $duration-base $ease-out;
     box-shadow: 0 2rpx 4rpx rgba(0,0,0,0.1);
   }
 
   &.is-checked {
-    background: #00C531;
+    background: $success;
     .switch-knob {
       left: calc(100% - 44rpx);
     }
@@ -777,7 +779,7 @@ onUnmounted(() => {
   .empty-text {
     margin-top: 24rpx;
     font-size: 28rpx;
-    color: #666;
+    color: $text-secondary;
   }
 }
 
@@ -792,7 +794,7 @@ onUnmounted(() => {
     gap: 6rpx;
     .location-text {
       font-size: 26rpx;
-      color: #333;
+      color: $text-primary;
     }
   }
   .countdown {
@@ -801,14 +803,14 @@ onUnmounted(() => {
     gap: 6rpx;
     .time-text {
       font-size: 26rpx;
-      color: #F59E0B;
+      color: $warning;
       font-weight: bold;
     }
   }
   .order-title {
     font-size: 30rpx;
     font-weight: bold;
-    color: #333;
+    color: $text-primary;
   }
 }
 
@@ -819,10 +821,11 @@ onUnmounted(() => {
     font-weight: bold;
     display: block;
     margin-bottom: 8rpx;
+    color: $text-primary;
   }
   .order-price {
     font-size: 36rpx;
-    color: #2F6BEE;
+    color: $primary;
     font-weight: bold;
   }
 }
@@ -832,13 +835,13 @@ onUnmounted(() => {
   padding: 8rpx 0;
   .detail-label {
     font-size: 24rpx;
-    color: #999;
+    color: $text-tertiary;
     width: 160rpx;
     flex-shrink: 0;
   }
   .detail-value {
     font-size: 24rpx;
-    color: #333;
+    color: $text-secondary;
     flex: 1;
   }
 }
@@ -851,19 +854,24 @@ onUnmounted(() => {
     height: 72rpx;
     line-height: 72rpx;
     font-size: 26rpx;
-    border-radius: 12rpx;
+    border-radius: $radius-base;
     flex: 1;
+    font-weight: 600;
+    transition: transform $duration-fast;
+    &:active {
+      transform: scale(0.97);
+    }
   }
   .btn-reject {
-    background: #F53F3F;
+    background: $danger;
     color: #fff;
   }
   .btn-accept {
-    background: #2F6BEE;
+    background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
     color: #fff;
   }
   .btn-confirm-depart, .btn-arrive {
-    background: #10B981;
+    background: $success;
     color: #fff;
   }
 }
@@ -874,12 +882,12 @@ onUnmounted(() => {
   justify-content: center;
   gap: 8rpx;
   padding: 20rpx;
-  background: #ECFDF5;
-  border-radius: 12rpx;
+  background: $success-light;
+  border-radius: $radius-base;
   margin-top: 24rpx;
   .hint-text {
     font-size: 26rpx;
-    color: #10B981;
+    color: $success;
   }
 }
 
@@ -890,7 +898,7 @@ onUnmounted(() => {
   .nav-btn, .call-btn {
     flex: 1;
     height: 72rpx;
-    border-radius: 12rpx;
+    border-radius: $radius-base;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -898,14 +906,19 @@ onUnmounted(() => {
     font-size: 26rpx;
     padding: 0;
     margin: 0;
+    font-weight: 500;
+    transition: transform $duration-fast;
+    &:active {
+      transform: scale(0.97);
+    }
   }
   .nav-btn {
-    background: #2F6BEE;
+    background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
     color: #fff;
   }
   .call-btn {
-    background: #ECFDF5;
-    color: #10B981;
+    background: $success-light;
+    color: $success;
   }
 }
 
@@ -918,25 +931,25 @@ onUnmounted(() => {
 .serve-top {
   .left-time {
     font-size: 26rpx;
-    color: #2F6BEE;
+    color: $primary;
     font-weight: bold;
   }
 }
 .timer-box {
   text-align: center;
   padding: 32rpx 0;
-  background: #F8F9FB;
-  border-radius: 12rpx;
+  background: $bg-page;
+  border-radius: $radius-base;
   margin: 24rpx 0;
   .big-time {
     font-size: 64rpx;
     font-weight: bold;
-    color: #333;
+    color: $text-primary;
     display: block;
   }
   .time-desc {
     font-size: 24rpx;
-    color: #999;
+    color: $text-tertiary;
     margin-top: 8rpx;
   }
 }
@@ -944,10 +957,15 @@ onUnmounted(() => {
   width: 100%;
   height: 80rpx;
   line-height: 80rpx;
-  background: #F53F3F;
+  background: $danger;
   color: #fff;
-  border-radius: 12rpx;
+  border-radius: $radius-base;
   font-size: 28rpx;
+  font-weight: 600;
+  transition: transform $duration-fast;
+  &:active {
+    transform: scale(0.97);
+  }
 }
 .detail-box {
   display: flex;
@@ -957,7 +975,7 @@ onUnmounted(() => {
   .shop-img {
     width: 120rpx;
     height: 120rpx;
-    border-radius: 12rpx;
+    border-radius: $radius-base;
   }
   .info {
     flex: 1;
@@ -967,14 +985,14 @@ onUnmounted(() => {
     .shop-name {
       font-size: 28rpx;
       font-weight: bold;
-      color: #333;
+      color: $text-primary;
     }
     .contact-row {
       display: flex;
       align-items: center;
       gap: 8rpx;
       font-size: 24rpx;
-      color: #666;
+      color: $text-secondary;
       .call-btn {
         background: transparent;
         padding: 0;
@@ -989,11 +1007,11 @@ onUnmounted(() => {
     }
     .service-name {
       font-size: 26rpx;
-      color: #333;
+      color: $text-secondary;
     }
     .service-price {
       font-size: 28rpx;
-      color: #2F6BEE;
+      color: $primary;
       font-weight: bold;
     }
     .tip-box {
@@ -1001,14 +1019,14 @@ onUnmounted(() => {
       align-items: center;
       gap: 4rpx;
       font-size: 22rpx;
-      color: #F59E0B;
+      color: $warning;
       margin-top: 4rpx;
     }
   }
   .nav-btn {
-    background: #2F6BEE;
+    background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
     color: #fff;
-    border-radius: 8rpx;
+    border-radius: $radius-sm;
     font-size: 24rpx;
     height: 60rpx;
     padding: 0 20rpx;
@@ -1024,17 +1042,23 @@ onUnmounted(() => {
 }
 .data-card {
   flex: 1;
-  background: #fff;
-  border-radius: 16rpx;
+  background: $bg-card;
+  border-radius: $radius-xl;
   padding: 24rpx 16rpx;
   text-align: center;
   position: relative;
-  border: 1rpx solid #F0F0F0;
+  border: 1rpx solid $border-light;
+  transition: transform $duration-base $ease-out, box-shadow $duration-base $ease-out;
+
+  &:active {
+    transform: translateY(-4rpx);
+    box-shadow: $shadow-lg;
+  }
 
   .data-icon {
     width: 48rpx;
     height: 48rpx;
-    border-radius: 10rpx;
+    border-radius: $radius-base;
     margin: 0 auto 12rpx;
     display: flex;
     align-items: center;
@@ -1045,10 +1069,11 @@ onUnmounted(() => {
     font-weight: bold;
     display: block;
     margin-bottom: 8rpx;
+    color: $text-primary;
   }
   .data-label {
     font-size: 24rpx;
-    color: #888;
+    color: $text-tertiary;
   }
   .real-tag {
     transform: scale(0.75);
@@ -1064,17 +1089,17 @@ onUnmounted(() => {
   align-items: center;
   margin-bottom: 20rpx;
   padding-bottom: 16rpx;
-  border-bottom: 1rpx solid #F0F0F0;
+  border-bottom: 1rpx solid $border-light;
 }
 .card-title {
   font-size: 30rpx;
   font-weight: bold;
-  color: #333;
+  color: $text-primary;
 }
 
 .view-all-text {
   font-size: 26rpx;
-  color: #2F6BEE;
+  color: $primary;
   padding: 8rpx 0;
   &:active {
     opacity: 0.7;
@@ -1091,8 +1116,8 @@ onUnmounted(() => {
 }
 .history-order-item {
   padding: 20rpx;
-  background: #F8F9FB;
-  border-radius: 12rpx;
+  background: $bg-page;
+  border-radius: $radius-base;
   .order-top {
     display: flex;
     justify-content: space-between;
@@ -1101,11 +1126,11 @@ onUnmounted(() => {
     .order-title {
       font-size: 28rpx;
       font-weight: 500;
-      color: #333;
+      color: $text-primary;
     }
     .order-price {
       font-size: 28rpx;
-      color: #2F6BEE;
+      color: $primary;
       font-weight: bold;
     }
   }
@@ -1115,7 +1140,7 @@ onUnmounted(() => {
     align-items: center;
     .order-time {
       font-size: 24rpx;
-      color: #999;
+      color: $text-tertiary;
     }
   }
 }

@@ -252,7 +252,7 @@ onUnload(() => {
 <style lang="scss" scoped>
 .order-detail-wrapper {
   min-height: 100vh;
-  background: #F8F9FB;
+  background: $bg-page;
   padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
@@ -262,36 +262,37 @@ onUnload(() => {
 }
 
 :deep(.uni-nav-bar) {
-  background: #fff !important;
-  border-bottom: 1rpx solid #F0F0F0 !important;
+  background: $bg-card !important;
+  border-bottom: 1rpx solid $border-light !important;
 }
 
 /* 计时区域 */
 .timer-section {
-  background: #fff;
+  background: $bg-card;
   text-align: center;
   padding: 32rpx 24rpx 48rpx;
   margin-bottom: 24rpx;
+  box-shadow: $shadow-sm;
   .status-tag {
     margin-bottom: 16rpx;
   }
   .big-time {
     font-size: 96rpx;
     font-weight: bold;
-    color: #333;
+    color: $text-primary;
     display: block;
     line-height: 1;
     margin: 16rpx;
   }
   .time-label {
     font-size: 26rpx;
-    color: #999;
+    color: $text-tertiary;
     display: block;
     margin-bottom: 16rpx;
   }
   .left-time {
     font-size: 28rpx;
-    color: #F53F3F;
+    color: $danger;
     font-weight: bold;
   }
 }
@@ -302,14 +303,15 @@ onUnload(() => {
 
 /* 通用卡片样式 */
 .card {
-  background: #fff;
-  border-radius: 16rpx;
+  background: $bg-card;
+  border-radius: $radius-xl;
   padding: 24rpx;
   margin: 0 24rpx 24rpx;
+  box-shadow: $shadow-sm;
   .card-title {
     font-size: 30rpx;
     font-weight: bold;
-    color: #333;
+    color: $text-primary;
     margin-bottom: 24rpx;
   }
 }
@@ -320,20 +322,20 @@ onUnload(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16rpx 0;
-  border-bottom: 1rpx solid #F8F9FB;
+  border-bottom: 1rpx solid $bg-page;
   &:last-child {
     border-bottom: none;
   }
   .label {
     font-size: 26rpx;
-    color: #666;
+    color: $text-tertiary;
   }
   .value {
     font-size: 26rpx;
-    color: #333;
+    color: $text-secondary;
   }
   .price {
-    color: #2F6BEE;
+    color: $primary;
     font-weight: bold;
   }
 }
@@ -342,7 +344,7 @@ onUnload(() => {
 .shop-img {
   width: 100%;
   height: 300rpx;
-  border-radius: 12rpx;
+  border-radius: $radius-base;
   margin-bottom: 20rpx;
 }
 .shop-info {
@@ -357,15 +359,15 @@ onUnload(() => {
     .shop-name {
       font-size: 28rpx;
       font-weight: bold;
-      color: #333;
+      color: $text-primary;
     }
     .shop-address {
       font-size: 24rpx;
-      color: #666;
+      color: $text-secondary;
     }
     .distance {
       font-size: 24rpx;
-      color: #2F6BEE;
+      color: $primary;
       margin-top: 4rpx;
     }
   }
@@ -373,17 +375,20 @@ onUnload(() => {
     width: 80rpx;
     height: 80rpx;
     border-radius: 50%;
-    background: #2F6BEE;
+    background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
     margin: 0;
-    transition: all 0.3s;
+    transition: transform $duration-fast;
+    &:active {
+      transform: scale(0.95);
+    }
   }
   /* 导航禁用样式：置灰+不可点击 */
   .nav-btn-disabled {
-    background: #ccc !important;
+    background: $border !important;
     opacity: 0.5;
     pointer-events: none;
   }
@@ -407,23 +412,27 @@ onUnload(() => {
     .customer-name {
       font-size: 28rpx;
       font-weight: bold;
-      color: #333;
+      color: $text-primary;
     }
     .customer-phone {
       font-size: 24rpx;
-      color: #666;
+      color: $text-secondary;
     }
   }
   .call-btn {
     width: 72rpx;
     height: 72rpx;
     border-radius: 50%;
-    background: #ECFDF5;
+    background: $success-light;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
     margin: 0;
+    transition: transform $duration-fast;
+    &:active {
+      transform: scale(0.95);
+    }
   }
 }
 .card:last-of-type {
@@ -440,7 +449,7 @@ onUnload(() => {
   backdrop-filter: blur(10px);
   padding: 20rpx 30rpx;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+  border-top: 1rpx solid $border-light;
   display: flex;
   flex-direction: column;
   gap: 16rpx;
@@ -450,13 +459,17 @@ onUnload(() => {
     width: 100%;
     height: 90rpx;
     line-height: 90rpx;
-    background: #F53F3F;
+    background: $danger;
     color: #fff;
     border-radius: 45rpx;
     font-size: 30rpx;
     font-weight: bold;
     box-shadow: 0 8rpx 20rpx rgba(245, 63, 63, 0.2);
     border: none;
+    transition: transform $duration-fast;
+    &:active {
+      transform: scale(0.98);
+    }
     &::after { border: none; }
   }
 
@@ -465,7 +478,7 @@ onUnload(() => {
     height: 72rpx;
     line-height: 72rpx;
     background: transparent;
-    color: #888;
+    color: $text-tertiary;
     border: none;
     font-size: 26rpx;
     text-decoration: underline;

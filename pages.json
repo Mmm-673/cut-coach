@@ -68,7 +68,51 @@
     "style": {
       "navigationBarTitleText": "我的"
     }
-  }, {
+  },
+    {
+      "path": "pages/mine/evaluate/index",
+      "style": {
+        "navigationBarTitleText": "我的评价",
+        "navigationBarBackgroundColor": "#fff",
+        "navigationBarTextStyle": "black",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/mine/wallet/withdraw-record/index",
+      "style": {
+        "navigationBarTitleText": "提现记录",
+        "navigationBarBackgroundColor": "#fff",
+        "navigationBarTextStyle": "black",
+        "enablePullDownRefresh": false
+      }
+    }, {
+      "path": "pages/mine/wallet/deduct/index",
+      "style": {
+        "navigationBarTitleText": "扣款记录",
+        "navigationBarBackgroundColor": "#fff",
+        "navigationBarTextStyle": "black",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/mine/wallet/appeal/index",
+      "style": {
+        "navigationBarTitleText": "扣款申诉",
+        "navigationBarBackgroundColor": "#fff",
+        "navigationBarTextStyle": "black",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/mine/wallet/withdraw/index",
+      "style": {
+        "navigationBarTitleText": "提现",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black",
+        "enablePullDownRefresh": false
+      }
+    },{
     "path": "pages/mine/avatar/index",
     "style": {
       "navigationBarTitleText": "修改头像"
