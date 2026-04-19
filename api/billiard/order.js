@@ -61,3 +61,20 @@ export function finishService(data) {
     data: data
   })
 }
+
+// 获取订单列表（分页）
+export function getOrderPage(params) {
+  return request({
+    url: '/coach-api/billiard/order/page',
+    method: 'get',
+    params
+  })
+}
+
+// 获取进行中订单详情
+export function getInProgressOrder() {
+  return request({
+    url: '/coach-api/billiard/order/in-progress',
+    method: 'get'
+  })
+}

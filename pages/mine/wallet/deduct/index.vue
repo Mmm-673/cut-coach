@@ -1,10 +1,23 @@
 <template>
-  <view class="deduct-detail-page">
+  <view class="deduct-page">
     <!-- 顶部统计栏 -->
     <view class="stats-header">
       <view class="total-deduct">
         <text class="label">累计扣款</text>
-        <text class="value">¥180.00</text>
+        <text class="value">-¥{{ (totalDeduction / 100).toFixed(2) }}</text>
+      </view>
+    </view>
+
+    <!-- 标签栏 -->
+    <view class="tab-bar">
+      <view
+          v-for="tab in tabList"
+          :key="tab.value"
+          class="tab-item"
+          :class="{ active: activeTab === tab.value }"
+          @click="switchTab(tab.value)"
+      >
+        {{ tab.label }}
       </view>
     </view>
 
@@ -12,206 +25,264 @@
     <scroll-view
         scroll-y
         class="deduct-list"
+        :refresher-enabled="true"
+        :refresher-triggered="refreshing"
+        @refresherrefresh="onRefresh"
         @scrolltolower="handleLoadMore"
     >
-      <!-- 2026年3月 -->
-      <view class="month-group">
-        <view class="month-title">2026年3月</view>
-        <view
-            v-for="item in marchList"
-            :key="item.id"
-            class="deduct-item"
-        >
-          <view class="item-top">
-            <view class="item-title">{{ item.title }}</view>
-            <view class="amount red">-¥{{ item.amount }}</view>
+      <view
+          v-for="item in displayRecords"
+          :key="item.id"
+          class="deduct-item"
+      >
+        <view class="item-top">
+          <view class="status-tag" :class="getStatusClass(item.status)">
+            {{ getStatusText(item.status) }}
           </view>
-          <view class="order-no">订单号：{{ item.orderNo }}</view>
-          <view class="reason">扣款原因：{{ item.reason }}</view>
-          <view class="item-bottom">
-            <view class="time">{{ item.time }}</view>
-            <view
-                class="appeal-btn"
-                :class="{ disabled: item.appealed }"
-                @click="handleAppeal(item)"
-            >
-              {{ item.appealed ? '已申诉' : '申诉' }}
-            </view>
+          <view class="amount red">-¥{{ (item.deductionAmount / 100).toFixed(2) }}</view>
+        </view>
+        <view class="order-no">订单号：{{ item.orderNo || '-' }}</view>
+        <view class="reason">扣款原因：{{ item.reason || '-' }}</view>
+        <view class="item-bottom">
+          <view class="time">{{ formatTime(item.createTime) }}</view>
+          <view
+              class="appeal-btn"
+              :class="{ disabled: item.status !== 0 }"
+              @click="handleAppeal(item)"
+          >
+            {{ item.status === 0 ? '申诉' : '已申诉' }}
           </view>
+        </view>
+        <!-- 申诉信息 -->
+        <view class="appeal-info" v-if="item.appealContent">
+          <view class="appeal-label">申诉内容：</view>
+          <view class="appeal-content">{{ item.appealContent }}</view>
+        </view>
+        <view class="appeal-info" v-if="item.appealResult">
+          <view class="appeal-label">处理结果：</view>
+          <view class="appeal-content">{{ item.appealResult }}</view>
         </view>
       </view>
 
-      <!-- 2026年2月 -->
-      <view class="month-group">
-        <view class="month-title">2026年2月</view>
-        <view v-if="febList.length === 0" class="empty-state">
-          <uni-icons type="list" size="80" color="#ccc"></uni-icons>
-          <text class="empty-text">暂无扣款记录</text>
-        </view>
-        <view
-            v-else
-            v-for="item in febList"
-            :key="item.id"
-            class="deduct-item"
-        >
-          <view class="item-top">
-            <view class="item-title">{{ item.title }}</view>
-            <view class="amount red">-¥{{ item.amount }}</view>
-          </view>
-          <view class="order-no">订单号：{{ item.orderNo }}</view>
-          <view class="reason">扣款原因：{{ item.reason }}</view>
-          <view class="item-bottom">
-            <view class="time">{{ item.time }}</view>
-            <view
-                class="appeal-btn"
-                :class="{ disabled: item.appealed }"
-                @click="handleAppeal(item)"
-            >
-              {{ item.appealed ? '已申诉' : '申诉' }}
-            </view>
-          </view>
-        </view>
+      <!-- 空状态 -->
+      <view v-if="!loading && displayRecords.length === 0" class="empty-state">
+        <uni-icons type="list" size="80" color="#ccc"></uni-icons>
+        <text class="empty-text">暂无扣款记录</text>
       </view>
 
       <!-- 加载状态 -->
-      <view v-if="loading" class="loading">加载中...</view>
-      <view v-if="!loading && hasMore" class="load-more">上拉加载更多</view>
-      <view v-if="!hasMore" class="no-more">已经到底啦~</view>
+      <view v-if="loading" class="loading-tip">加载中...</view>
+      <view v-if="!hasMore && displayRecords.length > 0" class="no-more-tip">已经到底啦~</view>
     </scroll-view>
   </view>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { getDeductionPage } from '@/api/billiard/wallet'
 
-// 扣款明细数据（模拟接口数据）
-const allDeductList = reactive([
-  // 3月数据
-  {
-    id: 1,
-    title: '爽约扣款',
-    amount: '120.00',
-    orderNo: '202603151800001',
-    reason: '未按时到达服务地点，客户取消订单',
-    time: '2026-03-15 18:05',
-    appealed: false,
-    month: '2026年3月'
-  },
-  {
-    id: 2,
-    title: '拒单扣款',
-    amount: '60.00',
-    orderNo: '202603101400001',
-    reason: '接单后10分钟内拒单，扣除订单金额的50%',
-    time: '2026-03-10 14:02',
-    appealed: true,
-    month: '2026年3月'
-  }
-])
+// 标签栏数据
+const tabList = [
+  { label: '全部', value: null},
+  { label: '待申诉', value: 0 },
+  { label: '申诉中', value: 1 },
+  { label: '维持扣款', value: 2 },
+  { label: '已退还', value: 3 }
+]
+const activeTab = ref(null)
 
-// 按月份分组数据
-const marchList = computed(() => allDeductList.filter(item => item.month === '2026年3月'))
-const febList = computed(() => allDeductList.filter(item => item.month === '2026年2月'))
+// 统计数据
+const totalDeduction = ref(0)
 
-// 分页加载状态
+// 扣款记录数据
+const recordList = ref([])
+const pageNo = ref(1)
+const pageSize = ref(20)
 const loading = ref(false)
+const refreshing = ref(false)
 const hasMore = ref(true)
 
-// 页面交互逻辑
-const handleBack = () => {
-  uni.navigateBack()
+// 按tab筛选（API已按status筛选，这里直接返回）
+const displayRecords = computed(() => {
+  return recordList.value
+})
+
+// 状态映射
+const statusTextMap = {
+  0: '待申诉',
+  1: '申诉中',
+  2: '维持扣款',
+  3: '已退还'
+}
+
+const statusClassMap = {
+  0: 'pending',
+  1: 'appealing',
+  2: 'kept',
+  3: 'refunded'
+}
+
+const getStatusText = (status) => {
+  return statusTextMap[status] || '未知'
+}
+
+const getStatusClass = (status) => {
+  return statusClassMap[status] || ''
+}
+
+const formatTime = (time) => {
+  if (!time) return '-'
+  const date = new Date(time)
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
+}
+
+// 获取扣款记录
+const fetchDeductionRecords = async (reset = false) => {
+  if (loading.value) return
+  if (!reset && !hasMore.value) return
+
+  loading.value = true
+  try {
+    const params = {
+      pageNo: reset ? 1 : pageNo.value,
+      pageSize: pageSize.value,
+      status: activeTab.value
+    }
+
+    const res = await getDeductionPage(params)
+    if (res.data) {
+      const list = res.data.list || []
+
+      if (reset) {
+        recordList.value = list
+        pageNo.value = 1
+        totalDeduction.value = res.data.totalDeduction || 0
+      } else {
+        recordList.value = [...recordList.value, ...list]
+        pageNo.value++
+      }
+      hasMore.value = list.length >= pageSize.value
+    }
+  } catch (err) {
+    console.error('获取扣款记录失败', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 切换tab
+const switchTab = (value) => {
+  if (activeTab.value === value) return
+  activeTab.value = value
+  recordList.value = []
+  hasMore.value = true
+  pageNo.value = 1
+  fetchDeductionRecords(true)
+}
+
+// 下拉刷新
+const onRefresh = async () => {
+  refreshing.value = true
+  await fetchDeductionRecords(true)
+  refreshing.value = false
+}
+
+// 上拉加载更多
+const handleLoadMore = () => {
+  if (!loading.value && hasMore.value) {
+    fetchDeductionRecords(false)
+  }
 }
 
 const handleAppeal = (item) => {
-  if (item.appealed) {
+  if (item.status !== 0) {
     uni.showToast({ title: '该订单已申诉', icon: 'none' })
     return
   }
   uni.navigateTo({
-    url: '/pages/mine/wallet/appeal/index'
+    url: `/pages/mine/wallet/appeal/index?recordId=${item.id}&orderNo=${item.orderNo || ''}&reason=${encodeURIComponent(item.reason || '')}&amount=${item.deductionAmount}`
   })
-
 }
 
-const handleLoadMore = () => {
-  if (loading.value || !hasMore.value) return
-
-  loading.value = true
-  // 模拟接口请求
-  setTimeout(() => {
-    loading.value = false
-    hasMore.value = false
-  }, 800)
-}
+onMounted(() => {
+  fetchDeductionRecords(true)
+})
 </script>
 
-<style scoped lang="scss">
-.deduct-detail-page {
+<style lang="scss" scoped>
+.deduct-page {
   min-height: 100vh;
-  background-color: #f7f8fa;
+  background: $bg-page;
 }
 
 /* 顶部统计栏 */
 .stats-header {
-  background-color: #fff;
-  padding: 30rpx;
-  position: relative;
-}
-
-.back-btn {
-  position: absolute;
-  left: 30rpx;
-  top: 30rpx;
-  z-index: 10;
-}
-
-.page-title {
-  text-align: center;
-  font-size: 36rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 40rpx;
+  background: $bg-card;
+  padding: 32rpx 30rpx;
 }
 
 .total-deduct {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 10rpx;
 }
 
 .label {
-  font-size: 32rpx;
-  color: #666;
+  font-size: 30rpx;
+  color: $text-secondary;
 }
 
 .value {
   font-size: 48rpx;
   font-weight: bold;
-  color: #ff3b30;
+  color: $danger;
+}
+
+/* 标签栏 */
+.tab-bar {
+  display: flex;
+  background: $bg-card;
+  padding: 0 16rpx;
+  margin-bottom: 16rpx;
+  box-shadow: $shadow-sm;
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  font-size: 28rpx;
+  color: $text-tertiary;
+  padding: 24rpx 0;
+  position: relative;
+  transition: all $duration-base;
+
+  &.active {
+    color: $primary;
+    font-weight: bold;
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 48rpx;
+      height: 6rpx;
+      background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+      border-radius: 3rpx;
+    }
+  }
 }
 
 /* 扣款列表 */
 .deduct-list {
-  height: calc(100vh - 300rpx);
-  padding: 0 30rpx;
-}
-
-.month-group {
-  margin-bottom: 30rpx;
-}
-
-.month-title {
-  font-size: 32rpx;
-  font-weight: 500;
-  color: #666;
-  margin-bottom: 20rpx;
+  height: calc(100vh - 280rpx);
+  padding: 0 32rpx;
 }
 
 .deduct-item {
-  background-color: #fff;
-  border-radius: 20rpx;
-  padding: 30rpx;
+  background: $bg-card;
+  border-radius: $radius-xl;
+  padding: 28rpx;
   margin-bottom: 20rpx;
 }
 
@@ -219,36 +290,57 @@ const handleLoadMore = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16rpx;
+  margin-bottom: 12rpx;
 }
 
-.item-title {
-  font-size: 34rpx;
+.status-tag {
+  display: inline-block;
+  padding: 6rpx 20rpx;
+  border-radius: $radius-sm;
+  font-size: 24rpx;
   font-weight: 500;
-  color: #333;
+
+  &.pending {
+    background: #FFF7ED;
+    color: $warning;
+  }
+
+  &.appealing {
+    background: #EFF6FF;
+    color: $primary;
+  }
+
+  &.kept {
+    background: #FEF2F2;
+    color: $danger;
+  }
+
+  &.refunded {
+    background: #ECFDF5;
+    color: $success;
+  }
 }
 
 .amount {
   font-size: 36rpx;
   font-weight: bold;
-  color: #333;
-
+  color: $text-primary;
   &.red {
-    color: #ff3b30;
+    color: $danger;
   }
 }
 
 .order-no {
-  font-size: 30rpx;
-  color: #999;
-  margin-bottom: 16rpx;
+  font-size: 26rpx;
+  color: $text-secondary;
+  margin-bottom: 8rpx;
 }
 
 .reason {
-  font-size: 30rpx;
-  color: #666;
+  font-size: 28rpx;
+  color: $text-secondary;
   line-height: 1.5;
-  margin-bottom: 30rpx;
+  margin-bottom: 16rpx;
 }
 
 .item-bottom {
@@ -258,27 +350,46 @@ const handleLoadMore = () => {
 }
 
 .time {
-  font-size: 28rpx;
-  color: #999;
+  font-size: 26rpx;
+  color: $text-tertiary;
 }
 
 .appeal-btn {
   padding: 8rpx 24rpx;
-  border-radius: 8rpx;
-  font-size: 28rpx;
-  background-color: #fff3e0;
-  color: #ff9500;
-
+  border-radius: $radius-sm;
+  font-size: 26rpx;
+  background: #FFF7ED;
+  color: $warning;
+  transition: all $duration-fast;
+  &:active {
+    opacity: 0.8;
+  }
   &.disabled {
-    background-color: #f0f0f0;
-    color: #ccc;
+    background: $bg-page;
+    color: $text-tertiary;
+  }
+}
+
+.appeal-info {
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid $border-light;
+  .appeal-label {
+    font-size: 26rpx;
+    color: $text-tertiary;
+    margin-bottom: 8rpx;
+  }
+  .appeal-content {
+    font-size: 28rpx;
+    color: $text-secondary;
+    line-height: 1.5;
   }
 }
 
 /* 空状态 */
 .empty-state {
-  background-color: #fff;
-  border-radius: 20rpx;
+  background: $bg-card;
+  border-radius: $radius-xl;
   padding: 80rpx 30rpx;
   text-align: center;
   display: flex;
@@ -288,15 +399,15 @@ const handleLoadMore = () => {
 }
 
 .empty-text {
-  font-size: 30rpx;
-  color: #999;
+  font-size: 28rpx;
+  color: $text-tertiary;
 }
 
 /* 加载状态 */
-.loading, .load-more, .no-more {
+.loading-tip, .no-more-tip {
   text-align: center;
   padding: 30rpx 0;
-  font-size: 28rpx;
-  color: #999;
+  font-size: 26rpx;
+  color: $text-tertiary;
 }
 </style>

@@ -25,3 +25,20 @@ export function getCoachProfile() {
     method: 'get'
   })
 }
+
+// 切换免费出行开关
+export function updateFreeTravel(data) {
+  return request({
+    url: '/coach-api/billiard/coach/free-travel',
+    method: 'post',
+    data: data
+  })
+}
+
+// 获取助教看板数据
+export function getCoachDashboard() {
+  return request({
+    url: '/coach-api/billiard/coach/dashboard',
+    method: 'get'
+  })
+}

@@ -1,12 +1,5 @@
 <template>
   <view class="appeal-page">
-    <!-- 返回头部 -->
-    <view class="page-header">
-      <view class="back-btn" @click="handleBack">
-        <uni-icons type="back" size="20" color="#333"></uni-icons>
-      </view>
-      <view class="title">扣款申诉</view>
-    </view>
 
     <!-- 扣款信息卡片 -->
     <view class="info-card">
