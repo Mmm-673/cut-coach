@@ -1,14 +1,27 @@
 <template>
   <view class="order-detail-wrapper" :class="{ 'order-detail-finished': !isProcessing }">
-    <!-- 状态计时区域：根据状态动态渲染 -->
-    <view class="timer-section" :class="{ 'timer-section-finished': !isProcessing }">
-      <uni-tag :text="statusText" :type="statusType" size="normal" class="status-tag" />
-      <!-- 仅进行中显示已服务/剩余时长，已结束隐藏 -->
-      <template v-if="isProcessing">
+    <!-- 进行中状态：显示计时器区域 -->
+    <view v-if="orderStatus === ORDER_STATUS.PROCESSING" class="timer-section">
+      <uni-tag :text="getStatusText(orderStatus)" :type="getStatusType(orderStatus)" size="normal" class="status-tag" />
+      <template v-if="orderInfo.orderId">
         <text class="big-time">{{ usedText }}</text>
         <text class="time-label">已服务时长</text>
         <text class="left-time">剩余时长：{{ leftText }}</text>
       </template>
+    </view>
+
+    <!-- 其他状态：显示状态卡片 -->
+    <view v-else class="status-section" :class="`status-${orderStatus}`">
+      <view class="status-header">
+        <view class="status-badge" :class="`badge-${orderStatus}`">
+          <uni-icons :type="getStatusIcon(orderStatus)" :size="20" color="#fff" />
+          <text class="badge-text">{{ getStatusText(orderStatus) }}</text>
+        </view>
+      </view>
+      <view class="status-content">
+        <text class="status-main-text">{{ getStatusMainText(orderStatus) }}</text>
+        <text class="status-sub-text">{{ getStatusSubText(orderStatus) }}</text>
+      </view>
     </view>
 
     <!-- 订单信息卡片 -->
@@ -16,49 +29,42 @@
       <view class="card-title">订单信息</view>
       <view class="info-row">
         <text class="label">订单编号</text>
-        <text class="value">{{ orderInfo.orderNo || '202603221430001' }}</text>
+        <text class="value">{{ orderInfo.orderNo || '-' }}</text>
       </view>
       <view class="info-row">
         <text class="label">服务类型</text>
-        <text class="value">{{ orderInfo.serviceName }}</text>
+        <text class="value">{{ orderInfo.serviceType === 1 ? '台球陪练' : '陪游' }}</text>
       </view>
       <view class="info-row">
         <text class="label">服务时长</text>
-        <text class="value">{{ orderInfo.duration || '1小时' }}</text>
+        <text class="value">{{ orderInfo.serviceDuration ? `${orderInfo.serviceDuration}分钟` : '-' }}</text>
       </view>
       <view class="info-row">
         <text class="label">订单金额</text>
-        <text class="value price">¥{{ orderInfo.price }}</text>
+        <text class="value price">¥{{ orderInfo.totalAmount ? (orderInfo.totalAmount / 100).toFixed(2) : '-' }}</text>
       </view>
-      <!-- 已结束可以显示最终服务时长，需要的话打开注释即可 -->
-      <!-- <view class="info-row" v-if="!isProcessing">
-        <text class="label">实际服务时长</text>
-        <text class="value">{{ usedText }}</text>
-      </view> -->
       <view class="info-row">
         <text class="label">预约时间</text>
-        <text class="value">{{ orderInfo.appointTime || '2026-03-22 14:30' }}</text>
+        <text class="value">{{ orderInfo.bookingTimeText || '-' }}</text>
       </view>
       <view class="info-row">
         <text class="label">创建时间</text>
-        <text class="value">{{ orderInfo.createTime || '2026-03-22 14:25:12' }}</text>
+        <text class="value">{{ orderInfo.createTimeText || '-' }}</text>
       </view>
     </view>
 
     <!-- 服务地点卡片 -->
-    <view class="card">
+    <view class="card" v-if="orderInfo.venueName && orderInfo.venueName !== '-'">
       <view class="card-title">服务地点</view>
-      <image class="shop-img" src="https://picsum.photos/750/300" mode="aspectFill"></image>
+      <image class="shop-img" :src="orderInfo.venueImg || 'https://picsum.photos/750/300'" mode="aspectFill"></image>
       <view class="shop-info">
         <view class="shop-left">
-          <text class="shop-name">{{ orderInfo.shopName }}</text>
-          <text class="shop-address">{{ orderInfo.address || '上海市浦东新区XX路123号' }}</text>
-          <text class="distance">距离您{{ orderInfo.distance || '2.3公里' }}，驾车约{{ orderInfo.driveTime || '10分钟' }}</text>
+          <text class="shop-name">{{ orderInfo.venueName }}</text>
+          <text class="shop-address">{{ orderInfo.venueAddress || '-' }}</text>
         </view>
-        <!-- 导航按钮：已结束自动加禁用样式，点击失效 -->
         <button
             class="nav-btn"
-
+            :class="{ 'nav-btn-disabled': !isProcessing }"
             @click="navigate"
         >
           <uni-icons type="location-filled" size="20" color="#fff" />
@@ -67,13 +73,13 @@
     </view>
 
     <!-- 客户信息卡片 -->
-    <view class="card">
+    <view class="card" v-if="orderInfo.userPhone && orderInfo.userPhone !== '-'">
       <view class="card-title">客户信息</view>
       <view class="customer-info">
         <image class="avatar" src="https://picsum.photos/100/100" mode="aspectFill"></image>
         <view class="customer-left">
-          <text class="customer-name">{{ orderInfo.customerName || '李先生' }}</text>
-          <text class="customer-phone">{{ orderInfo.customerPhone || '138****8888' }}</text>
+          <text class="customer-name">{{ orderInfo.userPhone }}</text>
+          <text class="customer-phone">脱敏手机号</text>
         </view>
         <button class="call-btn" @click="makeCall">
           <uni-icons type="phone" size="20" color="#10B981" />
@@ -83,9 +89,21 @@
 
     <!-- 底部操作区 -->
     <view class="footer">
-      <!-- 仅进行中显示结束服务按钮，已结束自动隐藏 -->
-      <button v-if="isProcessing" class="btn-end" @click="endService">结束服务</button>
-      <button class="btn-service" @click="contactService">联系客服</button>
+      <!-- 待接单状态显示接单/拒单按钮 -->
+      <template v-if="orderStatus === ORDER_STATUS.PENDING">
+        <view class="btn-row">
+          <button class="btn-danger" @click="rejectOrder">拒单</button>
+          <button class="btn-primary" @click="acceptOrder">接单</button>
+        </view>
+      </template>
+      <!-- 进行中状态显示结束服务按钮 -->
+      <template v-else-if="orderStatus === ORDER_STATUS.PROCESSING">
+        <button class="btn-end" @click="endService">结束服务</button>
+      </template>
+      <!-- 其他状态显示联系客服 -->
+      <template v-else>
+        <button class="btn-service" @click="contactService">联系客服</button>
+      </template>
     </view>
   </view>
 </template>
@@ -94,16 +112,22 @@
 import { ref, computed } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { openMapNavigation } from '@/utils/platform'
+import { getInProgressOrder, finishService } from '@/api/billiard/order'
 
-// 订单状态枚举（可根据你的业务修改状态值）
+// 订单状态枚举
 const ORDER_STATUS = {
-  // 进行中
-  PROCESSING: 1,
-  // 已结束
-  FINISHED: 2
+  UNPAID: 10,        // 待付款
+  PENDING: 20,       // 待接单
+  ACCEPTED: 30,     // 已接单
+  PROCESSING: 40,    // 进行中
+  PENDING_REVIEW: 50, // 待评价
+  FINISHED: 60,     // 已完成
+  CANCELLED: 70     // 已取消
 }
 
 // 接收路由参数
+const orderId = ref(null)
+const orderStatus = ref(null)
 const orderInfo = ref({})
 const usedSec = ref(0)
 const leftSec = ref(0)
@@ -112,16 +136,96 @@ const leftSec = ref(0)
 const usedText = ref('00:00')
 const leftText = ref('00:00:00')
 
-// 状态计算属性（自动判断）
-const isProcessing = computed(() => orderInfo.value.status === ORDER_STATUS.PROCESSING)
-const statusText = computed(() => isProcessing.value ? '进行中' : '已结束')
-const statusType = computed(() => isProcessing.value ? 'primary' : 'grey')
+// 状态计算属性
+const isProcessing = computed(() => orderStatus.value === ORDER_STATUS.PROCESSING)
+
+// 获取状态类型（用于uni-tag）
+const getStatusType = (status) => {
+  const typeMap = {
+    10: 'warning',
+    20: 'warning',
+    30: 'primary',
+    40: 'primary',
+    50: 'warning',
+    60: 'success',
+    70: 'default'
+  }
+  return typeMap[status] || 'default'
+}
+
+// 获取状态图标
+const getStatusIcon = (status) => {
+  const iconMap = {
+    10: 'wallet',
+    20: 'calendar',
+    30: 'check',
+    40: 'play',
+    50: 'star',
+    60: 'checkmarkempty',
+    70: 'close'
+  }
+  return iconMap[status] || 'info'
+}
+
+// 获取状态文本
+const getStatusText = (status) => {
+  const textMap = {
+    10: '待付款',
+    20: '待接单',
+    30: '已接单',
+    40: '进行中',
+    50: '待评价',
+    60: '已完成',
+    70: '已取消'
+  }
+  return textMap[status] || '未知'
+}
+
+// 获取状态主文本
+const getStatusMainText = (status) => {
+  switch (status) {
+    case ORDER_STATUS.UNPAID:
+      return '等待用户付款'
+    case ORDER_STATUS.PENDING:
+      return '等待您接单'
+    case ORDER_STATUS.ACCEPTED:
+      return '已接单，待服务'
+    case ORDER_STATUS.PENDING_REVIEW:
+      return '服务已完成'
+    case ORDER_STATUS.FINISHED:
+      return '订单已完成'
+    case ORDER_STATUS.CANCELLED:
+      return '订单已取消'
+    default:
+      return ''
+  }
+}
+
+// 获取状态副文本
+const getStatusSubText = (status) => {
+  switch (status) {
+    case ORDER_STATUS.UNPAID:
+      return `金额 ¥${orderInfo.value.totalAmount ? (orderInfo.value.totalAmount / 100).toFixed(2) : '-'}`
+    case ORDER_STATUS.PENDING:
+      return `预约时间 ${orderInfo.value.bookingTimeText || '-'}`
+    case ORDER_STATUS.ACCEPTED:
+      return `预约时间 ${orderInfo.value.bookingTimeText || '-'}`
+    case ORDER_STATUS.PENDING_REVIEW:
+      return `服务时长 ${orderInfo.value.serviceDuration || '-'}分钟`
+    case ORDER_STATUS.FINISHED:
+      return `感谢您的服务`
+    case ORDER_STATUS.CANCELLED:
+      return '如有疑问请联系客服'
+    default:
+      return ''
+  }
+}
 
 // 计时器实例
 let usedTimer = null
 let leftTimer = null
 
-// 时间格式化函数（和工作台保持一致）
+// 时间格式化函数
 const fmtMMSS = (s) => {
   const m = Math.floor(s / 60)
   const sec = s % 60
@@ -134,11 +238,65 @@ const fmtHHMMSS = (s) => {
   return `${String(h).padStart(2,0)}:${String(m).padStart(2,0)}:${String(sec).padStart(2,0)}`
 }
 
+const formatTime = (timestamp) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
+}
+
+// 获取进行中订单详情
+const fetchInProgressOrder = async () => {
+  try {
+    // TODO: 上线前删除这段模拟数据
+    const USE_MOCK = true
+    if (USE_MOCK) {
+      const now = Date.now()
+      const mockData = {
+        orderId: 1001,
+        userPhone: '138****8888',
+        venueName: '星牌台球俱乐部',
+        venueAddress: '北京市朝阳区建国路88号SOHO现代城',
+        venueLongitude: 116.47823,
+        venueLatitude: 39.916527,
+        totalAmount: 20000,
+        serviceDuration: 120,
+        startTime: now - 30 * 60 * 1000, // 30分钟前开始
+        remainingMinutes: 90,
+        bookingTime: now + 30 * 60 * 1000,
+        createTime: now - 60 * 60 * 1000
+      }
+      orderInfo.value = {
+        ...mockData,
+        bookingTimeText: formatTime(mockData.bookingTime),
+        createTimeText: formatTime(mockData.createTime)
+      }
+      leftSec.value = mockData.remainingMinutes * 60
+      usedSec.value = (mockData.serviceDuration - mockData.remainingMinutes) * 60
+      startTimer()
+      return
+    }
+
+    const res = await getInProgressOrder()
+    if (res.data) {
+      orderInfo.value = {
+        ...res.data,
+        bookingTimeText: formatTime(res.data.bookingTime),
+        createTimeText: formatTime(res.data.createTime)
+      }
+      // 计算剩余时长
+      if (res.data.remainingMinutes) {
+        leftSec.value = res.data.remainingMinutes * 60
+      }
+      // 启动计时
+      startTimer()
+    }
+  } catch (err) {
+    console.error('获取进行中订单失败', err)
+  }
+}
+
 // 启动计时
 const startTimer = () => {
-  // 只有进行中才启动计时
-  if (!isProcessing.value) return
-
   // 初始化显示
   usedText.value = fmtMMSS(usedSec.value)
   leftText.value = fmtHHMMSS(leftSec.value)
@@ -163,51 +321,53 @@ const startTimer = () => {
 
 // 页面加载时接收参数
 onLoad((options) => {
-  if (options.orderInfo) {
-    orderInfo.value = JSON.parse(decodeURIComponent(options.orderInfo))
+  orderId.value = options.orderId ? parseInt(options.orderId) : null
+  orderStatus.value = options.status ? parseInt(options.status) : null
+
+  if (orderStatus.value === ORDER_STATUS.PROCESSING) {
+    // 进行中订单，调用API获取详情
+    fetchInProgressOrder()
+  } else {
+    // 其他状态订单，使用传入的信息
+    orderInfo.value = {
+      orderNo: options.orderNo || '-',
+      serviceType: options.serviceType ? parseInt(options.serviceType) : null,
+      totalAmount: options.totalAmount ? parseInt(options.totalAmount) : 0,
+      bookingTimeText: decodeURIComponent(options.bookingTimeText || '-'),
+      createTimeText: decodeURIComponent(options.createTimeText || '-'),
+      venueName: decodeURIComponent(options.venueName || ''),
+      venueAddress: decodeURIComponent(options.venueAddress || ''),
+      venueLongitude: options.venueLongitude ? parseFloat(options.venueLongitude) : null,
+      venueLatitude: options.venueLatitude ? parseFloat(options.venueLatitude) : null,
+      userPhone: decodeURIComponent(options.userPhone || '')
+    }
   }
-  usedSec.value = parseInt(options.usedSec || 0)
-  leftSec.value = parseInt(options.leftSec || 3600)
-
-  // 默认参数补全
-  orderInfo.value.status = orderInfo.value.status || ORDER_STATUS.PROCESSING
-  orderInfo.value.lat = orderInfo.value.lat || 31.230416
-  orderInfo.value.lon = orderInfo.value.lon || 121.473701
-  orderInfo.value.address = orderInfo.value.address || '上海市浦东新区XX路123号'
-  orderInfo.value.shopName = orderInfo.value.shopName || 'XX台球厅（XX路店）'
-  orderInfo.value.serviceName = orderInfo.value.serviceName || '台球助教'
-  orderInfo.value.price = orderInfo.value.price || 128
-
-  startTimer()
 })
 
-// ====================== 导航逻辑 ======================
+// 导航
 const navigate = () => {
-  // 已结束直接拦截
   if (!isProcessing.value) {
     return uni.showToast({ title: '服务已结束，无需导航', icon: 'none' })
   }
 
-  const { lat, lon, shopName, address } = orderInfo.value
-  if (!lat || !lon) {
+  const { venueLatitude, venueLongitude, venueName, venueAddress } = orderInfo.value
+  if (!venueLatitude || !venueLongitude) {
     return uni.showToast({ title: '地址信息有误', icon: 'none' })
   }
 
-  // 使用多端兼容的导航函数
   openMapNavigation({
-    latitude: lat,
-    longitude: lon,
-    name: shopName,
-    address: address,
+    latitude: venueLatitude,
+    longitude: venueLongitude,
+    name: venueName,
+    address: venueAddress,
     mode: 'driving'
   })
 }
-// ====================== 导航逻辑结束 ======================
 
 // 打电话
 const makeCall = () => {
-  const phone = orderInfo.value.customerPhone?.replace(/\*/g, '') || '13800008888'
-  uni.makePhoneCall({ phoneNumber: phone })
+  // 脱敏手机号无法直接拨打，提示用户
+  uni.showToast({ title: '无法拨打脱敏号码', icon: 'none' })
 }
 
 // 联系客服
@@ -215,28 +375,54 @@ const contactService = () => {
   uni.showToast({ title: '正在联系客服', icon: 'none' })
 }
 
+// 接单
+const acceptOrder = () => {
+  uni.showToast({ title: '接单功能待实现', icon: 'none' })
+}
+
+// 拒单
+const rejectOrder = () => {
+  uni.showModal({
+    title: '确认拒单',
+    content: '确定要拒绝此订单吗？',
+    success: (res) => {
+      if (res.confirm) {
+        uni.showToast({ title: '拒单功能待实现', icon: 'none' })
+      }
+    }
+  })
+}
+
 // 结束服务
 const endService = () => {
   uni.showModal({
     title: '确认结束',
     content: '确定要结束当前服务吗？结束后无法继续计时',
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
-        // 清空计时器
-        clearInterval(usedTimer)
-        clearInterval(leftTimer)
-        // ✅ 本地立即更新状态，页面自动切换成已结束样式，不用返回也能看到变化
-        orderInfo.value.status = ORDER_STATUS.FINISHED
-        // 通知工作台服务已结束
-        uni.$emit('serviceEnded', {
-          order: orderInfo.value,
-          usedTime: usedText.value
-        })
-        uni.showToast({ title: '服务已结束', icon: 'success' })
-        // 延迟返回
-        setTimeout(() => {
-          uni.navigateBack()
-        }, 1000)
+        try {
+          await finishService({
+            orderId: orderId.value
+          })
+          // 清空计时器
+          clearInterval(usedTimer)
+          clearInterval(leftTimer)
+          // 更新状态
+          orderStatus.value = ORDER_STATUS.FINISHED
+          // 通知工作台服务已结束
+          uni.$emit('serviceEnded', {
+            orderId: orderId.value,
+            usedTime: usedText.value
+          })
+          uni.showToast({ title: '服务已结束', icon: 'success' })
+          // 延迟返回
+          setTimeout(() => {
+            uni.navigateBack()
+          }, 1000)
+        } catch (err) {
+          console.error('结束服务失败', err)
+          uni.showToast({ title: err?.msg || '操作失败', icon: 'none' })
+        }
       }
     }
   })
@@ -256,7 +442,6 @@ onUnload(() => {
   padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
-/* 已结束状态：调小底部padding，避免空白 */
 .order-detail-finished {
   padding-bottom: calc(100rpx + env(safe-area-inset-bottom));
 }
@@ -266,7 +451,7 @@ onUnload(() => {
   border-bottom: 1rpx solid $border-light !important;
 }
 
-/* 计时区域 */
+/* 进行中计时区域 */
 .timer-section {
   background: $bg-card;
   text-align: center;
@@ -296,9 +481,53 @@ onUnload(() => {
     font-weight: bold;
   }
 }
-/* 已结束计时区域：压缩高度，布局更紧凑 */
-.timer-section-finished {
-  padding-bottom: 32rpx;
+
+/* 状态区域 */
+.status-section {
+  background: $bg-card;
+  padding: 40rpx 32rpx;
+  margin-bottom: 24rpx;
+  text-align: center;
+
+  .status-header {
+    margin-bottom: 24rpx;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    padding: 12rpx 32rpx;
+    border-radius: 40rpx;
+    font-size: 28rpx;
+    font-weight: bold;
+    color: #fff;
+
+    &.badge-10 { background: linear-gradient(135deg, #FF9500 0%, #FF6B00 100%); } // 待付款-橙色
+    &.badge-20 { background: linear-gradient(135deg, #007AFF 0%, #0056FF 100%); } // 待接单-蓝色
+    &.badge-30 { background: linear-gradient(135deg, #8E8E93 0%, #636366 100%); } // 已接单-灰色
+    &.badge-40 { background: linear-gradient(135deg, #34C759 0%, #28A745 100%); } // 进行中-绿色
+    &.badge-50 { background: linear-gradient(135deg, #FF2D55 0%, #E91E63 100%); } // 待评价-粉红色
+    &.badge-60 { background: linear-gradient(135deg, #5856D6 0%, #3F3F98 100%); } // 已完成-紫色
+    &.badge-70 { background: linear-gradient(135deg, #8E8E93 0%, #636366 100%); } // 已取消-灰色
+  }
+
+  .status-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  .status-main-text {
+    font-size: 32rpx;
+    font-weight: bold;
+    color: $text-primary;
+  }
+
+  .status-sub-text {
+    font-size: 26rpx;
+    color: $text-tertiary;
+  }
 }
 
 /* 通用卡片样式 */
@@ -364,11 +593,6 @@ onUnload(() => {
     .shop-address {
       font-size: 24rpx;
       color: $text-secondary;
-    }
-    .distance {
-      font-size: 24rpx;
-      color: $primary;
-      margin-top: 4rpx;
     }
   }
   .nav-btn {
@@ -447,7 +671,7 @@ onUnload(() => {
   right: 0;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(10px);
-  padding: 20rpx 30rpx;
+  padding: 20rpx 32rpx;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
   border-top: 1rpx solid $border-light;
   display: flex;
@@ -455,15 +679,47 @@ onUnload(() => {
   gap: 16rpx;
   z-index: 99;
 
-  .btn-end {
-    width: 100%;
-    height: 90rpx;
-    line-height: 90rpx;
+  .btn-row {
+    display: flex;
+    gap: 24rpx;
+  }
+
+  .btn-danger, .btn-primary {
+    flex: 1;
+    height: 88rpx;
+    line-height: 88rpx;
+    border-radius: $radius-base;
+    font-size: 32rpx;
+    font-weight: 600;
+    border: none;
+    transition: transform $duration-fast;
+    &:active {
+      transform: scale(0.98);
+    }
+    &::after { border: none; }
+  }
+
+  .btn-danger {
     background: $danger;
     color: #fff;
-    border-radius: 45rpx;
-    font-size: 30rpx;
-    font-weight: bold;
+    box-shadow: 0 8rpx 20rpx rgba(245, 63, 63, 0.2);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+    color: #fff;
+    box-shadow: 0 8rpx 20rpx rgba($primary, 0.3);
+  }
+
+  .btn-end {
+    width: 100%;
+    height: 88rpx;
+    line-height: 88rpx;
+    background: $danger;
+    color: #fff;
+    border-radius: $radius-base;
+    font-size: 32rpx;
+    font-weight: 600;
     box-shadow: 0 8rpx 20rpx rgba(245, 63, 63, 0.2);
     border: none;
     transition: transform $duration-fast;
@@ -475,13 +731,14 @@ onUnload(() => {
 
   .btn-service {
     width: 100%;
-    height: 72rpx;
-    line-height: 72rpx;
-    background: transparent;
-    color: $text-tertiary;
-    border: none;
-    font-size: 26rpx;
-    text-decoration: underline;
+    height: 88rpx;
+    line-height: 88rpx;
+    background: $bg-card;
+    color: $text-secondary;
+    border: 2rpx solid $border-light;
+    border-radius: $radius-base;
+    font-size: 32rpx;
+    font-weight: 500;
     &::after { border: none; }
   }
 }

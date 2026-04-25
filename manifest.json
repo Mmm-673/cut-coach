@@ -1,7 +1,7 @@
 {
-    "name" : "台球助教端",
+    "name" : "球了么裁教端",
     "appid" : "__UNI__1FB2E02",
-    "description" : "台球助教端应用",
+    "description" : "面向台球专业教练、裁教从业者打造。在线接收用户陪练预约订单，自主接单、管理服务日程、查看收益明细。平台统一合规结算、订单管理与客服协作，助力台球从业者线上接单，灵活增收，高效开展台球教学陪练服务",
     "versionName" : "1.0.0",
     "versionCode" : "100",
     "transformPx" : false,
@@ -19,6 +19,7 @@
         },
         "distribute" : {
             "android" : {
+                "package" : "com.aksjzt.qiuleme.coach",
                 "abiFilters" : [ "armeabi-v7a", "arm64-v8a", "x86" ],
                 "permissions" : [
                     "<uses-permission android:name=\"android.permission.CHANGE_NETWORK_STATE\"/>",
@@ -37,21 +38,37 @@
                     "<uses-feature android:name=\"android.hardware.camera\"/>",
                     "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>",
                     "<uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\"/>",
-                    "<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOC\"/>",
                     "<uses-permission android:name=\"android.permission.ACCESS_LOCATION_EXTRA_COMMANDS\"/>"
                 ]
             },
             "ios" : {
+                "bundleID" : "com.aksjzt.qiuleme.coach",
                 "dSYMs" : false,
                 "plist" : {
                     "NSCameraUsageDescription" : "需要访问您的相机进行拍照",
                     "NSPhotoLibraryUsageDescription" : "需要访问您的相册选择图片",
-                    "NSPhotoLibraryAddUsageDescription" : "需要保存图片到您的相册"
+                    "NSPhotoLibraryAddUsageDescription" : "需要保存图片到您的相册",
+                    "NSLocationWhenInUseUsageDescription" : "需要获取您的位置信息，为您提供导航服务",
+                    "LSApplicationQueriesSchemes" : [ "iosamap", "baidumap" ]
                 },
-                "NSLocationWhenInUseUsageDescription" : "需要获取您的位置信息，为您提供导航服务",
-                "LSApplicationQueriesSchemes" : [ "iosamap", "baidumap" ]
+                "entitlements" : {
+                    "com.apple.security.application-groups" : []
+                }
             },
-            "sdkConfigs" : {}
+            "sdkConfigs" : {
+                "payment" : {
+                    "alipay" : {
+                        "__platform__" : [ "ios", "android" ]
+                    },
+                    "weixin" : {
+                        "__platform__" : [ "ios", "android" ],
+                        "appid" : "",
+                        "UniversalLinks" : ""
+                    }
+                },
+                "maps" : {}
+            }
         }
     },
     "quickapp" : {},
@@ -94,7 +111,7 @@
             "https" : false,
             "disableHostCheck" : true
         },
-        "title" : "台球助教端",
+        "title" : "球了么裁教端",
         "router" : {
             "mode" : "hash",
             "base" : "./"

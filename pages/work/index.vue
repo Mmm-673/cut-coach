@@ -17,6 +17,20 @@
           <text class="label-on" :class="{ active: isOnline }">上线</text>
         </view>
       </view>
+      <view class="status-row">
+        <text class="status-label">免费出行</text>
+        <view class="switch-wrapper">
+          <text class="label-off" :class="{ active: !isFreeTravel }">关闭</text>
+          <view
+              class="custom-switch"
+              :class="{ 'is-checked': isFreeTravel, 'is-disabled': freeTravelLoading }"
+              @click="handleFreeTravelSwitchClick"
+          >
+            <view class="switch-knob"></view>
+          </view>
+          <text class="label-on" :class="{ active: isFreeTravel }">开启</text>
+        </view>
+      </view>
       <uni-tag
           :text="isOnline ? '在线接单中' : '已下线，不接收新订单'"
           :type="isOnline ? 'success' : 'default'"
@@ -190,27 +204,35 @@
         <text class="view-all-text" @click="goToAllOrder">查看全部</text>
       </view>
       <uni-segmented-control
-          :current="currentTab"
-          :values="tabs"
+          :current="historyTabIndex"
+          :values="historyTabs.map(t => t.label)"
           activeColor="#2F6BEE"
           style-type="button"
           class="history-tabs"
-          @clickItem="onTabClick"
+          @clickItem="onHistoryTabClick"
       />
       <view class="history-order-list">
-        <view class="history-order-item" v-for="(item, index) in displayOrders" :key="index">
+        <view
+            class="history-order-item"
+            v-for="item in displayHistoryOrders"
+            :key="item.orderId"
+            @click="goToOrderDetail(item)"
+        >
           <view class="order-top">
-            <text class="order-title">{{ item.name }}</text>
-            <text class="order-price">¥{{ item.price }}</text>
+            <text class="order-title">{{ item.serviceType === 1 ? '台球陪练' : '陪游' }}</text>
+            <text class="order-price">¥{{ (item.totalAmount / 100).toFixed(2) }}</text>
           </view>
           <view class="order-bottom">
-            <text class="order-time">{{ item.time }}</text>
+            <text class="order-time">{{ formatOrderTime(item.bookingTime) }}</text>
             <uni-tag
-                :text="currentTab === 0 ? '已完成' : '已取消'"
-                :type="currentTab === 0 ? 'success' : 'default'"
+                :text="getHistoryStatusText(item.status)"
+                :type="getHistoryStatusType(item.status)"
                 size="small"
             />
           </view>
+        </view>
+        <view class="empty-tip" v-if="!displayHistoryOrders.length">
+          暂无订单
         </view>
       </view>
     </uni-card>
@@ -219,10 +241,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, getCurrentInstance } from 'vue'
+import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import {
   updateWorkStatus,
-  updateLocation
+  updateLocation,
+  updateFreeTravel,
+  getCoachDashboard
 } from '@/api/billiard/coach'
 import {
   getPendingOrders,
@@ -231,7 +255,8 @@ import {
   arrive as arriveApi,
   rejectOrder as rejectOrderApi,
   startService as startServiceApi,
-  finishService as finishServiceApi
+  finishService as finishServiceApi,
+  getOrderPage
 } from '@/api/billiard/order'
 import {
   getLocation,
@@ -245,10 +270,20 @@ const { proxy } = getCurrentInstance()
 
 // ====================== 基础状态 ======================
 const isOnline = ref(false)
-const orderStatus = ref('idle') // idle, pending, accepted, serving
-const currentTab = ref(0)
-const tabs = ref(['已完成', '已取消'])
+const isFreeTravel = ref(false)
 const switchLoading = ref(false)
+const freeTravelLoading = ref(false)
+
+// 订单状态
+const orderStatus = ref('idle')
+
+// 历史订单 tab
+const historyTabs = [
+  { label: '待评价', value: 50 },
+  { label: '已完成', value: 60 },
+  { label: '已取消', value: 70 }
+]
+const historyTab = ref(60)
 
 // 轮询相关
 let pollTimer = null
@@ -267,25 +302,151 @@ const servingUsedTimeText = ref('00:00')
 const leftSec = ref(3600)
 const servingLeftTimeText = ref('01:00:00')
 
-// 数据 - 已完成订单
-const completedOrders = ref([
-  { name: '中式八球陪练 1小时', time: '今天 14:30 · XX台球厅', price: '120' },
-  { name: '斯诺克教学 2小时', time: '今天 10:00 · XX台球俱乐部', price: '300' }
-])
+// 历史订单
+const historyOrders = ref([])
+const historyPageNo = ref(1)
+const historyPageSize = ref(5)
 
-// 数据 - 已取消订单
-const cancelledOrders = ref([
-  { name: '中式八球陪练 2小时', time: '昨天 16:00 · XX台球馆', price: '200' },
-  { name: '斯诺克陪练 1小时', time: '昨天 11:30 · XX俱乐部', price: '150' }
-])
+const displayHistoryOrders = computed(() => {
+  return historyOrders.value.filter(order => order.status === historyTab.value)
+})
 
-const displayOrders = ref(completedOrders.value)
+// 获取历史订单
+const fetchHistoryOrders = async () => {
+  try {
+    // TODO: 上线前删除这段模拟数据
+    const USE_MOCK = true
+    if (USE_MOCK) {
+      const now = Date.now()
+      historyOrders.value = [
+        {
+          orderId: 1001,
+          orderNo: '202604181000001',
+          serviceType: 1,
+          bookingTime: now - 2 * 60 * 60 * 1000,
+          totalAmount: 20000,
+          status: 60,
+          createTime: now - 3 * 60 * 60 * 1000,
+          venueName: '星牌台球俱乐部',
+          venueAddress: '北京市朝阳区建国路88号SOHO现代城',
+          userPhone: '138****8888'
+        },
+        {
+          orderId: 1002,
+          orderNo: '202604171430002',
+          serviceType: 1,
+          bookingTime: now - 24 * 60 * 60 * 1000,
+          totalAmount: 12800,
+          status: 60,
+          createTime: now - 25 * 60 * 60 * 1000,
+          venueName: '来力台球会所',
+          venueAddress: '上海市浦东新区张杨路1000号',
+          userPhone: '139****6666'
+        },
+        {
+          orderId: 1003,
+          orderNo: '202604161030003',
+          serviceType: 2,
+          bookingTime: now - 48 * 60 * 60 * 1000,
+          totalAmount: 36000,
+          status: 70,
+          createTime: now - 50 * 60 * 60 * 1000,
+          venueName: '金台球俱乐部',
+          venueAddress: '广州市天河区天河路100号',
+          userPhone: '136****5555'
+        },
+        {
+          orderId: 1004,
+          orderNo: '202604151030004',
+          serviceType: 1,
+          bookingTime: now - 72 * 60 * 60 * 1000,
+          totalAmount: 18000,
+          status: 50,
+          createTime: now - 73 * 60 * 60 * 1000,
+          venueName: '绅士台球厅',
+          venueAddress: '深圳市南山区科技园路200号',
+          userPhone: '135****4444'
+        }
+      ]
+      return
+    }
+
+    const res = await getOrderPage({
+      pageNo: historyPageNo.value,
+      pageSize: historyPageSize.value,
+      status: 0 // 全部
+    })
+    if (res.data) {
+      historyOrders.value = res.data.list || []
+    }
+  } catch (err) {
+    console.error('获取历史订单失败', err)
+  }
+}
+
+// 格式化时间
+const formatOrderTime = (timestamp) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
+  const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
+  const time = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
+  if (dateStr === today) {
+    return `今天 ${time}`
+  }
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+  const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`
+  if (dateStr === yesterdayStr) {
+    return `昨天 ${time}`
+  }
+  return `${dateStr} ${time}`
+}
+
+// 历史订单状态文本
+const getHistoryStatusText = (status) => {
+  const statusMap = {
+    50: '待评价',
+    60: '已完成',
+    70: '已取消'
+  }
+  return statusMap[status] || '未知'
+}
+
+// 历史订单状态类型
+const getHistoryStatusType = (status) => {
+  const typeMap = {
+    50: 'warning',
+    60: 'success',
+    70: 'default'
+  }
+  return typeMap[status] || 'default'
+}
 
 const todayData = ref([
-  { icon: 'calendar', value: '2小时30分', label: '今日上钟时长', color: '#2F6BEE', bgColor: '#EFF6FF' },
-  { icon: 'checkbox', value: '3单', label: '今日服务次数', color: '#10B981', bgColor: '#ECFDF5' },
-  { icon: 'wallet', value: '¥360', label: '预计收入', color: '#F59E0B', bgColor: '#FFF7ED' }
+  { icon: 'calendar', value: '0小时0分', label: '今日上钟时长', color: '#2F6BEE', bgColor: '#EFF6FF' },
+  { icon: 'checkbox', value: '0单', label: '今日服务次数', color: '#10B981', bgColor: '#ECFDF5' },
+  { icon: 'wallet', value: '¥0', label: '预计收入', color: '#F59E0B', bgColor: '#FFF7ED' }
 ])
+
+// 获取看板数据
+const fetchDashboard = async () => {
+  try {
+    const res = await getCoachDashboard()
+    if (res.data) {
+      const { todayServiceMinutes, todayServiceCount, todayEstimatedIncome } = res.data
+      const hours = Math.floor(todayServiceMinutes / 60)
+      const mins = todayServiceMinutes % 60
+      todayData.value = [
+        { icon: 'calendar', value: `${hours}小时${mins}分`, label: '今日上钟时长', color: '#2F6BEE', bgColor: '#EFF6FF' },
+        { icon: 'checkbox', value: `${todayServiceCount}单`, label: '今日服务次数', color: '#10B981', bgColor: '#ECFDF5' },
+        { icon: 'wallet', value: `¥${Number(todayEstimatedIncome).toFixed(2)}`, label: '预计收入', color: '#F59E0B', bgColor: '#FFF7ED' }
+      ]
+    }
+  } catch (err) {
+    console.error('获取看板数据失败', err)
+  }
+}
 
 // 时间格式化
 const fmtMMSS = (s) => {
@@ -336,6 +497,34 @@ const handleSwitchClick = () => {
     success: (res) => {
       if (res.confirm) {
         onSwitchChange(targetStatus)
+      }
+    }
+  })
+}
+
+// 免费出行开关点击
+const handleFreeTravelSwitchClick = () => {
+  if (freeTravelLoading.value) return
+  const targetStatus = !isFreeTravel.value
+
+  uni.showModal({
+    title: '确认切换',
+    content: targetStatus ? '确认开启免费出行？' : '确认关闭免费出行？',
+    success: async (res) => {
+      if (res.confirm) {
+        freeTravelLoading.value = true
+        try {
+          await updateFreeTravel({
+            freeTravel: targetStatus
+          })
+          isFreeTravel.value = targetStatus
+          proxy.$modal.msgSuccess(targetStatus ? '已开启免费出行' : '已关闭免费出行')
+        } catch (err) {
+          console.error('切换免费出行失败', err)
+          proxy.$modal.msgError(err?.msg || '操作失败')
+        } finally {
+          freeTravelLoading.value = false
+        }
       }
     }
   })
@@ -424,8 +613,8 @@ const stopPolling = () => {
 // 查询待接单列表
 const fetchPendingOrders = async () => {
   try {
-    // const res = await getPendingOrders()
-    const res  = {"code":0,"msg":"","data":{"total":1,"list":[{"orderId":22,"orderNo":"20260331141626630416","userPhone":"138****8000","venueName":"Mock球厅-9","venueAddress":"Mock地址-9","venueLongitude":116.397128,"venueLatitude":39.916527,"serviceType":1,"bookingTime":0,"serviceDuration":120,"totalAmount":20000,"expireAt":1874938103000,"createTime":1774937787000}]}}
+    const res = await getPendingOrders()
+    // const res  = {"code":0,"msg":"","data":{"total":1,"list":[{"orderId":22,"orderNo":"20260331141626630416","userPhone":"138****8000","venueName":"Mock球厅-9","venueAddress":"Mock地址-9","venueLongitude":116.397128,"venueLatitude":39.916527,"serviceType":1,"bookingTime":0,"serviceDuration":120,"totalAmount":20000,"expireAt":1874938103000,"createTime":1774937787000}]}}
     if (res.data && res.data?.list?.length > 0) {
       // 有待接单，停止轮询
       stopPolling()
@@ -646,18 +835,36 @@ const makeCall = () => {
   makePhoneCallUtil(phoneNumber)
 }
 
-// 标签切换
-const onTabClick = (e) => {
-  currentTab.value = e.currentIndex
-  displayOrders.value = e.currentIndex === 0 ? completedOrders.value : cancelledOrders.value
+// 历史订单 tab索引计算
+const historyTabIndex = computed(() => {
+  const idx = historyTabs.findIndex(t => t.value === historyTab.value)
+  return idx >= 0 ? idx : 0
+})
+
+// 历史订单tab切换
+const onHistoryTabClick = (e) => {
+  historyTab.value = historyTabs[e.currentIndex].value
 }
 
-// 查看全部订单
+// 跳转到全部订单
 const goToAllOrder = () => {
-  uni.showToast({ title:'跳转到全部订单页', icon:'none' })
+  uni.switchTab({
+    url: '/pages/order/index'
+  })
+}
+
+// 跳转到订单详情
+const goToOrderDetail = (order) => {
+  uni.navigateTo({
+    url: `/pages/order/detail?orderId=${order.orderId}&status=${order.status}&orderNo=${order.orderNo || ''}&serviceType=${order.serviceType || ''}&totalAmount=${order.totalAmount || ''}&bookingTimeText=${encodeURIComponent(formatOrderTime(order.bookingTime))}&createTimeText=${encodeURIComponent(formatOrderTime(order.createTime))}&venueName=${encodeURIComponent(order.venueName || '')}&venueAddress=${encodeURIComponent(order.venueAddress || '')}&venueLongitude=${order.venueLongitude || ''}&venueLatitude=${order.venueLatitude || ''}&userPhone=${encodeURIComponent(order.userPhone || '')}`
+  })
 }
 
 onMounted(() => {
+  // 获取看板数据
+  fetchDashboard()
+  // 获取历史订单
+  fetchHistoryOrders()
   // 上线状态下进入页面时开始轮询
   if (isOnline.value) {
     startPolling()

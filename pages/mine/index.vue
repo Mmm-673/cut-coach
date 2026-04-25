@@ -3,13 +3,13 @@
     <!-- 顶部用户信息栏 -->
     <view class="user-header">
       <view class="user-info">
-        <image class="avatar" src="/static/avatar.jpg" mode="aspectFill"></image>
+        <image class="avatar" :src="coachProfile.avatar || '/static/avatar.jpg'" mode="aspectFill"></image>
         <view class="user-detail">
           <view class="user-name">
-            <text class="name">张助教</text>
-            <text class="badge">金牌助教</text>
+            <text class="name">{{ coachProfile.stageName || '助教' }}</text>
+            <uni-tag :text="levelName" type="primary" size="small" :inverted="true" />
           </view>
-          <view class="user-id">ID: 123456</view>
+          <view class="user-id">ID: {{ coachProfile.id || '-' }}</view>
         </view>
       </view>
       <view class="edit-icon" @click="handleEdit">
@@ -18,98 +18,155 @@
     </view>
 
     <!-- 钱包模块 -->
-    <view class="wallet-card">
+    <uni-card :is-shadow="true" :border="false" class="wallet-card">
       <view class="wallet-title">我的钱包</view>
       <view class="balance-wrap">
-        <view class="balance">¥2580.00</view>
+        <view class="balance">¥{{ (walletInfo.balance / 100).toFixed(2) || '0.00' }}</view>
         <view class="balance-tip">可提现余额</view>
       </view>
-      <view class="pending-audit">
-        待审核：¥500，预计3个工作日到账
+      <view class="pending-audit" v-if="walletInfo.freezePrice > 0">
+        <uni-icons type="wallet" size="16" color="#F59E0B"></uni-icons>
+        <text>冻结金额：¥{{ (walletInfo.freezePrice / 100).toFixed(2) }}</text>
       </view>
       <button class="withdraw-btn" @click="handleWithdraw">去提现</button>
       <view class="wallet-links">
         <view class="link-item" @click="navToDeduct">
           <text>扣款明细</text>
-          <uni-icons type="right" size="14" color="#ccc"></uni-icons>
+          <uni-icons type="right" size="14" color="$text-tertiary"></uni-icons>
         </view>
         <view class="link-item" @click="navToWithdrawRecord">
           <text>提现记录</text>
-          <uni-icons type="right" size="14" color="#ccc"></uni-icons>
+          <uni-icons type="right" size="14" color="$text-tertiary"></uni-icons>
         </view>
       </view>
-    </view>
+    </uni-card>
 
     <!-- 功能列表 -->
-    <view class="func-list">
+    <uni-card :is-shadow="true" :border="false" class="func-card">
       <view class="func-item" @click="navToOrder">
         <view class="func-icon icon-blue">
-          <uni-icons type="list" size="20" color="#007aff"></uni-icons>
+          <uni-icons type="list" size="20" color="#2F6BEE"></uni-icons>
         </view>
         <text class="func-name">我的订单</text>
-        <uni-icons type="right" size="16" color="#ccc"></uni-icons>
+        <uni-icons type="right" size="16" color="$text-tertiary"></uni-icons>
       </view>
-
       <view class="func-item" @click="navToEvaluate">
         <view class="func-icon icon-green">
-          <uni-icons type="star" size="20" color="#34c759"></uni-icons>
+          <uni-icons type="star" size="20" color="#10B981"></uni-icons>
         </view>
         <text class="func-name">我的评价</text>
-        <uni-icons type="right" size="16" color="#ccc"></uni-icons>
+        <uni-icons type="right" size="16" color="$text-tertiary"></uni-icons>
       </view>
-
       <view class="func-item" @click="navToBankCard">
         <view class="func-icon icon-orange">
-          <uni-icons type="creditcard" size="20" color="#ff9500"></uni-icons>
+          <uni-icons type="creditcard" size="20" color="#F59E0B"></uni-icons>
         </view>
         <text class="func-name">银行卡管理</text>
-        <uni-icons type="right" size="16" color="#ccc"></uni-icons>
+        <uni-icons type="right" size="16" color="$text-tertiary"></uni-icons>
       </view>
-
       <view class="func-item" @click="navToService">
         <view class="func-icon icon-purple">
-          <uni-icons type="headphones" size="20" color="#af52de"></uni-icons>
+          <uni-icons type="headphones" size="20" color="#8B5CF6"></uni-icons>
         </view>
         <text class="func-name">客服中心</text>
-        <uni-icons type="right" size="16" color="#ccc"></uni-icons>
+        <uni-icons type="right" size="16" color="$text-tertiary"></uni-icons>
       </view>
-
       <view class="func-item" @click="navToSetting">
         <view class="func-icon icon-lightblue">
-          <uni-icons type="gear" size="20" color="#00aaff"></uni-icons>
+          <uni-icons type="gear" size="20" color="#00A6E3"></uni-icons>
         </view>
         <text class="func-name">设置</text>
-        <uni-icons type="right" size="16" color="#ccc"></uni-icons>
+        <uni-icons type="right" size="16" color="$text-tertiary"></uni-icons>
       </view>
-    </view>
+    </uni-card>
   </view>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-// 自动引入uni-icons（uni-app 3.x + Vue3 自动导入，无需手动import）
+import { ref, computed, onMounted } from 'vue'
+import { getCoachProfile } from '@/api/billiard/coach'
+import { getWalletBalance } from '@/api/billiard/wallet'
 
-// 页面交互逻辑
+// 教练档案
+const coachProfile = ref({
+  id: '',
+  stageName: '',      // 艺名
+  level: 0,          // 助教级别 0/1/2
+  mobile: '',         // 手机号
+  avatar: '',         // 头像
+  introduction: '',   // 简介
+  commissionRate: 0   // 扣佣比例
+})
+
+// 钱包信息
+const walletInfo = ref({
+  balance: 0,         // 可提现余额（分）
+  freezePrice: 0     // 冻结金额（分）
+})
+
+// 级别映射
+const levelNameMap = {
+  0: '普通助教',
+  1: '高级助教',
+  2: '金牌助教'
+}
+
+// 计算属性：级别名称
+const levelName = computed(() => {
+  return levelNameMap[coachProfile.value.level] || '普通助教'
+})
+
+// 获取教练档案
+const fetchCoachProfile = async () => {
+  try {
+    const res = await getCoachProfile()
+    if (res.data) {
+      coachProfile.value = {
+        id: res.data.id || '',
+        stageName: res.data.stageName || res.data.name || '助教',
+        level: res.data.level ?? 0,
+        mobile: res.data.mobile || '',
+        avatar: res.data.avatar || '',
+        introduction: res.data.introduction || '',
+        commissionRate: res.data.commissionRate || 0
+      }
+    }
+  } catch (err) {
+    console.error('获取教练档案失败', err)
+  }
+}
+
+// 获取钱包余额
+const fetchWalletBalance = async () => {
+  try {
+    const res = await getWalletBalance()
+    if (res.data) {
+      walletInfo.value = {
+        balance: res.data.balance ?? 0,
+        freezePrice: res.data.freezePrice ?? 0
+      }
+    }
+  } catch (err) {
+    console.error('获取钱包余额失败', err)
+  }
+}
+
 const handleEdit = () => {
   uni.showToast({
     title: '编辑个人信息',
     icon: 'none'
   })
-  // 实际开发中跳转到编辑页：uni.navigateTo({ url: '/pages/my/edit' })
 }
 
 const handleWithdraw = () => {
-
-
   uni.showModal({
     title: '提现',
-    content: `当前可提现余额：¥2580.00`,
+    content: `当前可提现余额：¥${(walletInfo.balance / 100).toFixed(2)}`,
     success: (res) => {
       if (res.confirm) {
         uni.showLoading({ title: '跳转提现页...' })
         setTimeout(() => {
           uni.hideLoading()
-          // 实际开发中跳转到提现页
           uni.navigateTo({ url: '/pages/mine/wallet/withdraw/index' })
         }, 800)
       }
@@ -117,7 +174,6 @@ const handleWithdraw = () => {
   })
 }
 
-// 页面跳转逻辑
 const navToDeduct = () => {
   uni.navigateTo({ url: '/pages/mine/wallet/deduct/index' })
 }
@@ -145,23 +201,37 @@ const navToService = () => {
 const navToSetting = () => {
   uni.navigateTo({ url: '/pages/setting/index' })
 }
+
+onMounted(() => {
+  fetchCoachProfile()
+  fetchWalletBalance()
+})
 </script>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
+:deep(.uni-card) {
+  margin: 0 32rpx 24rpx !important;
+  border-radius: $radius-xl !important;
+  box-shadow: $shadow-base;
+}
+:deep(.uni-card .uni-card__content) {
+  padding: 0 !important;
+}
+
 .my-page {
   min-height: 100vh;
-  background-color: #f7f8fa;
+  background: $bg-page;
+  padding-top: 32rpx;
   padding-bottom: 40rpx;
 }
 
 /* 顶部用户栏 */
 .user-header {
-  background-color: #66b3ff;
-  padding: 40rpx 30rpx;
+  background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+  padding: 48rpx 32rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #fff;
 }
 
 .user-info {
@@ -174,156 +244,182 @@ const navToSetting = () => {
   height: 120rpx;
   border-radius: 50%;
   margin-right: 24rpx;
+  border: 4rpx solid rgba(255, 255, 255, 0.3);
 }
 
 .user-detail {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: 8rpx;
 }
 
 .user-name {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: 12rpx;
 }
 
 .name {
-  font-size: 40rpx;
+  font-size: 36rpx;
   font-weight: bold;
-}
-
-.badge {
-  background-color: rgba(255, 255, 255, 0.3);
-  padding: 6rpx 20rpx;
-  border-radius: 12rpx;
-  font-size: 26rpx;
+  color: #fff;
 }
 
 .user-id {
-  font-size: 30rpx;
-  opacity: 0.9;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .edit-icon {
-  font-size: 40rpx;
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
 }
 
 /* 钱包卡片 */
 .wallet-card {
-  background-color: #fff;
-  margin: 30rpx;
-  border-radius: 20rpx;
-  padding: 40rpx 30rpx;
+  :deep(.uni-card__content) {
+    padding: 32rpx !important;
+  }
 }
 
 .wallet-title {
-  font-size: 34rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 30rpx;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: $text-primary;
+  margin-bottom: 24rpx;
 }
 
 .balance-wrap {
   text-align: center;
-  margin-bottom: 30rpx;
+  margin-bottom: 24rpx;
 }
 
 .balance {
-  font-size: 80rpx;
+  font-size: 72rpx;
   font-weight: bold;
-  color: #333;
+  color: $primary;
   line-height: 1.2;
 }
 
 .balance-tip {
-  font-size: 30rpx;
-  color: #999;
-  margin-top: 10rpx;
+  font-size: 26rpx;
+  color: $text-tertiary;
+  margin-top: 8rpx;
 }
 
 .pending-audit {
-  background-color: #f7f8fa;
-  border-radius: 12rpx;
-  padding: 20rpx;
-  font-size: 30rpx;
-  color: #666;
-  margin-bottom: 30rpx;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: $warning-light;
+  border-radius: $radius-base;
+  padding: 20rpx 24rpx;
+  font-size: 26rpx;
+  color: $warning;
+  margin-bottom: 24rpx;
 }
 
 .withdraw-btn {
   width: 100%;
-  height: 90rpx;
-  line-height: 90rpx;
-  background-color: #007aff;
+  height: 80rpx;
+  line-height: 80rpx;
+  background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
   color: #fff;
-  border-radius: 16rpx;
+  border-radius: $radius-base;
   border: none;
-  font-size: 34rpx;
-  font-weight: 500;
-  margin-bottom: 30rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  margin-bottom: 24rpx;
+  transition: transform $duration-fast;
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .wallet-links {
   display: flex;
   justify-content: space-between;
+  padding-top: 24rpx;
+  border-top: 1rpx solid $border-light;
 }
 
 .link-item {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  font-size: 32rpx;
-  color: #333;
+  font-size: 28rpx;
+  color: $text-secondary;
+  &:active {
+    opacity: 0.7;
+  }
 }
 
 /* 功能列表 */
+.func-card {
+  :deep(.uni-card__content) {
+    padding: 0 !important;
+  }
+}
+
 .func-list {
   background-color: #fff;
-  margin: 0 30rpx;
-  border-radius: 20rpx;
-  padding: 20rpx 0;
+  margin: 0 32rpx;
+  border-radius: $radius-xl;
+  overflow: hidden;
 }
 
 .func-item {
   display: flex;
   align-items: center;
-  padding: 30rpx;
+  padding: 32rpx;
   gap: 20rpx;
+  background: $bg-card;
+  transition: background $duration-fast;
+  &:active {
+    background: $bg-page;
+  }
+  &:not(:last-child) {
+    border-bottom: 1rpx solid $border-light;
+  }
 }
 
 .func-icon {
-  width: 70rpx;
-  height: 70rpx;
-  border-radius: 12rpx;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: $radius-base;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .icon-blue {
-  background-color: #e6f0ff;
+  background: #EFF6FF;
 }
 
 .icon-green {
-  background-color: #e6ffe6;
+  background: #ECFDF5;
 }
 
 .icon-orange {
-  background-color: #fff2e6;
+  background: #FFF7ED;
 }
 
 .icon-purple {
-  background-color: #f3e6ff;
+  background: #F5F3FF;
 }
 
 .icon-lightblue {
-  background-color: #e6f7ff;
+  background: #E0F2FE;
 }
 
 .func-name {
   flex: 1;
-  font-size: 34rpx;
-  color: #333;
+  font-size: 30rpx;
+  color: $text-primary;
 }
 </style>

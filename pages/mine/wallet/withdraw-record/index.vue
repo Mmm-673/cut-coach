@@ -4,17 +4,17 @@
     <view class="stats-header">
       <view class="stats-row">
         <view class="stats-item">
-          <view class="stats-value green">¥5,280.00</view>
+          <view class="stats-value green">¥{{ (totalWithdraw / 100).toFixed(2) }}</view>
           <view class="stats-label">累计提现</view>
         </view>
         <view class="stats-divider"></view>
         <view class="stats-item">
-          <view class="stats-value orange">¥500.00</view>
+          <view class="stats-value orange">¥{{ (pendingWithdraw / 100).toFixed(2) }}</view>
           <view class="stats-label">提现中</view>
         </view>
         <view class="stats-divider"></view>
         <view class="stats-item">
-          <view class="stats-value blue">12</view>
+          <view class="stats-value blue">{{ totalCount }}次</view>
           <view class="stats-label">提现次数</view>
         </view>
       </view>
@@ -37,177 +37,232 @@
     <scroll-view
         scroll-y
         class="record-list"
+        :refresher-enabled="true"
+        :refresher-triggered="refreshing"
+        @refresherrefresh="onRefresh"
         @scrolltolower="handleLoadMore"
     >
-      <!-- 2026年3月 -->
-      <view class="month-group">
-        <view class="month-title">2026年3月</view>
-        <view
-            v-for="item in marchList"
-            :key="item.id"
-            class="record-item"
-        >
-          <view class="item-left">
-            <view class="status-tag" :class="item.status">
-              {{ item.statusText }}
-            </view>
-            <view class="item-title">提现到银行卡</view>
-            <view class="bank-info">{{ item.bankInfo }}</view>
-            <view class="create-time">{{ item.createTime }}</view>
+      <view
+          v-for="item in displayRecords"
+          :key="item.id"
+          class="record-item"
+      >
+        <view class="item-left">
+          <view class="status-tag" :class="getStatusClass(item.status)">
+            {{ getStatusText(item.status) }}
           </view>
-          <view class="item-right">
-            <view class="amount">¥{{ item.amount }}</view>
-            <view class="arrive-time" :class="item.status">
-              {{ item.arriveTimeText }}
-            </view>
+          <view class="item-title">{{ getAccountTypeText(item.accountType) }}</view>
+          <view class="bank-info">{{ item.realName }} {{ maskAccountNo(item.accountNo) }}</view>
+          <view class="create-time">申请时间：{{ formatTime(item.createTime) }}</view>
+        </view>
+        <view class="item-right">
+          <view class="amount">¥{{ (item.withdrawAmount / 100).toFixed(2) }}</view>
+          <view class="fee-info" v-if="item.feeAmount > 0">含手续费¥{{ (item.feeAmount / 100).toFixed(2) }}</view>
+          <view class="arrive-time" :class="getStatusClass(item.status)">
+            {{ getArriveTimeText(item) }}
           </view>
         </view>
       </view>
 
-      <!-- 2026年2月 -->
-      <view class="month-group">
-        <view class="month-title">2026年2月</view>
-        <view
-            v-for="item in febList"
-            :key="item.id"
-            class="record-item"
-        >
-          <view class="item-left">
-            <view class="status-tag" :class="item.status">
-              {{ item.statusText }}
-            </view>
-            <view class="item-title">提现到银行卡</view>
-            <view class="bank-info">{{ item.bankInfo }}</view>
-            <view class="create-time">{{ item.createTime }}</view>
-          </view>
-          <view class="item-right">
-            <view class="amount">¥{{ item.amount }}</view>
-            <view class="arrive-time" :class="item.status">
-              {{ item.arriveTimeText }}
-            </view>
-          </view>
-        </view>
+      <!-- 空状态 -->
+      <view v-if="!loading && displayRecords.length === 0" class="empty-tip">
+        <text>暂无提现记录</text>
       </view>
 
       <!-- 加载状态 -->
-      <view v-if="loading" class="loading">加载中...</view>
-      <view v-if="!loading && hasMore" class="load-more">上拉加载更多</view>
-      <view v-if="!hasMore" class="no-more">已经到底啦~</view>
+      <view v-if="loading" class="loading-tip">加载中...</view>
+      <view v-if="!hasMore && displayRecords.length > 0" class="no-more-tip">已经到底啦~</view>
     </scroll-view>
   </view>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { getWithdrawalPage } from '@/api/billiard/wallet'
 
 // 标签栏数据
-const tabList = reactive([
-  { label: '全部', value: 'all' },
-  { label: '审核中', value: 'pending' },
-  { label: '已到账', value: 'success' },
-  { label: '已失败', value: 'fail' }
-])
-const activeTab = ref('all')
+const tabList = [
+  { label: '全部', value: -1 },
+  { label: '申请中', value: 0 },
+  { label: '处理中', value: 1 },
+  { label: '已到账', value: 2 },
+  { label: '已拒绝', value: 3 }
+]
+const activeTab = ref(-1)
 
-// 提现记录数据（模拟接口数据）
-const allRecordList = reactive([
-  // 3月数据
-  {
-    id: 1,
-    status: 'pending',
-    statusText: '审核中',
-    amount: '500.00',
-    bankInfo: '招商银行(尾号8888)',
-    createTime: '2026-03-21 15:30:45',
-    arriveTimeText: '预计3个工作日到账',
-    month: '2026年3月'
-  },
-  {
-    id: 2,
-    status: 'success',
-    statusText: '已到账',
-    amount: '1,280.00',
-    bankInfo: '招商银行(尾号8888)',
-    createTime: '2026-03-15 10:20:16',
-    arriveTimeText: '2026-03-17 14:30:00到账',
-    month: '2026年3月'
-  },
-  // 2月数据
-  {
-    id: 3,
-    status: 'success',
-    statusText: '已到账',
-    amount: '3,500.00',
-    bankInfo: '招商银行(尾号8888)',
-    createTime: '2026-02-29 16:45:32',
-    arriveTimeText: '2026-03-03 09:15:00到账',
-    month: '2026年2月'
-  }
-])
+// 统计数据
+const totalWithdraw = ref(0)
+const pendingWithdraw = ref(0)
+const totalCount = ref(0)
 
-// 按月份分组数据
-const marchList = computed(() => allRecordList.filter(item => item.month === '2026年3月'))
-const febList = computed(() => allRecordList.filter(item => item.month === '2026年2月'))
-
-// 分页加载状态
+// 提现记录数据
+const recordList = ref([])
+const pageNo = ref(1)
+const pageSize = ref(20)
 const loading = ref(false)
+const refreshing = ref(false)
 const hasMore = ref(true)
 
-// 页面交互逻辑
-const handleBack = () => {
-  uni.navigateBack()
+// 按tab筛选
+const displayRecords = computed(() => {
+  if (activeTab.value === -1) {
+    return recordList.value
+  }
+  return recordList.value.filter(item => item.status === activeTab.value)
+})
+
+// 状态映射
+const statusTextMap = {
+  0: '申请中',
+  1: '处理中',
+  2: '已到账',
+  3: '已拒绝'
 }
 
-const switchTab = (value) => {
-  activeTab.value = value
-  // 实际开发中根据标签筛选数据
-  uni.showToast({ title: `切换到${tabList.find(t => t.value === value)?.label}`, icon: 'none' })
+const statusClassMap = {
+  0: 'pending',
+  1: 'processing',
+  2: 'success',
+  3: 'rejected'
 }
 
-const handleLoadMore = () => {
-  if (loading.value || !hasMore.value) return
+const getStatusText = (status) => {
+  return statusTextMap[status] || '未知'
+}
+
+const getStatusClass = (status) => {
+  return statusClassMap[status] || ''
+}
+
+const getAccountTypeText = (type) => {
+  const map = { 1: '提现到微信', 2: '提现到支付宝' }
+  return map[type] || '提现到银行卡'
+}
+
+const maskAccountNo = (no) => {
+  if (!no) return ''
+  if (no.length > 8) {
+    return `(${no.slice(-4)})`
+  }
+  return `(${no})`
+}
+
+const formatTime = (time) => {
+  if (!time) return '-'
+  const date = new Date(time)
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
+}
+
+const getArriveTimeText = (item) => {
+  if (item.status === 2 && item.payTime) {
+    return `${formatTime(item.payTime)}到账`
+  }
+  if (item.status === 3 && item.rejectReason) {
+    return `拒绝原因：${item.rejectReason}`
+  }
+  if (item.status === 0) {
+    return '预计3个工作日到账'
+  }
+  if (item.status === 1) {
+    return '处理中，请耐心等待'
+  }
+  return '-'
+}
+
+// 获取提现记录
+const fetchWithdrawalRecords = async (reset = false) => {
+  if (loading.value) return
+  if (!reset && !hasMore.value) return
 
   loading.value = true
-  // 模拟接口请求
-  setTimeout(() => {
+  try {
+    const params = {
+      pageNo: reset ? 1 : pageNo.value,
+      pageSize: pageSize.value
+    }
+    // 全部不传status，其他传status筛选
+    if (activeTab.value !== -1) {
+      params.status = activeTab.value
+    }
+
+    const res = await getWithdrawalPage(params)
+    if (res.data) {
+      const list = res.data.list || []
+      // 计算统计数据
+      let total = 0
+      let pending = 0
+      let count = 0
+      list.forEach(item => {
+        total += item.withdrawAmount
+        count++
+        if (item.status === 0 || item.status === 1) {
+          pending += item.withdrawAmount
+        }
+      })
+
+      if (reset) {
+        recordList.value = list
+        pageNo.value = 1
+        totalWithdraw.value = res.data.totalWithdraw || total
+        pendingWithdraw.value = res.data.pendingWithdraw || pending
+        totalCount.value = res.data.totalCount || count
+      } else {
+        recordList.value = [...recordList.value, ...list]
+        pageNo.value++
+      }
+      hasMore.value = list.length >= pageSize.value
+    }
+  } catch (err) {
+    console.error('获取提现记录失败', err)
+  } finally {
     loading.value = false
-    hasMore.value = false
-  }, 800)
+  }
 }
+
+// 切换tab
+const switchTab = (value) => {
+  if (activeTab.value === value) return
+  activeTab.value = value
+  recordList.value = []
+  hasMore.value = true
+  pageNo.value = 1
+  fetchWithdrawalRecords(true)
+}
+
+// 下拉刷新
+const onRefresh = async () => {
+  refreshing.value = true
+  await fetchWithdrawalRecords(true)
+  refreshing.value = false
+}
+
+// 上拉加载更多
+const handleLoadMore = () => {
+  if (!loading.value && hasMore.value) {
+    fetchWithdrawalRecords(false)
+  }
+}
+
+onMounted(() => {
+  fetchWithdrawalRecords(true)
+})
 </script>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
 .withdraw-record-page {
   min-height: 100vh;
-  background-color: #f7f8fa;
+  background: $bg-page;
 }
 
 /* 顶部统计栏 */
 .stats-header {
-  background-color: #fff;
-  padding: 30rpx;
-  position: relative;
-}
-
-.back-btn {
-  position: absolute;
-  left: 30rpx;
-  top: 30rpx;
-  z-index: 10;
-}
-
-.page-title {
-  text-align: center;
-  font-size: 36rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 40rpx;
+  background: $bg-card;
+  padding: 32rpx 30rpx;
 }
 
 .stats-row {
   display: flex;
   align-items: center;
-  justify-content: space-around;
 }
 
 .stats-item {
@@ -216,91 +271,71 @@ const handleLoadMore = () => {
 }
 
 .stats-value {
-  font-size: 48rpx;
+  font-size: 44rpx;
   font-weight: bold;
   line-height: 1.2;
-  margin-bottom: 10rpx;
-}
-
-.green {
-  color: #00b578;
-}
-
-.orange {
-  color: #ff9500;
-}
-
-.blue {
-  color: #007aff;
+  margin-bottom: 8rpx;
+  &.green { color: $success; }
+  &.orange { color: $warning; }
+  &.blue { color: $primary; }
 }
 
 .stats-label {
-  font-size: 28rpx;
-  color: #999;
+  font-size: 26rpx;
+  color: $text-tertiary;
 }
 
 .stats-divider {
   width: 2rpx;
   height: 60rpx;
-  background-color: #f0f0f0;
+  background: $border-light;
 }
 
 /* 标签栏 */
 .tab-bar {
   display: flex;
-  background-color: #fff;
-  padding: 20rpx 0;
-  margin-bottom: 20rpx;
+  background: $bg-card;
+  padding: 0 16rpx;
+  margin-bottom: 16rpx;
+  box-shadow: $shadow-sm;
 }
 
 .tab-item {
   flex: 1;
   text-align: center;
-  font-size: 32rpx;
-  color: #999;
-  padding: 10rpx 0;
+  font-size: 28rpx;
+  color: $text-tertiary;
+  padding: 24rpx 0;
   position: relative;
-  transition: all 0.3s;
+  transition: all $duration-base;
 
   &.active {
-    color: #007aff;
-    font-weight: 500;
-
+    color: $primary;
+    font-weight: bold;
     &::after {
       content: '';
       position: absolute;
       bottom: 0;
       left: 50%;
       transform: translateX(-50%);
-      width: 60rpx;
-      height: 4rpx;
-      background-color: #007aff;
-      border-radius: 2rpx;
+      width: 48rpx;
+      height: 6rpx;
+      background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+      border-radius: 3rpx;
     }
   }
 }
 
 /* 记录列表 */
 .record-list {
-  height: calc(100vh - 400rpx);
-  padding: 0 30rpx;
-}
-
-.month-group {
-  margin-bottom: 30rpx;
-}
-
-.month-title {
-  font-size: 32rpx;
-  font-weight: 500;
-  color: #666;
-  margin-bottom: 20rpx;
+  height: calc(100vh - 300rpx);
+  padding: 0 32rpx;
 }
 
 .record-item {
-  background-color: #fff;
-  border-radius: 20rpx;
-  padding: 30rpx;
+  background: $bg-card;
+  border-radius: $radius-xl;
+  padding: 28rpx;
   margin-bottom: 20rpx;
   display: flex;
   justify-content: space-between;
@@ -314,70 +349,93 @@ const handleLoadMore = () => {
 .status-tag {
   display: inline-block;
   padding: 6rpx 20rpx;
-  border-radius: 8rpx;
-  font-size: 28rpx;
+  border-radius: $radius-sm;
+  font-size: 24rpx;
   font-weight: 500;
-  margin-bottom: 10rpx;
+  margin-bottom: 12rpx;
 
   &.pending {
-    background-color: #fff3e0;
-    color: #ff9500;
+    background: #FFF7ED;
+    color: $warning;
+  }
+
+  &.processing {
+    background: #EFF6FF;
+    color: $primary;
   }
 
   &.success {
-    background-color: #e6ffe6;
-    color: #00b578;
+    background: #ECFDF5;
+    color: $success;
   }
 
-  &.fail {
-    background-color: #ffe6e6;
-    color: #ff3b30;
+  &.rejected {
+    background: #FEF2F2;
+    color: $danger;
   }
 }
 
 .item-title {
-  font-size: 34rpx;
+  font-size: 30rpx;
   font-weight: 500;
-  color: #333;
-  margin-bottom: 10rpx;
+  color: $text-primary;
+  margin-bottom: 8rpx;
 }
 
 .bank-info {
-  font-size: 30rpx;
-  color: #999;
-  margin-bottom: 30rpx;
+  font-size: 26rpx;
+  color: $text-secondary;
+  margin-bottom: 8rpx;
 }
 
 .create-time {
-  font-size: 28rpx;
-  color: #999;
+  font-size: 24rpx;
+  color: $text-tertiary;
 }
 
 .item-right {
   text-align: right;
+  flex-shrink: 0;
+  margin-left: 20rpx;
 }
 
 .amount {
   font-size: 40rpx;
   font-weight: bold;
-  color: #333;
-  margin-bottom: 30rpx;
+  color: $text-primary;
+  margin-bottom: 4rpx;
+}
+
+.fee-info {
+  font-size: 22rpx;
+  color: $text-tertiary;
+  margin-bottom: 8rpx;
 }
 
 .arrive-time {
-  font-size: 28rpx;
-  color: #999;
-
+  font-size: 24rpx;
+  color: $text-tertiary;
   &.success {
-    color: #00b578;
+    color: $success;
+  }
+  &.rejected {
+    color: $danger;
   }
 }
 
+/* 空状态 */
+.empty-tip {
+  text-align: center;
+  padding: 100rpx 0;
+  font-size: 28rpx;
+  color: $text-tertiary;
+}
+
 /* 加载状态 */
-.loading, .load-more, .no-more {
+.loading-tip, .no-more-tip {
   text-align: center;
   padding: 30rpx 0;
-  font-size: 28rpx;
-  color: #999;
+  font-size: 26rpx;
+  color: $text-tertiary;
 }
 </style>
