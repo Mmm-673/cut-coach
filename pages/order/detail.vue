@@ -112,7 +112,7 @@
 import { ref, computed } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { openMapNavigation } from '@/utils/platform'
-import { getInProgressOrder, finishService } from '@/api/billiard/order'
+import { getOrderDetail, finishService } from '@/api/billiard/order'
 
 // 订单状态枚举
 const ORDER_STATUS = {
@@ -244,54 +244,40 @@ const formatTime = (timestamp) => {
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
 }
 
-// 获取进行中订单详情
-const fetchInProgressOrder = async () => {
-  try {
-    // TODO: 上线前删除这段模拟数据
-    const USE_MOCK = true
-    if (USE_MOCK) {
-      const now = Date.now()
-      const mockData = {
-        orderId: 1001,
-        userPhone: '138****8888',
-        venueName: '星牌台球俱乐部',
-        venueAddress: '北京市朝阳区建国路88号SOHO现代城',
-        venueLongitude: 116.47823,
-        venueLatitude: 39.916527,
-        totalAmount: 20000,
-        serviceDuration: 120,
-        startTime: now - 30 * 60 * 1000, // 30分钟前开始
-        remainingMinutes: 90,
-        bookingTime: now + 30 * 60 * 1000,
-        createTime: now - 60 * 60 * 1000
-      }
-      orderInfo.value = {
-        ...mockData,
-        bookingTimeText: formatTime(mockData.bookingTime),
-        createTimeText: formatTime(mockData.createTime)
-      }
-      leftSec.value = mockData.remainingMinutes * 60
-      usedSec.value = (mockData.serviceDuration - mockData.remainingMinutes) * 60
-      startTimer()
-      return
-    }
+// 获取订单详情
+const fetchOrderDetail = async () => {
+  if (!orderId.value) return
 
-    const res = await getInProgressOrder()
+  try {
+    const res = await getOrderDetail(orderId.value)
     if (res.data) {
       orderInfo.value = {
         ...res.data,
         bookingTimeText: formatTime(res.data.bookingTime),
         createTimeText: formatTime(res.data.createTime)
       }
-      // 计算剩余时长
-      if (res.data.remainingMinutes) {
-        leftSec.value = res.data.remainingMinutes * 60
+
+      // 如果是进行中订单，启动计时
+      if (orderStatus.value === ORDER_STATUS.PROCESSING) {
+        // 计算已服务时长
+        if (res.data.startTime) {
+          usedSec.value = Math.floor((Date.now() - res.data.startTime) / 1000)
+        }
+        // 计算剩余时长
+        if (res.data.remainingMinutes) {
+          leftSec.value = res.data.remainingMinutes * 60
+        } else if (res.data.serviceDuration && res.data.startTime) {
+          // 根据预定时长和开始时间计算剩余
+          const elapsed = Math.floor((Date.now() - res.data.startTime) / 1000)
+          const total = res.data.serviceDuration * 60
+          leftSec.value = Math.max(0, total - elapsed)
+        }
+        startTimer()
       }
-      // 启动计时
-      startTimer()
     }
   } catch (err) {
-    console.error('获取进行中订单失败', err)
+    console.error('获取订单详情失败', err)
+    uni.showToast({ title: '获取订单详情失败', icon: 'none' })
   }
 }
 
@@ -324,11 +310,11 @@ onLoad((options) => {
   orderId.value = options.orderId ? parseInt(options.orderId) : null
   orderStatus.value = options.status ? parseInt(options.status) : null
 
-  if (orderStatus.value === ORDER_STATUS.PROCESSING) {
-    // 进行中订单，调用API获取详情
-    fetchInProgressOrder()
+  // 如果有订单ID，通过API获取详情
+  if (orderId.value) {
+    fetchOrderDetail()
   } else {
-    // 其他状态订单，使用传入的信息
+    // 兜底：使用传入的信息（兼容没有orderId的情况）
     orderInfo.value = {
       orderNo: options.orderNo || '-',
       serviceType: options.serviceType ? parseInt(options.serviceType) : null,

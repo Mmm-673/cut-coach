@@ -106,9 +106,9 @@ const walletInfo = ref({
 
 // 级别映射
 const levelNameMap = {
-  0: '普通助教',
-  1: '高级助教',
-  2: '金牌助教'
+  0: '初级助教',
+  1: '中级助教',
+  2: '高级助教'
 }
 
 // 计算属性：级别名称
@@ -183,7 +183,7 @@ const navToWithdrawRecord = () => {
 }
 
 const navToOrder = () => {
-  uni.navigateTo({ url: '/pages/order/list' })
+  uni.switchTab({ url: '/pages/order/index' })
 }
 
 const navToEvaluate = () => {

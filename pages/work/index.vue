@@ -246,7 +246,8 @@ import {
   updateWorkStatus,
   updateLocation,
   updateFreeTravel,
-  getCoachDashboard
+  getCoachDashboard,
+  getWorkStatus
 } from '@/api/billiard/coach'
 import {
   getPendingOrders,
@@ -445,6 +446,18 @@ const fetchDashboard = async () => {
     }
   } catch (err) {
     console.error('获取看板数据失败', err)
+  }
+}
+
+// 查询当前工作状态
+const fetchWorkStatus = async () => {
+  try {
+    const res = await getWorkStatus()
+    if (res.data) {
+      isOnline.value = res.data.workStatus === 1
+    }
+  } catch (err) {
+    console.error('获取工作状态失败', err)
   }
 }
 
@@ -861,6 +874,8 @@ const goToOrderDetail = (order) => {
 }
 
 onMounted(() => {
+  // 获取当前工作状态
+  fetchWorkStatus()
   // 获取看板数据
   fetchDashboard()
   // 获取历史订单

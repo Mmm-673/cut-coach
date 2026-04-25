@@ -42,3 +42,11 @@ export function getCoachDashboard() {
     method: 'get'
   })
 }
+
+// 查询当前本人工作状态
+export function getWorkStatus() {
+  return request({
+    url: '/coach-api/billiard/coach/work-status',
+    method: 'get'
+  })
+}

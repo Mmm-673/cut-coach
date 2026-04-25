@@ -78,3 +78,12 @@ export function getInProgressOrder() {
     method: 'get'
   })
 }
+
+// 获取订单详情（支持所有状态）
+export function getOrderDetail(id) {
+  return request({
+    url: '/coach-api/billiard/order/get',
+    method: 'get',
+    params: { id }
+  })
+}
