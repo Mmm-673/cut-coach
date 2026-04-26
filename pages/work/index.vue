@@ -125,7 +125,8 @@
           <text class="hint-text">已到达服务地点，请等待用户确认</text>
         </view>
 
-        <view class="btn-group" v-if="pendingOrder.arriveTime">
+        <view class="btn-group" v-if="pendingOrder.arriveTime && !pendingOrder.startTime">
+          <button class="btn btn-exception" @click="showReportException">报告异常</button>
           <button class="btn btn-accept" @click="startService">开始服务</button>
         </view>
 
@@ -257,7 +258,11 @@ import {
   rejectOrder as rejectOrderApi,
   startService as startServiceApi,
   finishService as finishServiceApi,
-  getOrderPage
+  getOrderPage,
+  reportException as reportExceptionApi,
+  startTimer as startTimerApi,
+  endTimer as endTimerApi,
+  getTimerStatus as getTimerStatusApi
 } from '@/api/billiard/order'
 import {
   getLocation,
@@ -489,6 +494,41 @@ const getPlatformLocation = () => {
   })
 }
 
+// 计算两点之间的距离（米），使用 Haversine 公式
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371000 // 地球半径（米）
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+// 校验是否在允许范围内（默认200米）
+const checkLocationInRange = (targetLat, targetLon, maxDistance = 200) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const location = await getPlatformLocation()
+      const distance = calculateDistance(
+        location.latitude,
+        location.longitude,
+        targetLat,
+        targetLon
+      )
+      console.log(`当前位置与球厅距离: ${Math.round(distance)}米`)
+      if (distance <= maxDistance) {
+        resolve(distance)
+      } else {
+        reject(new Error(`距离球厅${Math.round(distance)}米，超出允许范围${maxDistance}米`))
+      }
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
+
 // 开关点击+下线二次确认逻辑
 const handleSwitchClick = () => {
   if (switchLoading.value) return
@@ -548,52 +588,61 @@ const onSwitchChange = async (targetStatus) => {
   switchLoading.value = true
 
   try {
-    let locationData = {}
     if (targetStatus) {
+      // 上线前必须先获取位置
+      let loc
       try {
-        const loc = await getPlatformLocation()
-        locationData = {
-          longitude: loc.longitude,
-          latitude: loc.latitude
-        }
+        loc = await getPlatformLocation()
       } catch (err) {
-        console.warn('获取位置失败', err)
-        // 显示权限引导
-        uni.showModal({
-          title: '需要位置权限',
-          content: '上线需要获取位置信息，请授权位置权限',
-          confirmText: '去设置',
-          cancelText: '取消',
-          success: (res) => {
-            if (res.confirm) {
-              showLocationPermissionGuide()
-            }
-          }
-        })
+        // 获取位置失败，检查是否是权限问题
+        if (err.message?.includes('权限') || err.message?.includes('auth deny')) {
+          showLocationPermissionGuide()
+          // const modalRes = await new Promise((resolve) => {
+          //   uni.showModal({
+          //     title: '需要位置权限',
+          //     content: '上线需要获取位置信息，请授权位置权限',
+          //     confirmText: '去设置',
+          //     cancelText: '取消',
+          //     success: resolve
+          //   })
+          // })
+
+          // if (modalRes.confirm) {
+          //   showLocationPermissionGuide()
+          //   // 延迟后重新尝试获取位置
+          //   setTimeout(async () => {
+          //     try {
+          //       loc = await getPlatformLocation()
+          //       await doOnlineWithLocation(loc)
+          //     } catch (e) {
+          //       console.error('重新获取位置失败', e)
+          //     }
+          //   }, 1000)
+          // }
+        } else {
+          proxy.$modal.msgError('获取位置失败')
+        }
         switchLoading.value = false
         return
       }
-    }
 
-    await updateWorkStatus({
-      workStatus: targetStatus ? 1 : 0,
-      ...locationData
-    })
-
-    isOnline.value = targetStatus
-
-    if (isOnline.value) {
-      // 上线后开始轮询
-      startPolling()
+      await doOnlineWithLocation(loc)
     } else {
+      // 下线不需要位置
+      await updateWorkStatus({
+        workStatus: 0
+      })
+
       // 下线，停止轮询，清空所有状态
       stopPolling()
+      stopTimerPolling()
       orderStatus.value = 'idle'
       clearInterval(pendingTimer)
       clearInterval(usedTimer)
       clearInterval(leftTimer)
     }
 
+    isOnline.value = targetStatus
     proxy.$modal.msgSuccess(targetStatus ? '已上线' : '已下线')
   } catch (err) {
     console.error('切换状态失败', err)
@@ -601,6 +650,26 @@ const onSwitchChange = async (targetStatus) => {
   } finally {
     switchLoading.value = false
   }
+}
+
+// 上线并上报位置
+const doOnlineWithLocation = async (loc) => {
+  // 上线时传递位置
+  await updateWorkStatus({
+    workStatus: 1,
+    longitude: loc.longitude,
+    latitude: loc.latitude
+  })
+
+  // 上线成功后再次上报位置
+  await updateLocation({
+    longitude: loc.longitude,
+    latitude: loc.latitude
+  })
+  console.log('位置上报成功')
+
+  // 上线后开始轮询
+  startPolling()
 }
 
 // 开始轮询待接单列表
@@ -623,18 +692,45 @@ const stopPolling = () => {
   }
 }
 
+// ====================== Mock数据 ======================
+const USE_MOCK = ref(true)
+
+const mockPendingOrder = {
+  orderId: 9527,
+  orderNo: '202604261000001',
+  userPhone: '138****8000',
+  venueName: '星牌台球俱乐部',
+  venueAddress: '北京市朝阳区建国路88号SOHO现代城',
+  venueLongitude: 116.397128,
+  venueLatitude: 39.916527,
+  serviceType: 1,
+  bookingTime: Date.now() + 30 * 60 * 1000,
+  serviceDuration: 3600,
+  totalAmount: 20000,
+  expireAt: Date.now() + 120 * 1000,
+  createTime: Date.now() - 5 * 60 * 1000
+}
+
+const mockAcceptedOrder = ref({ ...mockPendingOrder })
+// =====================================================
+
 // 查询待接单列表
 const fetchPendingOrders = async () => {
+  if (USE_MOCK.value) {
+    stopPolling()
+    pendingOrder.value = { ...mockPendingOrder }
+    orderStatus.value = 'pending'
+    pendingCountdown.value = 120
+    startPendingCountdown()
+    return
+  }
+
   try {
     const res = await getPendingOrders()
-    // const res  = {"code":0,"msg":"","data":{"total":1,"list":[{"orderId":22,"orderNo":"20260331141626630416","userPhone":"138****8000","venueName":"Mock球厅-9","venueAddress":"Mock地址-9","venueLongitude":116.397128,"venueLatitude":39.916527,"serviceType":1,"bookingTime":0,"serviceDuration":120,"totalAmount":20000,"expireAt":1874938103000,"createTime":1774937787000}]}}
     if (res.data && res.data?.list?.length > 0) {
-      // 有待接单，停止轮询
       stopPolling()
       pendingOrder.value = res.data.list[0]
       orderStatus.value = 'pending'
-
-      // 计算倒计时
       if (pendingOrder.value.expireAt) {
         const now = Date.now()
         const expire = new Date(pendingOrder.value.expireAt).getTime()
@@ -701,6 +797,17 @@ const rejectOrder = () => {
 
 // 接单
 const acceptOrder = async () => {
+  if (USE_MOCK.value) {
+    uni.showLoading({ title: '接单中...' })
+    await new Promise(r => setTimeout(r, 500))
+    uni.hideLoading()
+    clearInterval(pendingTimer)
+    orderStatus.value = 'accepted'
+    mockAcceptedOrder.value = { ...mockPendingOrder }
+    uni.showToast({ title: '接单成功', icon: 'success' })
+    return
+  }
+
   uni.showLoading({ title:'接单中...' })
   try {
     await acceptOrderApi({
@@ -719,6 +826,13 @@ const acceptOrder = async () => {
 
 // 确认出发
 const confirmDeparture = async () => {
+  if (USE_MOCK.value) {
+    mockAcceptedOrder.value.departureConfirmTime = new Date().toISOString()
+    pendingOrder.value = { ...mockAcceptedOrder.value }
+    uni.showToast({ title: '已确认出发', icon: 'success' })
+    return
+  }
+
   try {
     await confirmDepartureApi({
       orderId: pendingOrder.value.orderId
@@ -733,6 +847,48 @@ const confirmDeparture = async () => {
 
 // 到达服务地址
 const arrive = async () => {
+  if (USE_MOCK.value) {
+    mockAcceptedOrder.value.arriveTime = new Date().toISOString()
+    pendingOrder.value = { ...mockAcceptedOrder.value }
+    uni.showToast({ title: '已到达', icon: 'success' })
+    return
+  }
+
+  // 校验当前位置是否在球厅范围内（200米内）
+  uni.showLoading({ title: '校验位置...' })
+  try {
+    await checkLocationInRange(
+      pendingOrder.value.venueLatitude,
+      pendingOrder.value.venueLongitude,
+      200
+    )
+    uni.hideLoading()
+  } catch (err) {
+    uni.hideLoading()
+    // 位置校验失败
+    if (err.message?.includes('距离')) {
+      uni.showModal({
+        title: '位置不在范围内',
+        content: err.message + '，请确认已到达球厅地址',
+        showCancel: false
+      })
+    } else {
+      // 权限问题，引导开启
+      uni.showModal({
+        title: '需要位置权限',
+        content: '确认到达需要获取位置信息，请授权位置权限',
+        confirmText: '去设置',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            showLocationPermissionGuide()
+          }
+        }
+      })
+    }
+    return
+  }
+
   try {
     await arriveApi({
       orderId: pendingOrder.value.orderId
@@ -747,16 +903,72 @@ const arrive = async () => {
 
 // 开始服务
 const startService = async () => {
+  if (USE_MOCK.value) {
+    mockAcceptedOrder.value.startTime = new Date().toISOString()
+    pendingOrder.value = { ...mockAcceptedOrder.value }
+    orderStatus.value = 'serving'
+    startServeTimer()
+    uni.showToast({ title: '服务已开始', icon: 'success' })
+    return
+  }
+
   try {
+    // 1. 调用订单开始服务API
     await startServiceApi({
       orderId: pendingOrder.value.orderId
     })
+
+    // 2. 调用计时器开始API，获取服务端时间
+    const timerResp = await startTimerApi({
+      orderId: pendingOrder.value.orderId
+    })
+    console.log('计时器已启动:', timerResp)
+
+    // 3. 启动本地计时器（使用服务端返回的时间）
     orderStatus.value = 'serving'
     startServeTimer()
+    startTimerPolling()
     uni.showToast({ title: '服务已开始', icon: 'success' })
   } catch (err) {
     console.error('开始服务失败', err)
     proxy.$modal.msgError(err?.msg || '操作失败')
+  }
+}
+
+// 计时器状态轮询
+let timerPollTimer = null
+
+const startTimerPolling = () => {
+  // 先立即查询一次
+  fetchTimerStatus()
+  // 每30秒轮询一次
+  if (timerPollTimer) clearInterval(timerPollTimer)
+  timerPollTimer = setInterval(() => {
+    fetchTimerStatus()
+  }, 30000)
+}
+
+const stopTimerPolling = () => {
+  if (timerPollTimer) {
+    clearInterval(timerPollTimer)
+    timerPollTimer = null
+  }
+}
+
+const fetchTimerStatus = async () => {
+  if (!pendingOrder.value.orderId || orderStatus.value !== 'serving') return
+  try {
+    const resp = await getTimerStatusApi(pendingOrder.value.orderId)
+    if (resp) {
+      console.log('计时器状态:', resp)
+      // 更新已服务时长和剩余时长
+      usedSec.value = resp.elapsedSeconds || 0
+      servingUsedTimeText.value = fmtMMSS(usedSec.value)
+      const remaining = resp.remainingSeconds || 0
+      servingLeftTimeText.value = fmtHHMMSS(Math.max(0, remaining))
+    }
+  } catch (err) {
+    console.error('查询计时器状态失败', err)
   }
 }
 
@@ -786,9 +998,8 @@ const startServeTimer = () => {
 
 // 跳转到订单详情页
 const goToDetail = () => {
-  const params = encodeURIComponent(JSON.stringify(pendingOrder.value))
   uni.navigateTo({
-    url: `/pages/order/detail?orderInfo=${params}&usedSec=${usedSec.value}&leftSec=${leftSec.value}`
+    url: `/pages/order/detail?orderId=${pendingOrder.value.orderId}&status=40`
   })
 }
 
@@ -798,23 +1009,43 @@ const endService = () => {
     title: '确认结束',
     content: '确定要结束当前服务吗？',
     success: async (res) => {
-      if(res.confirm){
+      if (res.confirm) {
+        if (USE_MOCK.value) {
+          clearInterval(usedTimer)
+          clearInterval(leftTimer)
+          stopTimerPolling()
+          orderStatus.value = 'idle'
+          uni.showToast({ title: '服务已结束', icon: 'success' })
+          return
+        }
+
         try {
+          // 1. 调用计时器结束API，获取实际服务时长
+          const timerResp = await endTimerApi({
+            orderId: pendingOrder.value.orderId
+          })
+          console.log('计时器已结束:', timerResp)
+
+          // 2. 调用订单结束服务API
           await finishServiceApi({
             orderId: pendingOrder.value.orderId
           })
+
+          // 3. 停止计时器
           clearInterval(usedTimer)
           clearInterval(leftTimer)
+          stopTimerPolling()
           orderStatus.value = 'idle'
           completedOrders.value.unshift({
             name: pendingOrder.value.serviceType === 1 ? '台球陪练' : '陪游',
             time: `${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')} · ${pendingOrder.value.venueName}`,
             price: (pendingOrder.value.totalAmount / 100).toFixed(2)
           })
-          todayData.value[0].value = '3小时30分'
-          todayData.value[1].value = '4单'
-          todayData.value[2].value = '¥480'
-          // 恢复轮询
+
+          // 4. 查询真实看板数据
+          fetchDashboard()
+
+          // 5. 恢复轮询
           startPolling()
           uni.showToast({ title:'服务已结束', icon:'success' })
         } catch (err) {
@@ -848,6 +1079,45 @@ const makeCall = () => {
   makePhoneCallUtil(phoneNumber)
 }
 
+// 报告异常弹窗
+const showReportException = () => {
+  const exceptionTypes = [
+    { label: '联系不到客户', value: 1 },
+    { label: '客户违规', value: 2 },
+    { label: '其他', value: 3 }
+  ]
+  uni.showActionSheet({
+    itemList: exceptionTypes.map(t => t.label),
+    success: async (res) => {
+      const type = exceptionTypes[res.tapIndex].value
+      uni.showModal({
+        title: '异常说明',
+        editable: true,
+        placeholderText: '请输入异常描述（500字以内）',
+        success: async (modalRes) => {
+          if (modalRes.confirm && modalRes.content) {
+            try {
+              if (USE_MOCK.value) {
+                await new Promise(r => setTimeout(r, 500))
+                uni.showToast({ title: '已提交异常', icon: 'success' })
+                return
+              }
+              await reportExceptionApi({
+                orderId: pendingOrder.value.orderId,
+                exceptionType: type,
+                reason: modalRes.content
+              })
+              uni.showToast({ title: '已提交异常', icon: 'success' })
+            } catch (err) {
+              proxy.$modal.msgError(err?.msg || '提交失败')
+            }
+          }
+        }
+      })
+    }
+  })
+}
+
 // 历史订单 tab索引计算
 const historyTabIndex = computed(() => {
   const idx = historyTabs.findIndex(t => t.value === historyTab.value)
@@ -869,7 +1139,7 @@ const goToAllOrder = () => {
 // 跳转到订单详情
 const goToOrderDetail = (order) => {
   uni.navigateTo({
-    url: `/pages/order/detail?orderId=${order.orderId}&status=${order.status}&orderNo=${order.orderNo || ''}&serviceType=${order.serviceType || ''}&totalAmount=${order.totalAmount || ''}&bookingTimeText=${encodeURIComponent(formatOrderTime(order.bookingTime))}&createTimeText=${encodeURIComponent(formatOrderTime(order.createTime))}&venueName=${encodeURIComponent(order.venueName || '')}&venueAddress=${encodeURIComponent(order.venueAddress || '')}&venueLongitude=${order.venueLongitude || ''}&venueLatitude=${order.venueLatitude || ''}&userPhone=${encodeURIComponent(order.userPhone || '')}`
+    url: `/pages/order/detail?orderId=${order.orderId}&status=${order.status}`
   })
 }
 
@@ -880,14 +1150,19 @@ onMounted(() => {
   fetchDashboard()
   // 获取历史订单
   fetchHistoryOrders()
-  // 上线状态下进入页面时开始轮询
-  if (isOnline.value) {
+
+  // Mock: 上线状态下自动拉取待接单
+  if (USE_MOCK.value) {
+    isOnline.value = true
+    startPolling()
+  } else if (isOnline.value) {
     startPolling()
   }
 })
 
 onUnmounted(() => {
   stopPolling()
+  stopTimerPolling()
   clearInterval(pendingTimer)
   clearInterval(usedTimer)
   clearInterval(leftTimer)
@@ -1092,6 +1367,10 @@ onUnmounted(() => {
     background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
     color: #fff;
   }
+  .btn-exception {
+    background: $warning;
+    color: #fff;
+  }
   .btn-confirm-depart, .btn-arrive {
     background: $success;
     color: #fff;
@@ -1135,11 +1414,11 @@ onUnmounted(() => {
     }
   }
   .nav-btn {
-    background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+    background: linear-gradient(135deg, $primary-dark 0%, darken($primary, 15%) 100%);
     color: #fff;
   }
   .call-btn {
-    background: $success-light;
+    background: lighten($success, 40%);
     color: $success;
   }
 }

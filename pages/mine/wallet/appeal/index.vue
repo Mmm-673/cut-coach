@@ -5,23 +5,19 @@
     <view class="info-card">
       <view class="card-item">
         <text>扣款类型</text>
-        <text class="text-dark">爽约扣款</text>
+        <text class="text-dark">扣款申诉</text>
       </view>
       <view class="card-item">
         <text>扣款金额</text>
-        <text class="text-red">¥120.00</text>
+        <text class="text-red">¥{{ formatAmount(deductAmount) }}</text>
       </view>
       <view class="card-item">
         <text>订单编号</text>
-        <text class="text-dark">202603151800001</text>
-      </view>
-      <view class="card-item">
-        <text>扣款时间</text>
-        <text class="text-dark">2026-03-15 18:05</text>
+        <text class="text-dark">{{ orderId || '-' }}</text>
       </view>
       <view class="card-item">
         <text>扣款原因</text>
-        <text class="text-dark">未按时到达服务地点，客户取消订单</text>
+        <text class="text-dark">{{ deductReason || '-' }}</text>
       </view>
     </view>
 
@@ -40,27 +36,6 @@
         />
         <view class="count">{{ form.content.length }}/200</view>
       </view>
-
-      <!-- 上传图片 -->
-      <view class="form-item">
-        <text class="label">上传凭证（选填）</text>
-        <view class="upload-wrap">
-          <view
-              v-for="(item, index) in form.images"
-              :key="index"
-              class="upload-item"
-          >
-            <image :src="item" mode="aspectFill" class="upload-img"></image>
-            <view class="del-btn" @click="delImage(index)">
-              <uni-icons type="close" size="16" color="#fff"></uni-icons>
-            </view>
-          </view>
-          <view v-if="form.images.length < 3" class="upload-add" @click="chooseImage">
-            <uni-icons type="camera" size="32" color="#ccc"></uni-icons>
-          </view>
-        </view>
-        <text class="tip">最多上传3张，支持jpg/png</text>
-      </view>
     </view>
 
     <!-- 提交按钮 -->
@@ -78,12 +53,33 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { postDeductionAppeal } from '@/api/billiard/wallet'
+
+// 从URL获取参数
+const recordId = ref('')
+const orderId = ref('')
+const deductReason = ref('')
+const deductAmount = ref(0)
+
+onMounted(() => {
+  const pages = getCurrentPages()
+  const currentPage = pages[pages.length - 1]
+  const options = currentPage.options || {}
+  recordId.value = options.recordId || ''
+  orderId.value = options.orderId || ''
+  deductReason.value = decodeURIComponent(options.reason || '')
+  deductAmount.value = parseInt(options.amount || '0')
+})
+
+// 格式化金额
+const formatAmount = (fen) => {
+  return (fen / 100).toFixed(2)
+}
 
 // 表单数据
 const form = ref({
-  content: '',
-  images: []
+  content: ''
 })
 
 // 加载状态
@@ -91,7 +87,7 @@ const submitting = ref(false)
 
 // 是否可提交
 const canSubmit = computed(() => {
-  return form.value.content.trim().length >= 10 && !submitting.value
+  return form.value.content.trim().length >= 5 && !submitting.value
 })
 
 // 返回
@@ -99,40 +95,25 @@ const handleBack = () => {
   uni.navigateBack()
 }
 
-// 选择图片
-const chooseImage = () => {
-  uni.chooseImage({
-    count: 3 - form.value.images.length,
-    sizeType: ['compressed'],
-    success: (res) => {
-      form.value.images = [...form.value.images, ...res.tempFilePaths]
-    }
-  })
-}
-
-// 删除图片
-const delImage = (index) => {
-  form.value.images.splice(index, 1)
-}
-
 // 提交申诉
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (!canSubmit.value) return
 
   // 校验长度
-  if (form.value.content.length < 10) {
+  if (form.value.content.length < 5) {
     uni.showToast({
-      title: '申诉说明至少10个字',
+      title: '申诉说明至少5个字',
       icon: 'none'
     })
     return
   }
 
   submitting.value = true
-
-  // 模拟提交
-  setTimeout(() => {
-    submitting.value = false
+  try {
+    await postDeductionAppeal({
+      deductionId: parseInt(recordId.value),
+      appealContent: form.value.content.trim()
+    })
     uni.showModal({
       title: '提交成功',
       content: '我们将在1-3个工作日内处理完成，请耐心等待',
@@ -141,7 +122,11 @@ const handleSubmit = () => {
         uni.navigateBack()
       }
     })
-  }, 1500)
+  } catch (err) {
+    uni.showToast({ title: '提交失败', icon: 'none' })
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 

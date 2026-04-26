@@ -87,3 +87,41 @@ export function getOrderDetail(id) {
     params: { id }
   })
 }
+
+// 报告异常
+export function reportException(data) {
+  return request({
+    url: '/coach-api/billiard/exception/report',
+    method: 'post',
+    data
+  })
+}
+
+// ============ 计时器相关 API ============
+
+// 开始计时（启动服务端计时）
+export function startTimer(data) {
+  return request({
+    url: '/coach-api/billiard/timer/start',
+    method: 'post',
+    data
+  })
+}
+
+// 结束计时（停止服务端计时）
+export function endTimer(data) {
+  return request({
+    url: '/coach-api/billiard/timer/end',
+    method: 'post',
+    data
+  })
+}
+
+// 查询计时状态
+export function getTimerStatus(orderId) {
+  return request({
+    url: '/coach-api/billiard/timer/get-status',
+    method: 'get',
+    params: { orderId }
+  })
+}

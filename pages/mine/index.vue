@@ -57,13 +57,13 @@
         <text class="func-name">我的评价</text>
         <uni-icons type="right" size="16" color="$text-tertiary"></uni-icons>
       </view>
-      <view class="func-item" @click="navToBankCard">
-        <view class="func-icon icon-orange">
-          <uni-icons type="creditcard" size="20" color="#F59E0B"></uni-icons>
-        </view>
-        <text class="func-name">银行卡管理</text>
-        <uni-icons type="right" size="16" color="$text-tertiary"></uni-icons>
-      </view>
+<!--      <view class="func-item" @click="navToBankCard">-->
+<!--        <view class="func-icon icon-orange">-->
+<!--          <uni-icons type="creditcard" size="20" color="#F59E0B"></uni-icons>-->
+<!--        </view>-->
+<!--        <text class="func-name">银行卡管理</text>-->
+<!--        <uni-icons type="right" size="16" color="$text-tertiary"></uni-icons>-->
+<!--      </view>-->
       <view class="func-item" @click="navToService">
         <view class="func-icon icon-purple">
           <uni-icons type="headphones" size="20" color="#8B5CF6"></uni-icons>
@@ -138,12 +138,21 @@ const fetchCoachProfile = async () => {
 
 // 获取钱包余额
 const fetchWalletBalance = async () => {
+  // ========== Mock数据测试 ==========
+  await new Promise(r => setTimeout(r, 300))
+  walletInfo.value = {
+    balance: 50000, // 500元 mock数据
+    freezePrice: 0
+  }
+  return
+  // ==================================
+
   try {
     const res = await getWalletBalance()
-    if (res.data) {
+    if (res) {
       walletInfo.value = {
-        balance: res.data.balance ?? 0,
-        freezePrice: res.data.freezePrice ?? 0
+        balance: Number(res.balance) || 0,
+        freezePrice: Number(res.freezePrice) || 0
       }
     }
   } catch (err) {
@@ -159,17 +168,20 @@ const handleEdit = () => {
 }
 
 const handleWithdraw = () => {
+  // 余额为0时提示
+  if (!walletInfo.value.balance || walletInfo.value.balance <= 0) {
+    uni.showToast({
+      title: '余额不足，无法提现',
+      icon: 'none'
+    })
+    return
+  }
+
   uni.showModal({
     title: '提现',
-    content: `当前可提现余额：¥${(walletInfo.balance / 100).toFixed(2)}`,
+    content: `当前可提现余额：¥${(walletInfo.value.balance / 100).toFixed(2)}`,
     success: (res) => {
-      if (res.confirm) {
-        uni.showLoading({ title: '跳转提现页...' })
-        setTimeout(() => {
-          uni.hideLoading()
-          uni.navigateTo({ url: '/pages/mine/wallet/withdraw/index' })
-        }, 800)
-      }
+      uni.navigateTo({ url: '/pages/mine/wallet/withdraw/index' })
     }
   })
 }
@@ -190,9 +202,9 @@ const navToEvaluate = () => {
   uni.navigateTo({ url: '/pages/mine/evaluate/index' })
 }
 
-const navToBankCard = () => {
-  uni.navigateTo({ url: '/pages/wallet/bank-card' })
-}
+// const navToBankCard = () => {
+//   uni.navigateTo({ url: '/pages/wallet/bank-card' })
+// }
 
 const navToService = () => {
   uni.navigateTo({ url: '/pages/service/index' })

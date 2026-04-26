@@ -29,20 +29,54 @@
       </view>
     </view>
 
-    <!-- 到账银行卡 -->
-    <view class="bank-section" @click="chooseBank">
-      <text class="section-title">到账银行卡</text>
+    <!-- 到账方式 -->
+    <view class="bank-section" @click="chooseAccountType">
+      <text class="section-title">到账方式</text>
       <view class="bank-info">
         <view class="bank-left">
           <view class="bank-icon-wrap">
-            <uni-icons type="card" size="24" color="#007aff" />
+            <image
+              v-if="accountType === 1"
+              src="/static/font/wx.png"
+              class="account-icon"
+              mode="aspectFit"
+            />
+            <image
+              v-else-if="accountType === 2"
+              src="/static/font/zfb.png"
+              class="account-icon"
+              mode="aspectFit"
+            />
+            <uni-icons v-else type="card" size="24" color="#007aff" />
           </view>
           <view class="bank-detail">
-            <text class="bank-name">{{ bankCard }}</text>
+            <text class="bank-name">{{ accountType ? (accountType === 1 ? '微信' : '支付宝') : '请选择到账方式' }}</text>
             <text class="bank-arrive-tip">预计1-3个工作日到账</text>
           </view>
         </view>
         <uni-icons type="right" size="16" color="#ccc" />
+      </view>
+    </view>
+
+    <!-- 收款账号 -->
+    <view class="form-section" v-if="accountType">
+      <view class="form-item">
+        <text class="form-label">收款账号</text>
+        <input
+          v-model="accountNo"
+          type="text"
+          class="form-input"
+          :placeholder="accountType === 1 ? '请输入微信号' : '请输入支付宝账号'"
+        />
+      </view>
+      <view class="form-item">
+        <text class="form-label">收款实名</text>
+        <input
+          v-model="realName"
+          type="text"
+          class="form-input"
+          placeholder="请输入收款人姓名"
+        />
       </view>
     </view>
 
@@ -59,15 +93,17 @@
     </view>
 
     <!-- 确认提现按钮 -->
-    <view class="btn-area">
-      <button
-          class="confirm-btn"
-          :class="{ disabled: !canWithdraw || submitting }"
-          :loading="submitting"
-          @click="handleConfirm"
-      >
-        确认提现
-      </button>
+    <view class="footer">
+      <view class="btn-row">
+        <button
+            class="btn-primary"
+            :class="{ disabled: !canWithdraw || submitting }"
+            :loading="submitting"
+            @click="handleConfirm"
+        >
+          确认提现
+        </button>
+      </view>
     </view>
 
     <!-- 提现须知 -->
@@ -102,25 +138,91 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { getWalletBalance, getWithdrawalPage, createWithdrawal } from '@/api/billiard/wallet'
 
-const usableBalance = ref('2580.00')
+const usableBalance = ref('0.00')
 const withdrawAmount = ref('')
 const serviceFee = ref('0.00')
 const actualAmount = ref('0.00')
-const bankCard = ref('招商银行(尾号8975)')
 const submitting = ref(false)
 
-const recentRecords = ref([
-  { desc: '提现到招商银行', amount: '1500.00', status: '已到账', time: '2024-05-15 14:32:11' },
-  { desc: '提现到招商银行', amount: '2000.00', status: '已到账', time: '2024-05-08 09:15:47' },
-  { desc: '提现到招商银行', amount: '1800.00', status: '已到账', time: '2024-04-28 16:48:23' }
-])
+// 提现表单
+const accountType = ref(2) // 1=微信, 2=支付宝（默认支付宝）
+const accountNo = ref('')
+const realName = ref('')
+
+const recentRecords = ref([])
+
+// 状态映射
+const statusMap = {
+  0: '待处理',
+  1: '处理中',
+  2: '已到账',
+  3: '已驳回'
+}
+
+// 账号类型映射
+const accountTypeMap = {
+  1: '微信',
+  2: '支付宝'
+}
+
+// 获取钱包余额
+const fetchWalletBalance = async () => {
+  try {
+    const res = await getWalletBalance()
+    if (res) {
+      usableBalance.value = (Number(res.data.balance) / 100).toFixed(2)
+    }
+  } catch (err) {
+    console.error('获取钱包余额失败', err)
+  }
+}
+
+// 获取最近提现记录（默认3条）
+const fetchRecentRecords = async () => {
+  // ========== Mock数据测试 ==========
+  await new Promise(r => setTimeout(r, 300))
+  recentRecords.value = [
+    { desc: '提现到微信', amount: '500.00', status: '已到账', time: '2026-04-25 18:05:00' },
+    { desc: '提现到支付宝', amount: '300.00', status: '处理中', time: '2026-04-24 10:30:00' },
+    { desc: '提现到微信', amount: '200.00', status: '待处理', time: '2026-04-23 09:15:00' }
+  ]
+  return
+  // ==================================
+
+  try {
+    const res = await getWithdrawalPage({
+      pageNo: 1,
+      pageSize: 3
+    })
+    if (res.data && res.data.list) {
+      recentRecords.value = res.data.list.map(item => ({
+        desc: `提现到${accountTypeMap[item.accountType] || '银行卡'}`,
+        amount: (Number(item.withdrawAmount) / 100).toFixed(2),
+        status: statusMap[item.status] || '未知',
+        time: item.applyTime || ''
+      }))
+    }
+  } catch (err) {
+    console.error('获取提现记录失败', err)
+  }
+}
+
+onMounted(() => {
+  fetchWalletBalance()
+  fetchRecentRecords()
+})
 
 const canWithdraw = computed(() => {
   const amount = parseFloat(withdrawAmount.value || 0)
   const balance = parseFloat(usableBalance.value)
-  return amount >= 100 && amount <= balance && !submitting.value
+  return amount >= 100 && amount <= balance &&
+         accountType.value > 0 &&
+         accountNo.value.trim().length > 0 &&
+         realName.value.trim().length > 0 &&
+         !submitting.value
 })
 
 const handleBack = () => uni.navigateBack()
@@ -149,24 +251,61 @@ const calculateFee = () => {
   actualAmount.value = amount.toFixed(2)
 }
 
-const chooseBank = () => uni.showToast({ title: '选择银行卡', icon: 'none' })
+// 选择到账方式（微信/支付宝）
+const chooseAccountType = () => {
+  uni.showActionSheet({
+    itemList: ['微信', '支付宝'],
+    success: (res) => {
+      accountType.value = res.tapIndex + 1 // 1=微信, 2=支付宝
+      accountNo.value = ''
+      realName.value = ''
+    }
+  })
+}
+
 const showQuotaDesc = () => uni.showModal({ title: '限额说明', content: '单笔最低100元，最高50000元', showCancel: false })
 
-const handleConfirm = () => {
-  if (!canWithdraw.value) return uni.showToast({ title: '请输入有效金额', icon: 'none' })
+const handleConfirm = async () => {
+  if (!canWithdraw.value) {
+    if (!accountType.value) {
+      return uni.showToast({ title: '请选择到账方式', icon: 'none' })
+    }
+    if (!accountNo.value.trim()) {
+      return uni.showToast({ title: '请输入收款账号', icon: 'none' })
+    }
+    if (!realName.value.trim()) {
+      return uni.showToast({ title: '请输入收款姓名', icon: 'none' })
+    }
+    return uni.showToast({ title: '请输入有效金额', icon: 'none' })
+  }
+
   submitting.value = true
-  setTimeout(() => {
-    submitting.value = false
+  try {
+    const withdrawAmountFen = Math.round(parseFloat(withdrawAmount.value) * 100)
+    await createWithdrawal({
+      withdrawAmount: withdrawAmountFen,
+      accountType: accountType.value,
+      accountNo: accountNo.value.trim(),
+      realName: realName.value.trim()
+    })
+
     uni.showModal({
       title: '提现申请成功',
       content: '预计1-3个工作日到账',
       showCancel: false,
-      success: () => uni.navigateBack()
+      success: () => {
+        uni.navigateBack()
+      }
     })
-  }, 1500)
+  } catch (err) {
+    console.error('提现失败', err)
+    uni.showToast({ title: err?.msg || '提现失败', icon: 'none' })
+  } finally {
+    submitting.value = false
+  }
 }
 
-const viewAllRecord = () => uni.navigateTo({ url: '/pages/wallet/withdraw-record' })
+const viewAllRecord = () => uni.navigateTo({ url: '/pages/mine/wallet/withdraw-record/index' })
 </script>
 
 <style scoped lang="scss">
@@ -310,6 +449,12 @@ const viewAllRecord = () => uni.navigateTo({ url: '/pages/wallet/withdraw-record
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+}
+.account-icon {
+  width: 50rpx;
+  height: 50rpx;
+  border-radius: 8rpx;
 }
 .bank-detail {
   display: flex;
@@ -324,6 +469,37 @@ const viewAllRecord = () => uni.navigateTo({ url: '/pages/wallet/withdraw-record
 .bank-arrive-tip {
   font-size: 28rpx;
   color: #999;
+}
+
+.form-section {
+  background-color: #fff;
+  margin: 0 30rpx 30rpx;
+  border-radius: 20rpx;
+  padding: 30rpx;
+}
+.form-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+.form-item:last-child {
+  border-bottom: none;
+}
+.form-label {
+  width: 140rpx;
+  font-size: 30rpx;
+  color: #333;
+}
+.form-input {
+  flex: 1;
+  font-size: 30rpx;
+  color: #333;
+  text-align: right;
+  padding: 0;
+}
+.form-input::placeholder {
+  color: #ccc;
 }
 
 .fee-section {
@@ -356,26 +532,43 @@ const viewAllRecord = () => uni.navigateTo({ url: '/pages/wallet/withdraw-record
   font-weight: 500;
 }
 
-.btn-area {
+.footer {
   position: fixed;
-  bottom: 40rpx;
-  left: 30rpx;
-  right: 30rpx;
-  z-index: 10;
-}
-.confirm-btn {
-  width: 100%;
-  height: 88rpx;
-  line-height: 88rpx;
-  background-color: #007aff;
-  color: #fff;
-  border-radius: 16rpx;
-  font-size: 34rpx;
-  border: none;
-}
-.confirm-btn.disabled {
-  background-color: #ccc;
-  color: #fff;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  padding: 20rpx 32rpx;
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  z-index: 99;
+
+  .btn-row {
+    display: flex;
+    gap: 24rpx;
+  }
+
+  .btn-primary {
+    flex: 1;
+    height: 88rpx;
+    line-height: 88rpx;
+    border-radius: 16rpx;
+    font-size: 32rpx;
+    font-weight: 600;
+    background: linear-gradient(135deg, #007aff 0%, #0056ff 100%);
+    color: #fff;
+    border: none;
+    &::after { border: none; }
+  }
+
+  .btn-primary.disabled {
+    background: #ccc;
+    color: #fff;
+  }
 }
 
 .notice-section {

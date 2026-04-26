@@ -97,7 +97,8 @@
 		sendSmsCode
 	} from '@/api/login'
 	import {
-		updateLocation
+		updateLocation,
+		getWorkStatus
 	} from '@/api/billiard/coach'
 	import {
 		getLocation as getPlatformLocation,
@@ -251,15 +252,36 @@
 
 	function loginSuccess() {
 		userStore.getInfo().then(() => {
-			// 登录成功后上报位置
-			reportLocationAfterLogin()
+			// 登录成功后检查状态并上报位置
+			checkAndReportLocation()
 		}).catch(() => {
 			// 即使获取用户信息失败，也尝试上报位置
-			reportLocationAfterLogin()
+			checkAndReportLocation()
 		})
 	}
 
-	// 登录成功后获取位置并上报（多端兼容）
+	// 检查工作状态并上报位置
+	async function checkAndReportLocation() {
+		try {
+			// 先查询当前工作状态
+			const statusRes = await getWorkStatus()
+			const isOnline = statusRes?.data?.workStatus === 1
+
+			if (isOnline) {
+				// 在线状态才上报位置
+				await reportLocationAfterLogin()
+			} else {
+				// 离线状态直接跳转
+				proxy.$tab.reLaunch('/pages/work/index')
+			}
+		} catch (err) {
+			console.error('检查工作状态失败', err)
+			// 检查失败也直接跳转
+			proxy.$tab.reLaunch('/pages/work/index')
+		}
+	}
+
+	// 上报位置并跳转（仅在线状态调用）
 	async function reportLocationAfterLogin() {
 		const platform = getPlatform()
 		console.log('当前平台:', platform)

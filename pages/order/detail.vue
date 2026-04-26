@@ -64,7 +64,6 @@
         </view>
         <button
             class="nav-btn"
-            :class="{ 'nav-btn-disabled': !isProcessing }"
             @click="navigate"
         >
           <uni-icons type="location-filled" size="20" color="#fff" />
@@ -248,6 +247,46 @@ const formatTime = (timestamp) => {
 const fetchOrderDetail = async () => {
   if (!orderId.value) return
 
+  // ========== Mock数据测试 ==========
+  await new Promise(r => setTimeout(r, 300))
+  const mockOrderData = {
+    orderId: orderId.value,
+    orderNo: '202604261000001',
+    serviceType: 1, // 1=台球陪练
+    serviceDuration: 120, // 120分钟
+    totalAmount: 30000, // 300元
+    bookingTime: Date.now() + 30 * 60 * 1000,
+    createTime: Date.now() - 10 * 60 * 1000,
+    startTime: Date.now() - 20 * 60 * 1000, // 20分钟前开始
+    venueName: '星牌台球俱乐部',
+    venueAddress: '北京市朝阳区建国路88号SOHO现代城',
+    venueLongitude: 116.397128,
+    venueLatitude: 39.916527,
+    venueImg: 'https://picsum.photos/750/300',
+    userPhone: '138****8000'
+  }
+
+  orderInfo.value = {
+    ...mockOrderData,
+    bookingTimeText: formatTime(mockOrderData.bookingTime),
+    createTimeText: formatTime(mockOrderData.createTime)
+  }
+
+  // 如果是进行中订单，启动计时
+  if (orderStatus.value === ORDER_STATUS.PROCESSING) {
+    if (mockOrderData.startTime) {
+      usedSec.value = Math.floor((Date.now() - mockOrderData.startTime) / 1000)
+    }
+    if (mockOrderData.serviceDuration && mockOrderData.startTime) {
+      const elapsed = Math.floor((Date.now() - mockOrderData.startTime) / 1000)
+      const total = mockOrderData.serviceDuration * 60
+      leftSec.value = Math.max(0, total - elapsed)
+    }
+    startTimer()
+  }
+  return
+  // ==================================
+
   try {
     const res = await getOrderDetail(orderId.value)
     if (res.data) {
@@ -332,9 +371,6 @@ onLoad((options) => {
 
 // 导航
 const navigate = () => {
-  if (!isProcessing.value) {
-    return uni.showToast({ title: '服务已结束，无需导航', icon: 'none' })
-  }
 
   const { venueLatitude, venueLongitude, venueName, venueAddress } = orderInfo.value
   if (!venueLatitude || !venueLongitude) {
@@ -595,12 +631,6 @@ onUnload(() => {
     &:active {
       transform: scale(0.95);
     }
-  }
-  /* 导航禁用样式：置灰+不可点击 */
-  .nav-btn-disabled {
-    background: $border !important;
-    opacity: 0.5;
-    pointer-events: none;
   }
 }
 

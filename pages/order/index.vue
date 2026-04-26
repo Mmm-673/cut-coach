@@ -281,7 +281,7 @@ const handleTabClick = (value) => {
 // 跳转到订单详情
 const goToDetail = (order) => {
   uni.navigateTo({
-    url: `/pages/order/detail?orderId=${order.orderId}&status=${order.status}&orderNo=${order.orderNo || ''}&serviceType=${order.serviceType || ''}&totalAmount=${order.totalAmount || ''}&bookingTimeText=${encodeURIComponent(order.bookingTimeText || '')}&createTimeText=${encodeURIComponent(order.createTimeText || '')}&venueName=${encodeURIComponent(order.venueName || '')}&venueAddress=${encodeURIComponent(order.venueAddress || '')}&venueLongitude=${order.venueLongitude || ''}&venueLatitude=${order.venueLatitude || ''}&userPhone=${encodeURIComponent(order.userPhone || '')}`
+    url: `/pages/order/detail?orderId=${order.orderId}&status=${order.status}`
   })
 }
 

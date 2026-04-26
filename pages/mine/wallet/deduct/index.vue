@@ -39,10 +39,10 @@
           <view class="status-tag" :class="getStatusClass(item.status)">
             {{ getStatusText(item.status) }}
           </view>
-          <view class="amount red">-¥{{ (item.deductionAmount / 100).toFixed(2) }}</view>
+          <view class="amount red">-¥{{ (item.deductAmount / 100).toFixed(2) }}</view>
         </view>
-        <view class="order-no">订单号：{{ item.orderNo || '-' }}</view>
-        <view class="reason">扣款原因：{{ item.reason || '-' }}</view>
+        <view class="order-no">订单号：{{ item.orderId || '-' }}</view>
+        <view class="reason">扣款原因：{{ item.deductReason || '-' }}</view>
         <view class="item-bottom">
           <view class="time">{{ formatTime(item.createTime) }}</view>
           <view
@@ -80,6 +80,19 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { getDeductionPage } from '@/api/billiard/wallet'
+
+// ========== 模拟数据 - 测试用 ==========
+const mockData = {
+  total: 5,
+  list: [
+    { id: 81001, orderId: 9527, deductAmount: 5000, deductReason: '服务迟到扣款', status: 0, appealContent: null, appealTime: null, resolveNote: null, resolveTime: null, createTime: '2026-04-25 10:00:00' },
+    { id: 81002, orderId: 9528, deductAmount: 8000, deductReason: '用户投诉扣款', status: 1, appealContent: '我认为服务没有问题，已按时到达', appealTime: '2026-04-24 15:30:00', resolveNote: null, resolveTime: null, createTime: '2026-04-24 10:00:00' },
+    { id: 81003, orderId: 9529, deductAmount: 3000, deductReason: '中途取消扣款', status: 2, appealContent: '已提前沟通取消', appealTime: '2026-04-23 09:00:00', resolveNote: '经核实，教练确认取消', resolveTime: '2026-04-23 18:00:00', createTime: '2026-04-23 08:00:00' },
+    { id: 81004, orderId: 9530, deductAmount: 10000, deductReason: '违规操作扣款', status: 3, appealContent: '从未违规', appealTime: '2026-04-22 14:00:00', resolveNote: '申诉成功，已退款', resolveTime: '2026-04-22 20:00:00', createTime: '2026-04-22 12:00:00' },
+    { id: 81005, orderId: 9531, deductAmount: 2000, deductReason: '迟到扣款', status: 0, appealContent: null, appealTime: null, resolveNote: null, resolveTime: null, createTime: '2026-04-21 09:00:00' }
+  ]
+}
+// =====================================
 
 // 标签栏数据
 const tabList = [
@@ -143,10 +156,28 @@ const fetchDeductionRecords = async (reset = false) => {
 
   loading.value = true
   try {
+    // ========== 模拟数据测试 ==========
+    await new Promise(r => setTimeout(r, 300))
+    const list = mockData.list
+    if (reset) {
+      recordList.value = list
+      pageNo.value = 1
+      totalDeduction.value = list.reduce((sum, item) => sum + item.deductAmount, 0)
+    } else {
+      recordList.value = [...recordList.value, ...list]
+      pageNo.value++
+    }
+    hasMore.value = false
+    loading.value = false
+    return
+    // ==================================
+
     const params = {
       pageNo: reset ? 1 : pageNo.value,
-      pageSize: pageSize.value,
-      status: activeTab.value
+      pageSize: pageSize.value
+    }
+    if (activeTab.value !== null) {
+      params.status = activeTab.value
     }
 
     const res = await getDeductionPage(params)
@@ -200,7 +231,7 @@ const handleAppeal = (item) => {
     return
   }
   uni.navigateTo({
-    url: `/pages/mine/wallet/appeal/index?recordId=${item.id}&orderNo=${item.orderNo || ''}&reason=${encodeURIComponent(item.reason || '')}&amount=${item.deductionAmount}`
+    url: `/pages/mine/wallet/appeal/index?recordId=${item.id}&orderId=${item.orderId || ''}&reason=${encodeURIComponent(item.deductReason || '')}&amount=${item.deductAmount}`
   })
 }
 

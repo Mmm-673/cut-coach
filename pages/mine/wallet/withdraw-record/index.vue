@@ -53,7 +53,7 @@
           </view>
           <view class="item-title">{{ getAccountTypeText(item.accountType) }}</view>
           <view class="bank-info">{{ item.realName }} {{ maskAccountNo(item.accountNo) }}</view>
-          <view class="create-time">申请时间：{{ formatTime(item.createTime) }}</view>
+          <view class="create-time">申请时间：{{ formatTime(item.applyTime) }}</view>
         </view>
         <view class="item-right">
           <view class="amount">¥{{ (item.withdrawAmount / 100).toFixed(2) }}</view>
@@ -79,6 +79,19 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { getWithdrawalPage } from '@/api/billiard/wallet'
+
+// ========== 模拟数据 - 测试用 ==========
+const mockData = {
+  total: 5,
+  list: [
+    { id: 70001, withdrawAmount: 30000, accountType: 2, accountNo: 'coach@example.com', realName: '张三', status: 0, rejectReason: null, applyTime: '2026-04-25 18:05:00', handleTime: null, payTime: null },
+    { id: 70002, withdrawAmount: 50000, accountType: 1, accountNo: 'wx1234567890', realName: '李四', status: 1, rejectReason: null, applyTime: '2026-04-24 10:30:00', handleTime: '2026-04-24 11:00:00', payTime: null },
+    { id: 70003, withdrawAmount: 80000, accountType: 2, accountNo: 'alipay9876543210', realName: '王五', status: 2, rejectReason: null, applyTime: '2026-04-23 09:15:00', handleTime: '2026-04-23 14:00:00', payTime: '2026-04-23 15:30:00' },
+    { id: 70004, withdrawAmount: 20000, accountType: 1, accountNo: 'wx5678901234', realName: '赵六', status: 3, rejectReason: '账号信息有误', applyTime: '2026-04-22 16:45:00', handleTime: '2026-04-22 18:00:00', payTime: null },
+    { id: 70005, withdrawAmount: 100000, accountType: 2, accountNo: 'alipay1234567890', realName: '钱七', status: 0, rejectReason: null, applyTime: '2026-04-21 08:00:00', handleTime: null, payTime: null }
+  ]
+}
+// =====================================
 
 // 标签栏数据
 const tabList = [
@@ -176,6 +189,26 @@ const fetchWithdrawalRecords = async (reset = false) => {
 
   loading.value = true
   try {
+    // ========== 模拟数据测试 ==========
+    await new Promise(r => setTimeout(r, 300))
+    const list = mockData.list
+    if (reset) {
+      recordList.value = list
+      pageNo.value = 1
+      let total = 0, pending = 0, cnt = 0
+      list.forEach(item => {
+        total += item.withdrawAmount; cnt++
+        if (item.status === 0 || item.status === 1) pending += item.withdrawAmount
+      })
+      totalWithdraw.value = total; pendingWithdraw.value = pending; totalCount.value = cnt
+    } else {
+      recordList.value = [...recordList.value, ...list]; pageNo.value++
+    }
+    hasMore.value = false
+    loading.value = false
+    return
+    // ==================================
+
     const params = {
       pageNo: reset ? 1 : pageNo.value,
       pageSize: pageSize.value
@@ -188,24 +221,26 @@ const fetchWithdrawalRecords = async (reset = false) => {
     const res = await getWithdrawalPage(params)
     if (res.data) {
       const list = res.data.list || []
-      // 计算统计数据
-      let total = 0
-      let pending = 0
-      let count = 0
-      list.forEach(item => {
-        total += item.withdrawAmount
-        count++
-        if (item.status === 0 || item.status === 1) {
-          pending += item.withdrawAmount
-        }
-      })
 
       if (reset) {
         recordList.value = list
         pageNo.value = 1
-        totalWithdraw.value = res.data.totalWithdraw || total
-        pendingWithdraw.value = res.data.pendingWithdraw || pending
-        totalCount.value = res.data.totalCount || count
+        // 只有一页数据时，从列表计算统计
+        if (res.data.total <= pageSize.value && list.length > 0) {
+          let total = 0
+          let pending = 0
+          let cnt = 0
+          list.forEach(item => {
+            total += item.withdrawAmount
+            cnt++
+            if (item.status === 0 || item.status === 1) {
+              pending += item.withdrawAmount
+            }
+          })
+          totalWithdraw.value = total
+          pendingWithdraw.value = pending
+          totalCount.value = cnt
+        }
       } else {
         recordList.value = [...recordList.value, ...list]
         pageNo.value++
