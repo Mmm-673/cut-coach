@@ -1,0 +1,23 @@
+pages/work/index.vue
+  da29efd52c175548 1017-1018
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "334f853734955cd43761c83189af62d2f7959890",
+  "prompts": {
+    "da29efd52c175548": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5d9c4a14-8a96-4105-a0b4-434011f631bd",
+        "model": "MiniMax-M2.7"
+      },
+      "human_author": "Ma",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 383,
+      "accepted_lines": 4481,
+      "overriden_lines": 0
+    }
+  }
+}
