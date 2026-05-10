@@ -320,63 +320,6 @@ const displayHistoryOrders = computed(() => {
 // 获取历史订单
 const fetchHistoryOrders = async () => {
   try {
-    // TODO: 上线前删除这段模拟数据
-    const USE_MOCK = true
-    if (USE_MOCK) {
-      const now = Date.now()
-      historyOrders.value = [
-        {
-          orderId: 1001,
-          orderNo: '202604181000001',
-          serviceType: 1,
-          bookingTime: now - 2 * 60 * 60 * 1000,
-          totalAmount: 20000,
-          status: 60,
-          createTime: now - 3 * 60 * 60 * 1000,
-          venueName: '星牌台球俱乐部',
-          venueAddress: '北京市朝阳区建国路88号SOHO现代城',
-          userPhone: '138****8888'
-        },
-        {
-          orderId: 1002,
-          orderNo: '202604171430002',
-          serviceType: 1,
-          bookingTime: now - 24 * 60 * 60 * 1000,
-          totalAmount: 12800,
-          status: 60,
-          createTime: now - 25 * 60 * 60 * 1000,
-          venueName: '来力台球会所',
-          venueAddress: '上海市浦东新区张杨路1000号',
-          userPhone: '139****6666'
-        },
-        {
-          orderId: 1003,
-          orderNo: '202604161030003',
-          serviceType: 2,
-          bookingTime: now - 48 * 60 * 60 * 1000,
-          totalAmount: 36000,
-          status: 70,
-          createTime: now - 50 * 60 * 60 * 1000,
-          venueName: '金台球俱乐部',
-          venueAddress: '广州市天河区天河路100号',
-          userPhone: '136****5555'
-        },
-        {
-          orderId: 1004,
-          orderNo: '202604151030004',
-          serviceType: 1,
-          bookingTime: now - 72 * 60 * 60 * 1000,
-          totalAmount: 18000,
-          status: 50,
-          createTime: now - 73 * 60 * 60 * 1000,
-          venueName: '绅士台球厅',
-          venueAddress: '深圳市南山区科技园路200号',
-          userPhone: '135****4444'
-        }
-      ]
-      return
-    }
-
     const res = await getOrderPage({
       pageNo: historyPageNo.value,
       pageSize: historyPageSize.value,
@@ -692,39 +635,8 @@ const stopPolling = () => {
   }
 }
 
-// ====================== Mock数据 ======================
-const USE_MOCK = ref(true)
-
-const mockPendingOrder = {
-  orderId: 9527,
-  orderNo: '202604261000001',
-  userPhone: '138****8000',
-  venueName: '星牌台球俱乐部',
-  venueAddress: '北京市朝阳区建国路88号SOHO现代城',
-  venueLongitude: 116.397128,
-  venueLatitude: 39.916527,
-  serviceType: 1,
-  bookingTime: Date.now() + 30 * 60 * 1000,
-  serviceDuration: 3600,
-  totalAmount: 20000,
-  expireAt: Date.now() + 120 * 1000,
-  createTime: Date.now() - 5 * 60 * 1000
-}
-
-const mockAcceptedOrder = ref({ ...mockPendingOrder })
-// =====================================================
-
 // 查询待接单列表
 const fetchPendingOrders = async () => {
-  if (USE_MOCK.value) {
-    stopPolling()
-    pendingOrder.value = { ...mockPendingOrder }
-    orderStatus.value = 'pending'
-    pendingCountdown.value = 120
-    startPendingCountdown()
-    return
-  }
-
   try {
     const res = await getPendingOrders()
     if (res.data && res.data?.list?.length > 0) {
@@ -797,17 +709,6 @@ const rejectOrder = () => {
 
 // 接单
 const acceptOrder = async () => {
-  if (USE_MOCK.value) {
-    uni.showLoading({ title: '接单中...' })
-    await new Promise(r => setTimeout(r, 500))
-    uni.hideLoading()
-    clearInterval(pendingTimer)
-    orderStatus.value = 'accepted'
-    mockAcceptedOrder.value = { ...mockPendingOrder }
-    uni.showToast({ title: '接单成功', icon: 'success' })
-    return
-  }
-
   uni.showLoading({ title:'接单中...' })
   try {
     await acceptOrderApi({
@@ -826,13 +727,6 @@ const acceptOrder = async () => {
 
 // 确认出发
 const confirmDeparture = async () => {
-  if (USE_MOCK.value) {
-    mockAcceptedOrder.value.departureConfirmTime = new Date().toISOString()
-    pendingOrder.value = { ...mockAcceptedOrder.value }
-    uni.showToast({ title: '已确认出发', icon: 'success' })
-    return
-  }
-
   try {
     await confirmDepartureApi({
       orderId: pendingOrder.value.orderId
@@ -847,13 +741,6 @@ const confirmDeparture = async () => {
 
 // 到达服务地址
 const arrive = async () => {
-  if (USE_MOCK.value) {
-    mockAcceptedOrder.value.arriveTime = new Date().toISOString()
-    pendingOrder.value = { ...mockAcceptedOrder.value }
-    uni.showToast({ title: '已到达', icon: 'success' })
-    return
-  }
-
   // 校验当前位置是否在球厅范围内（200米内）
   uni.showLoading({ title: '校验位置...' })
   try {
@@ -903,15 +790,6 @@ const arrive = async () => {
 
 // 开始服务
 const startService = async () => {
-  if (USE_MOCK.value) {
-    mockAcceptedOrder.value.startTime = new Date().toISOString()
-    pendingOrder.value = { ...mockAcceptedOrder.value }
-    orderStatus.value = 'serving'
-    startServeTimer()
-    uni.showToast({ title: '服务已开始', icon: 'success' })
-    return
-  }
-
   try {
     // 1. 调用订单开始服务API
     await startServiceApi({
@@ -1010,15 +888,6 @@ const endService = () => {
     content: '确定要结束当前服务吗？',
     success: async (res) => {
       if (res.confirm) {
-        if (USE_MOCK.value) {
-          clearInterval(usedTimer)
-          clearInterval(leftTimer)
-          stopTimerPolling()
-          orderStatus.value = 'idle'
-          uni.showToast({ title: '服务已结束', icon: 'success' })
-          return
-        }
-
         try {
           // 1. 调用计时器结束API，获取实际服务时长
           const timerResp = await endTimerApi({
@@ -1097,11 +966,6 @@ const showReportException = () => {
         success: async (modalRes) => {
           if (modalRes.confirm && modalRes.content) {
             try {
-              if (USE_MOCK.value) {
-                await new Promise(r => setTimeout(r, 500))
-                uni.showToast({ title: '已提交异常', icon: 'success' })
-                return
-              }
               await reportExceptionApi({
                 orderId: pendingOrder.value.orderId,
                 exceptionType: type,
@@ -1150,12 +1014,8 @@ onMounted(() => {
   fetchDashboard()
   // 获取历史订单
   fetchHistoryOrders()
-
-  // Mock: 上线状态下自动拉取待接单
-  if (USE_MOCK.value) {
-    isOnline.value = true
-    startPolling()
-  } else if (isOnline.value) {
+  // 如果已上线，开始轮询
+  if (isOnline.value) {
     startPolling()
   }
 })

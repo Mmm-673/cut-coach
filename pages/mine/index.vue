@@ -138,15 +138,6 @@ const fetchCoachProfile = async () => {
 
 // 获取钱包余额
 const fetchWalletBalance = async () => {
-  // ========== Mock数据测试 ==========
-  await new Promise(r => setTimeout(r, 300))
-  walletInfo.value = {
-    balance: 50000, // 500元 mock数据
-    freezePrice: 0
-  }
-  return
-  // ==================================
-
   try {
     const res = await getWalletBalance()
     if (res) {

@@ -182,16 +182,6 @@ const fetchWalletBalance = async () => {
 
 // 获取最近提现记录（默认3条）
 const fetchRecentRecords = async () => {
-  // ========== Mock数据测试 ==========
-  await new Promise(r => setTimeout(r, 300))
-  recentRecords.value = [
-    { desc: '提现到微信', amount: '500.00', status: '已到账', time: '2026-04-25 18:05:00' },
-    { desc: '提现到支付宝', amount: '300.00', status: '处理中', time: '2026-04-24 10:30:00' },
-    { desc: '提现到微信', amount: '200.00', status: '待处理', time: '2026-04-23 09:15:00' }
-  ]
-  return
-  // ==================================
-
   try {
     const res = await getWithdrawalPage({
       pageNo: 1,
