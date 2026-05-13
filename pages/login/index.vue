@@ -4,8 +4,7 @@
 			<view class="logo-box">
 				<image class="logo-img" :src="globalConfig.appInfo.logo" mode="aspectFit"></image>
 			</view>
-			<text class="app-title">台球助教端</text>
-			<text class="app-subtitle">欢迎回来，请登录您的账号</text>
+			<text class="app-subtitle">欢迎回来，请登录您的裁教账号</text>
 		</view>
 
 		<view class="login-form-content">
@@ -27,11 +26,11 @@
 
 				<view class="input-item flex align-center" v-if="loginForm.loginType === 'pwd'">
 					<view class="iconfont icon-password icon"></view>
-					<input v-model="loginForm.password" :type="showPassword ? 'text' : 'password'" class="input"
+					<input class="input" v-model="loginForm.password" :password="!showPassword"
 						placeholder="请输入密码" maxlength="20" :focus="focusIndex === 1" @focus="onInputFocus(1)"
 						@blur="onInputBlur" confirm-type="done" @confirm="handleLogin" />
 					<view class="password-toggle" @click="showPassword = !showPassword">
-						<text :class="['iconfont', showPassword ? 'icon-eye-open' : 'icon-eye-close']"></text>
+						<uni-icons :type="showPassword ? 'eye' : 'eye-slash'" size="20" color="#999"></uni-icons>
 					</view>
 				</view>
 
@@ -406,186 +405,185 @@
 
 <style lang="scss" scoped>
 page {
-  background: linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%);
+	background: linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%);
 }
 
 .normal-login-container {
-  min-height: 100vh;
-  padding: 0 60rpx;
-  box-sizing: border-box;
+	min-height: 100vh;
+	box-sizing: border-box;
+	padding: 120rpx 48rpx 40rpx;
+	padding-top: calc(120rpx + var(--status-bar-height));
+	padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
 
-  .logo-section {
-    padding-top: 120rpx;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 80rpx;
+	.logo-section {
+		padding-top: 120rpx;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin-bottom: 80rpx;
 
-    .logo-box {
-      width: 140rpx;
-      height: 140rpx;
-      background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-      border-radius: 36rpx;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 30rpx;
-      box-shadow: 0 8rpx 24rpx rgba(47, 107, 238, 0.1);
+		.logo-box {
+			width: 140rpx;
+			height: 140rpx;
+			border-radius: 36rpx;
+			display: flex;
+			justify-content: center;
+			align-items: center;
 
-      .logo-img {
-        width: 80rpx;
-        height: 80rpx;
-      }
-    }
+			.logo-img {
+				width: 140rpx;
+				height: 140rpx;
+			}
+		}
 
-    .app-title {
-      font-size: 48rpx;
-      font-weight: bold;
-      color: $text-primary;
-    }
+		.app-title {
+			font-size: 48rpx;
+			font-weight: bold;
+			color: $text-primary;
+		}
 
-    .app-subtitle {
-      font-size: 26rpx;
-      color: $text-tertiary;
-      margin-top: 10rpx;
-    }
-  }
+		.app-subtitle {
+			font-size: 26rpx;
+			color: $text-tertiary;
+			margin-top: 10rpx;
+		}
+	}
 
-  .login-tabs {
-    display: flex;
-    background: #fff;
-    border: 1rpx solid $border-light;
-    padding: 8rpx;
-    border-radius: $radius-xl;
-    margin-bottom: 40rpx;
-    box-shadow: $shadow-sm;
+	.login-tabs {
+		display: flex;
+		background: #fff;
+		border: 1rpx solid $border-light;
+		padding: 8rpx;
+		border-radius: $radius-xl;
+		margin-bottom: 40rpx;
+		box-shadow: $shadow-sm;
 
-    .tab-item {
-      flex: 1;
-      text-align: center;
-      height: 80rpx;
-      line-height: 80rpx;
-      font-size: 28rpx;
-      color: $text-secondary;
-      border-radius: $radius-lg;
-      transition: all $duration-base $ease-out;
+		.tab-item {
+			flex: 1;
+			text-align: center;
+			height: 80rpx;
+			line-height: 80rpx;
+			font-size: 28rpx;
+			color: $text-secondary;
+			border-radius: $radius-lg;
+			transition: all $duration-base $ease-out;
 
-      &.active {
-        background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
-        color: #fff;
-        box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
-      }
-    }
-  }
+			&.active {
+				background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+				color: #fff;
+				box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+			}
+		}
+	}
 
-  .input-item {
-    background-color: $bg-card;
-    height: 100rpx;
-    border-radius: $radius-xl;
-    margin-bottom: 30rpx;
-    padding: 0 30rpx;
-    box-shadow: $shadow-sm;
-    border: 2rpx solid transparent;
-    position: relative;
-    transition: border-color $duration-fast, box-shadow $duration-fast;
+	.input-item {
+		background-color: $bg-card;
+		height: 100rpx;
+		border-radius: $radius-xl;
+		margin-bottom: 30rpx;
+		padding: 0 30rpx;
+		box-shadow: $shadow-sm;
+		border: 2rpx solid transparent;
+		position: relative;
+		transition: border-color $duration-fast, box-shadow $duration-fast;
 
-    &:focus-within {
-      border-color: $primary;
-      box-shadow: 0 0 0 6rpx $primary-light;
-    }
+		&:focus-within {
+			border-color: $primary;
+			box-shadow: 0 0 0 6rpx $primary-light;
+		}
 
-    .icon {
-      font-size: 38rpx;
-      color: $text-tertiary;
-    }
+		.icon {
+			font-size: 38rpx;
+			color: $text-tertiary;
+		}
 
-    .input {
-      flex: 1;
-      padding-left: 20rpx;
-      font-size: 28rpx;
-      height: 100%;
-      line-height: 100rpx;
-      color: $text-primary;
-    }
+		.input {
+			flex: 1;
+			padding-left: 20rpx;
+			font-size: 28rpx;
+			height: 100%;
+			line-height: 100rpx;
+			color: $text-primary;
+		}
 
-    .password-toggle {
-      padding: 10rpx;
+		.password-toggle {
+			padding: 10rpx;
 
-      .iconfont {
-        font-size: 36rpx;
-        color: $text-tertiary;
-      }
-    }
+			.iconfont {
+				font-size: 36rpx;
+				color: $text-tertiary;
+			}
+		}
 
-    .login-code-img {
-      width: 160rpx;
-      height: 60rpx;
-      border-radius: $radius-sm;
-    }
+		.login-code-img {
+			width: 160rpx;
+			height: 60rpx;
+			border-radius: $radius-sm;
+		}
 
-    .sms-code-btn {
-      font-size: 24rpx;
-      color: $primary;
-      background: $primary-light;
-      padding: 12rpx 24rpx;
-      border-radius: $radius-base;
-      white-space: nowrap;
-      flex-shrink: 0;
-      transition: all $duration-fast;
+		.sms-code-btn {
+			font-size: 24rpx;
+			color: $primary;
+			background: $primary-light;
+			padding: 12rpx 24rpx;
+			border-radius: $radius-base;
+			white-space: nowrap;
+			flex-shrink: 0;
+			transition: all $duration-fast;
 
-      &.disabled {
-        color: $text-tertiary;
-        background: $border-light;
-      }
-    }
-  }
+			&.disabled {
+				color: $text-tertiary;
+				background: $border-light;
+			}
+		}
+	}
 
-  .forget-pwd {
-    text-align: right;
-    color: $primary;
-    font-size: 24rpx;
-    margin-bottom: 40rpx;
-  }
+	.forget-pwd {
+		text-align: right;
+		color: $primary;
+		font-size: 24rpx;
+		margin-bottom: 40rpx;
+	}
 
-  .login-btn {
-    height: 100rpx;
-    background: linear-gradient(135deg, $primary 0%, $primary-dark 100%) !important;
-    border-radius: $radius-xl;
-    font-size: 32rpx;
-    color: #fff;
-    border: none;
-    font-weight: 600;
-    box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
-    transition: transform $duration-fast, box-shadow $duration-fast, opacity $duration-fast;
+	.login-btn {
+		height: 100rpx;
+		background: linear-gradient(135deg, $primary 0%, $primary-dark 100%) !important;
+		border-radius: $radius-xl;
+		font-size: 32rpx;
+		color: #fff;
+		border: none;
+		font-weight: 600;
+		box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+		transition: transform $duration-fast, box-shadow $duration-fast, opacity $duration-fast;
 
-    &:active {
-      transform: scale(0.97);
-      box-shadow: 0 2rpx 6rpx rgba(47, 107, 238, 0.2);
-    }
+		&:active {
+			transform: scale(0.97);
+			box-shadow: 0 2rpx 6rpx rgba(47, 107, 238, 0.2);
+		}
 
-    &:disabled {
-      background: #A5C3F0 !important;
-      box-shadow: none;
-    }
-  }
+		&:disabled {
+			background: #A5C3F0 !important;
+			box-shadow: none;
+		}
+	}
 
-  .xieyi-section {
-    margin-top: 40rpx;
-    font-size: 24rpx;
+	.xieyi-section {
+		margin-top: 40rpx;
+		font-size: 24rpx;
 
-    .text-grey-dark {
-      color: $text-secondary;
-    }
-  }
+		.text-grey-dark {
+			color: $text-secondary;
+		}
+	}
 
-  .bottom-footer {
-    position: fixed;
-    bottom: 60rpx;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 26rpx;
-    color: $text-tertiary;
-  }
+	.bottom-footer {
+		position: fixed;
+		bottom: 60rpx;
+		left: 0;
+		width: 100%;
+		text-align: center;
+		font-size: 26rpx;
+		color: $text-tertiary;
+	}
 }
 </style>

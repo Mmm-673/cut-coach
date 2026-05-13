@@ -113,21 +113,21 @@
 
         <view class="status-hint" v-else>
           <uni-icons type="checkmarkempty" size="20" color="#10B981"></uni-icons>
-          <text class="hint-text">已确认出发，请尽快前往服务地点</text>
+          <text class="hint-text">已确认出发，请尽快前往教学地点</text>
         </view>
 
         <view class="btn-group" v-if="pendingOrder.departureConfirmTime && !pendingOrder.arriveTime">
-          <button class="btn btn-arrive" @click="arrive">到达服务地址</button>
+          <button class="btn btn-arrive" @click="arrive">到达教学地址</button>
         </view>
 
         <view class="status-hint" v-if="pendingOrder.arriveTime">
           <uni-icons type="checkmarkempty" size="20" color="#10B981"></uni-icons>
-          <text class="hint-text">已到达服务地点，请等待用户确认</text>
+          <text class="hint-text">已到达教学地点，开始教学</text>
         </view>
 
         <view class="btn-group" v-if="pendingOrder.arriveTime && !pendingOrder.startTime">
           <button class="btn btn-exception" @click="showReportException">报告异常</button>
-          <button class="btn btn-accept" @click="startService">开始服务</button>
+          <button class="btn btn-accept" @click="startService">开始教学</button>
         </view>
 
         <view class="nav-row">
@@ -143,8 +143,8 @@
       </view>
     </uni-card>
 
-    <!-- 服务中状态 -->
-    <uni-card v-else-if="orderStatus === 'serving'" title="进行中服务" :is-shadow="true" :border="false">
+    <!-- 教学中状态 -->
+    <uni-card v-else-if="orderStatus === 'serving'" title="进行中教学" :is-shadow="true" :border="false">
       <view class="serving-order">
         <view class="serve-top">
           <text class="left-time">剩余时长 {{ servingLeftTimeText }}</text>
@@ -152,10 +152,10 @@
 
         <view class="timer-box">
           <text class="big-time">{{ servingUsedTimeText }}</text>
-          <text class="time-desc">已服务时长</text>
+          <text class="time-desc">已教学时长</text>
         </view>
 
-        <button class="btn-end" @click="endService">结束服务</button>
+        <button class="btn-end" @click="endService">结束教学</button>
 
         <uni-section title="订单详情" type="line" margin-top="20rpx" >
           <view class="detail-box" @click="goToDetail">
@@ -302,7 +302,7 @@ const pendingOrder = ref({})
 const pendingCountdown = ref(0)
 const pendingCountdownText = ref('0分0秒')
 
-// 服务计时
+// 教学计时
 const usedSec = ref(0)
 const servingUsedTimeText = ref('00:00')
 const leftSec = ref(3600)
@@ -374,7 +374,7 @@ const getHistoryStatusType = (status) => {
 
 const todayData = ref([
   { icon: 'calendar', value: '0小时0分', label: '今日上钟时长', color: '#2F6BEE', bgColor: '#EFF6FF' },
-  { icon: 'checkbox', value: '0单', label: '今日服务次数', color: '#10B981', bgColor: '#ECFDF5' },
+  { icon: 'checkbox', value: '0单', label: '今日教学次数', color: '#10B981', bgColor: '#ECFDF5' },
   { icon: 'wallet', value: '¥0', label: '预计收入', color: '#F59E0B', bgColor: '#FFF7ED' }
 ])
 
@@ -388,7 +388,7 @@ const fetchDashboard = async () => {
       const mins = todayServiceMinutes % 60
       todayData.value = [
         { icon: 'calendar', value: `${hours}小时${mins}分`, label: '今日上钟时长', color: '#2F6BEE', bgColor: '#EFF6FF' },
-        { icon: 'checkbox', value: `${todayServiceCount}单`, label: '今日服务次数', color: '#10B981', bgColor: '#ECFDF5' },
+        { icon: 'checkbox', value: `${todayServiceCount}单`, label: '今日教学次数', color: '#10B981', bgColor: '#ECFDF5' },
         { icon: 'wallet', value: `¥${Number(todayEstimatedIncome).toFixed(2)}`, label: '预计收入', color: '#F59E0B', bgColor: '#FFF7ED' }
       ]
     }
@@ -464,7 +464,7 @@ const checkLocationInRange = (targetLat, targetLon, maxDistance = 200) => {
       if (distance <= maxDistance) {
         resolve(distance)
       } else {
-        reject(new Error(`距离球厅${Math.round(distance)}米，超出允许范围${maxDistance}米`))
+        reject(new Error(`距离球厅${Math.round(distance)}米，超出打卡范围${maxDistance}米`))
       }
     } catch (err) {
       reject(err)
@@ -484,7 +484,7 @@ const handleSwitchClick = () => {
 
   let confirmText = '确认下线吗？下线后将无法接收新订单'
   if (orderStatus.value === 'serving') {
-    confirmText = '您当前有正在进行中的服务，确认下线将强制结束服务，是否继续？'
+    confirmText = '您当前有正在进行中的教学，确认下线将强制结束教学，是否继续？'
   }
 
   uni.showModal({
@@ -690,11 +690,6 @@ const rejectOrder = () => {
           })
           clearInterval(pendingTimer)
           orderStatus.value = 'idle'
-          cancelledOrders.value.unshift({
-            name: pendingOrder.value.serviceType === 1 ? '台球陪练' : '陪游',
-            time: `${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')} · ${pendingOrder.value.venueName}`,
-            price: (pendingOrder.value.totalAmount / 100).toFixed(2)
-          })
           // 恢复轮询
           startPolling()
           uni.showToast({ title:'已拒绝' })
@@ -739,42 +734,46 @@ const confirmDeparture = async () => {
   }
 }
 
-// 到达服务地址
+// 到达教学地址
 const arrive = async () => {
   // 校验当前位置是否在球厅范围内（200米内）
   uni.showLoading({ title: '校验位置...' })
-  try {
-    await checkLocationInRange(
-      pendingOrder.value.venueLatitude,
-      pendingOrder.value.venueLongitude,
-      200
-    )
-    uni.hideLoading()
-  } catch (err) {
-    uni.hideLoading()
-    // 位置校验失败
-    if (err.message?.includes('距离')) {
-      uni.showModal({
-        title: '位置不在范围内',
-        content: err.message + '，请确认已到达球厅地址',
-        showCancel: false
-      })
-    } else {
-      // 权限问题，引导开启
-      uni.showModal({
-        title: '需要位置权限',
-        content: '确认到达需要获取位置信息，请授权位置权限',
-        confirmText: '去设置',
-        cancelText: '取消',
-        success: (res) => {
-          if (res.confirm) {
-            showLocationPermissionGuide()
-          }
-        }
-      })
-    }
-    return
-  }
+  uni.hideLoading()
+
+
+
+  // try {
+  //   await checkLocationInRange(
+  //     pendingOrder.value.venueLatitude,
+  //     pendingOrder.value.venueLongitude,
+  //     200
+  //   )
+  //   uni.hideLoading()
+  // } catch (err) {
+  //   uni.hideLoading()
+  //   // 位置校验失败
+  //   if (err.message?.includes('距离')) {
+  //     uni.showModal({
+  //       title: '位置不在范围内',
+  //       content: err.message + '，请确认已到达球厅地址',
+  //       showCancel: false
+  //     })
+  //   } else {
+  //     // 权限问题，引导开启
+  //     uni.showModal({
+  //       title: '需要位置权限',
+  //       content: '确认到达需要获取位置信息，请授权位置权限',
+  //       confirmText: '去设置',
+  //       cancelText: '取消',
+  //       success: (res) => {
+  //         if (res.confirm) {
+  //           showLocationPermissionGuide()
+  //         }
+  //       }
+  //     })
+  //   }
+  //   return
+  // }
 
   try {
     await arriveApi({
@@ -788,27 +787,27 @@ const arrive = async () => {
   }
 }
 
-// 开始服务
+// 开始教学
 const startService = async () => {
   try {
-    // 1. 调用订单开始服务API
+    // 1. 调用订单开始教学API
     await startServiceApi({
       orderId: pendingOrder.value.orderId
     })
 
-    // 2. 调用计时器开始API，获取服务端时间
+    // 2. 调用计时器开始API，获取教学端时间
     const timerResp = await startTimerApi({
       orderId: pendingOrder.value.orderId
     })
     console.log('计时器已启动:', timerResp)
 
-    // 3. 启动本地计时器（使用服务端返回的时间）
+    // 3. 启动本地计时器（使用教学端返回的时间）
     orderStatus.value = 'serving'
     startServeTimer()
     startTimerPolling()
-    uni.showToast({ title: '服务已开始', icon: 'success' })
+    uni.showToast({ title: '教学已开始', icon: 'success' })
   } catch (err) {
-    console.error('开始服务失败', err)
+    console.error('开始教学失败', err)
     proxy.$modal.msgError(err?.msg || '操作失败')
   }
 }
@@ -839,7 +838,7 @@ const fetchTimerStatus = async () => {
     const resp = await getTimerStatusApi(pendingOrder.value.orderId)
     if (resp) {
       console.log('计时器状态:', resp)
-      // 更新已服务时长和剩余时长
+      // 更新已教学时长和剩余时长
       usedSec.value = resp.elapsedSeconds || 0
       servingUsedTimeText.value = fmtMMSS(usedSec.value)
       const remaining = resp.remainingSeconds || 0
@@ -850,7 +849,7 @@ const fetchTimerStatus = async () => {
   }
 }
 
-// 服务计时
+// 教学计时
 const startServeTimer = () => {
   clearInterval(usedTimer)
   clearInterval(leftTimer)
@@ -866,7 +865,7 @@ const startServeTimer = () => {
     if(leftSec.value <=0){
       clearInterval(leftTimer)
       clearInterval(usedTimer)
-      uni.showToast({ title: '服务时长已到', icon: 'none' })
+      uni.showToast({ title: '教学时长已到', icon: 'none' })
       return
     }
     leftSec.value--
@@ -881,21 +880,21 @@ const goToDetail = () => {
   })
 }
 
-// 结束服务
+// 结束教学
 const endService = () => {
   uni.showModal({
     title: '确认结束',
-    content: '确定要结束当前服务吗？',
+    content: '确定要结束当前教学吗？',
     success: async (res) => {
       if (res.confirm) {
         try {
-          // 1. 调用计时器结束API，获取实际服务时长
+          // 1. 调用计时器结束API，获取实际教学时长
           const timerResp = await endTimerApi({
             orderId: pendingOrder.value.orderId
           })
           console.log('计时器已结束:', timerResp)
 
-          // 2. 调用订单结束服务API
+          // 2. 调用订单结束教学API
           await finishServiceApi({
             orderId: pendingOrder.value.orderId
           })
@@ -905,20 +904,16 @@ const endService = () => {
           clearInterval(leftTimer)
           stopTimerPolling()
           orderStatus.value = 'idle'
-          completedOrders.value.unshift({
-            name: pendingOrder.value.serviceType === 1 ? '台球陪练' : '陪游',
-            time: `${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')} · ${pendingOrder.value.venueName}`,
-            price: (pendingOrder.value.totalAmount / 100).toFixed(2)
-          })
 
           // 4. 查询真实看板数据
           fetchDashboard()
 
-          // 5. 恢复轮询
+          // 5. 刷新历史订单并恢复轮询
+          fetchHistoryOrders()
           startPolling()
-          uni.showToast({ title:'服务已结束', icon:'success' })
+          uni.showToast({ title:'教学已结束', icon:'success' })
         } catch (err) {
-          console.error('结束服务失败', err)
+          console.error('结束教学失败', err)
           proxy.$modal.msgError(err?.msg || '操作失败')
         }
       }

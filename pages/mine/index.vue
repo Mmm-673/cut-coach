@@ -12,9 +12,9 @@
           <view class="user-id">ID: {{ coachProfile.id || '-' }}</view>
         </view>
       </view>
-      <view class="edit-icon" @click="handleEdit">
-        <uni-icons type="compose" size="20" color="#fff"></uni-icons>
-      </view>
+<!--      <view class="edit-icon" @click="handleEdit">-->
+<!--        <uni-icons type="compose" size="20" color="#fff"></uni-icons>-->
+<!--      </view>-->
     </view>
 
     <!-- 钱包模块 -->

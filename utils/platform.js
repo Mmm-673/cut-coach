@@ -432,6 +432,22 @@ export function showLocationPermissionGuide() {
  * 打开应用权限设置页面
  */
 export function openPermissionSettings() {
+  // #ifdef MP-WEIXIN
+  // 微信小程序：打开小程序设置页面
+  uni.openSetting({
+    success: (res) => {
+      console.log('打开设置成功', res)
+    },
+    fail: (err) => {
+      console.error('打开设置失败', err)
+      uni.showToast({
+        title: '请在小程序设置中开启权限',
+        icon: 'none'
+      })
+    }
+  })
+  // #endif
+
   // #ifdef APP-PLUS
   if (isIOS()) {
     // iOS 打开应用设置
@@ -457,7 +473,7 @@ export function openPermissionSettings() {
   } else if (isHarmony()) {
     // 鸿蒙打开设置
     try {
-      // 鸿蒙设置页面跳转简化版
+      // 鸿蒙设置页面跳转
       uni.showToast({
         title: '请在设置中开启权限',
         icon: 'none'
@@ -471,10 +487,12 @@ export function openPermissionSettings() {
   }
   // #endif
 
-  // #ifndef APP-PLUS
+  // #ifdef H5
+  // H5 端：提示用户在浏览器设置中开启权限
   uni.showToast({
-    title: '请在系统设置中开启权限',
-    icon: 'none'
+    title: '请在浏览器设置中开启位置权限',
+    icon: 'none',
+    duration: 2000
   })
   // #endif
 }
