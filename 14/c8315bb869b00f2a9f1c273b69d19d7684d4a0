@@ -1,0 +1,29 @@
+pages/work/index.vue
+  40cae58aef57bebe 911-912
+utils/platform.js
+  40cae58aef57bebe 435-450,476,490-491,493-495
+pages/login/index.vue
+  40cae58aef57bebe 7,29,33,408,412-587
+pages/order/detail.vue
+  40cae58aef57bebe 48,52,98-109,111-112,114-115,117-119,121-123,125-127,130,132,136-138,148-149,169-178,286-303,307-342,344-350,358-361,368-372,377,384,388-389,398-400,405-406,410-413,418-489,491-493,524-537,539-557,559,561-599,644-655,664-678,686-688,690-701,715-719,724-726,750-751,985,995-996,999-1004,1030-1041,1053-1071
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "14c8315bb869b00f2a9f1c273b69d19d7684d4a0",
+  "prompts": {
+    "40cae58aef57bebe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1e264d22-79b4-4e0e-a1bd-9f2dc0b39cad",
+        "model": "doubao-seed-2-0-code"
+      },
+      "human_author": "Ma",
+      "messages": [],
+      "total_additions": 738,
+      "total_deletions": 376,
+      "accepted_lines": 2125,
+      "overriden_lines": 50
+    }
+  }
+}
