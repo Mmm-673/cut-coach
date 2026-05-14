@@ -75,10 +75,10 @@
     <view class="card" v-if="orderInfo.userPhone && orderInfo.userPhone !== '-'">
       <view class="card-title">客户信息</view>
       <view class="customer-info">
-        <image class="avatar" src="https://picsum.photos/100/100" mode="aspectFill"></image>
+        <image class="avatar" :src="orderInfo.userAvatar" mode="aspectFill"></image>
         <view class="customer-left">
           <text class="customer-name">{{ orderInfo.userPhone }}</text>
-          <text class="customer-phone">脱敏手机号</text>
+          <text class="customer-phone">{{ orderInfo.userNickname }}</text>
         </view>
         <button class="call-btn" @click="makeCall">
           <uni-icons type="phone" size="20" color="#10B981" />

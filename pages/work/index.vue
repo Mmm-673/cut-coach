@@ -252,6 +252,8 @@ import {
 } from '@/api/billiard/coach'
 import {
   getPendingOrders,
+  getOrderDetail,
+  getInProgressOrder,
   acceptOrder as acceptOrderApi,
   confirmDeparture as confirmDepartureApi,
   arrive as arriveApi,
@@ -403,6 +405,7 @@ const fetchWorkStatus = async () => {
     const res = await getWorkStatus()
     if (res.data) {
       isOnline.value = res.data.workStatus === 1
+      isFreeTravel.value = res.data.freeTravel === 1
     }
   } catch (err) {
     console.error('获取工作状态失败', err)
@@ -472,6 +475,7 @@ const checkLocationInRange = (targetLat, targetLon, maxDistance = 200) => {
   })
 }
 
+
 // 开关点击+下线二次确认逻辑
 const handleSwitchClick = () => {
   if (switchLoading.value) return
@@ -539,29 +543,19 @@ const onSwitchChange = async (targetStatus) => {
       } catch (err) {
         // 获取位置失败，检查是否是权限问题
         if (err.message?.includes('权限') || err.message?.includes('auth deny')) {
-          showLocationPermissionGuide()
-          // const modalRes = await new Promise((resolve) => {
-          //   uni.showModal({
-          //     title: '需要位置权限',
-          //     content: '上线需要获取位置信息，请授权位置权限',
-          //     confirmText: '去设置',
-          //     cancelText: '取消',
-          //     success: resolve
-          //   })
-          // })
+          const modalRes = await new Promise((resolve) => {
+            uni.showModal({
+              title: '需要位置权限',
+              content: '上线需要获取位置信息，请授权位置权限',
+              confirmText: '去设置',
+              cancelText: '取消',
+              success: resolve
+            })
+          })
 
-          // if (modalRes.confirm) {
-          //   showLocationPermissionGuide()
-          //   // 延迟后重新尝试获取位置
-          //   setTimeout(async () => {
-          //     try {
-          //       loc = await getPlatformLocation()
-          //       await doOnlineWithLocation(loc)
-          //     } catch (e) {
-          //       console.error('重新获取位置失败', e)
-          //     }
-          //   }, 1000)
-          // }
+          if (modalRes.confirm) {
+            showLocationPermissionGuide()
+          }
         } else {
           proxy.$modal.msgError('获取位置失败')
         }
@@ -615,16 +609,14 @@ const doOnlineWithLocation = async (loc) => {
   startPolling()
 }
 
-// 开始轮询待接单列表
+// 开始轮询（优先查询进行中订单，没有再查询待接单）
 const startPolling = () => {
   stopPolling()
   // 立即查询一次
-  fetchPendingOrders()
+  fetchOrders()
   // 5秒轮询
   pollTimer = setInterval(() => {
-    if (orderStatus.value === 'idle') {
-      fetchPendingOrders()
-    }
+    fetchOrders()
   }, 5000)
 }
 
@@ -635,12 +627,76 @@ const stopPolling = () => {
   }
 }
 
-// 查询待接单列表
+// 查询订单（有订单时查详情，无订单时查待接单）
+const fetchOrders = async () => {
+  try {
+    // 如果当前有订单ID，查该订单详情
+    if (pendingOrder.value.orderId) {
+      const orderRes = await getOrderDetail(pendingOrder.value.orderId)
+      if (orderRes.data) {
+        const order = orderRes.data
+        pendingOrder.value = order
+
+        // 根据订单状态更新页面状态
+        if (order.status === 40) {
+          // 进行中
+          orderStatus.value = 'serving'
+          if (!timerPollTimer) {
+            startServeTimer()
+            startTimerPolling()
+          }
+        } else if (order.status === 30) {
+          // 已接单
+          orderStatus.value = 'accepted'
+        } else if (order.status === 20) {
+          // 待接单
+          orderStatus.value = 'pending'
+          if (order.expireAt) {
+            const now = Date.now()
+            const expire = new Date(order.expireAt).getTime()
+            pendingCountdown.value = Math.max(0, Math.floor((expire - now) / 1000))
+            startPendingCountdown()
+          }
+        } else {
+          // 其他状态（已完成/已取消），清空并回到idle
+          pendingOrder.value = {}
+          orderStatus.value = 'idle'
+          stopTimerPolling()
+          clearInterval(pendingTimer)
+          clearInterval(usedTimer)
+          clearInterval(leftTimer)
+        }
+        return
+      }
+    }
+
+    // 没有订单ID，说明是 idle 状态，只查待接单列表
+    const pendingRes = await getPendingOrders()
+    if (pendingRes.data && pendingRes.data?.list?.length > 0) {
+      // 查询到待接单，停止轮询
+      stopPolling()
+      pendingOrder.value = pendingRes.data.list[0]
+      orderStatus.value = 'pending'
+      if (pendingOrder.value.expireAt) {
+        const now = Date.now()
+        const expire = new Date(pendingOrder.value.expireAt).getTime()
+        pendingCountdown.value = Math.max(0, Math.floor((expire - now) / 1000))
+        startPendingCountdown()
+      }
+    } else {
+      // 没有待接单，保持 idle
+      orderStatus.value = 'idle'
+    }
+  } catch (err) {
+    console.error('查询订单失败', err)
+  }
+}
+
+// 查询待接单列表（保留用于兼容）
 const fetchPendingOrders = async () => {
   try {
     const res = await getPendingOrders()
     if (res.data && res.data?.list?.length > 0) {
-      stopPolling()
       pendingOrder.value = res.data.list[0]
       orderStatus.value = 'pending'
       if (pendingOrder.value.expireAt) {
@@ -689,8 +745,9 @@ const rejectOrder = () => {
             rejectReason: res.content || ''
           })
           clearInterval(pendingTimer)
+          pendingOrder.value = {}
           orderStatus.value = 'idle'
-          // 恢复轮询
+          // 拒单后重启轮询
           startPolling()
           uni.showToast({ title:'已拒绝' })
         } catch (err) {
@@ -705,13 +762,19 @@ const rejectOrder = () => {
 // 接单
 const acceptOrder = async () => {
   uni.showLoading({ title:'接单中...' })
+  const currentOrderId = pendingOrder.value.orderId
   try {
     await acceptOrderApi({
-      orderId: pendingOrder.value.orderId
+      orderId: currentOrderId
     })
     uni.hideLoading()
     clearInterval(pendingTimer)
-    orderStatus.value = 'accepted'
+    // 接单成功后查询该订单详情
+    const orderRes = await getOrderDetail(currentOrderId)
+    if (orderRes.data) {
+      pendingOrder.value = orderRes.data
+      orderStatus.value = 'accepted'
+    }
     uni.showToast({ title: '接单成功', icon: 'success' })
   } catch (err) {
     uni.hideLoading()
@@ -726,7 +789,11 @@ const confirmDeparture = async () => {
     await confirmDepartureApi({
       orderId: pendingOrder.value.orderId
     })
-    pendingOrder.value.departureConfirmTime = new Date().toISOString()
+    // 确认出发后查询订单详情更新
+    const orderRes = await getOrderDetail(pendingOrder.value.orderId)
+    if (orderRes.data) {
+      pendingOrder.value = orderRes.data
+    }
     uni.showToast({ title: '已确认出发', icon: 'success' })
   } catch (err) {
     console.error('确认出发失败', err)
@@ -740,46 +807,15 @@ const arrive = async () => {
   uni.showLoading({ title: '校验位置...' })
   uni.hideLoading()
 
-
-
-  // try {
-  //   await checkLocationInRange(
-  //     pendingOrder.value.venueLatitude,
-  //     pendingOrder.value.venueLongitude,
-  //     200
-  //   )
-  //   uni.hideLoading()
-  // } catch (err) {
-  //   uni.hideLoading()
-  //   // 位置校验失败
-  //   if (err.message?.includes('距离')) {
-  //     uni.showModal({
-  //       title: '位置不在范围内',
-  //       content: err.message + '，请确认已到达球厅地址',
-  //       showCancel: false
-  //     })
-  //   } else {
-  //     // 权限问题，引导开启
-  //     uni.showModal({
-  //       title: '需要位置权限',
-  //       content: '确认到达需要获取位置信息，请授权位置权限',
-  //       confirmText: '去设置',
-  //       cancelText: '取消',
-  //       success: (res) => {
-  //         if (res.confirm) {
-  //           showLocationPermissionGuide()
-  //         }
-  //       }
-  //     })
-  //   }
-  //   return
-  // }
-
   try {
     await arriveApi({
       orderId: pendingOrder.value.orderId
     })
-    pendingOrder.value.arriveTime = new Date().toISOString()
+    // 确认到达后查询订单详情更新
+    const orderRes = await getOrderDetail(pendingOrder.value.orderId)
+    if (orderRes.data) {
+      pendingOrder.value = orderRes.data
+    }
     uni.showToast({ title: '已到达', icon: 'success' })
   } catch (err) {
     console.error('确认到达失败', err)
@@ -903,14 +939,18 @@ const endService = () => {
           clearInterval(usedTimer)
           clearInterval(leftTimer)
           stopTimerPolling()
-          orderStatus.value = 'idle'
 
           // 4. 查询真实看板数据
           fetchDashboard()
 
-          // 5. 刷新历史订单并恢复轮询
+          // 5. 刷新历史订单
           fetchHistoryOrders()
+
+          // 6. 清空当前订单状态，重新开始轮询
+          pendingOrder.value = {}
+          orderStatus.value = 'idle'
           startPolling()
+
           uni.showToast({ title:'教学已结束', icon:'success' })
         } catch (err) {
           console.error('结束教学失败', err)
@@ -1002,15 +1042,44 @@ const goToOrderDetail = (order) => {
   })
 }
 
-onMounted(() => {
-  // 获取当前工作状态
-  fetchWorkStatus()
+onMounted(async () => {
   // 获取看板数据
   fetchDashboard()
   // 获取历史订单
   fetchHistoryOrders()
-  // 如果已上线，开始轮询
+  // 获取当前工作状态
+  await fetchWorkStatus()
+
+  // 如果已上线，先查询是否有进行中的订单
   if (isOnline.value) {
+    try {
+      // 1. 先查询进行中的订单
+      const inProgressRes = await getInProgressOrder()
+      if (inProgressRes.data) {
+        // 有进行中的订单，直接显示，不走轮询
+        pendingOrder.value = inProgressRes.data
+        if (inProgressRes.data.status === 40) {
+          orderStatus.value = 'serving'
+          startServeTimer()
+          startTimerPolling()
+        } else if (inProgressRes.data.status === 30) {
+          orderStatus.value = 'accepted'
+        } else if (inProgressRes.data.status === 20) {
+          orderStatus.value = 'pending'
+          if (inProgressRes.data.expireAt) {
+            const now = Date.now()
+            const expire = new Date(inProgressRes.data.expireAt).getTime()
+            pendingCountdown.value = Math.max(0, Math.floor((expire - now) / 1000))
+            startPendingCountdown()
+          }
+        }
+        return
+      }
+    } catch (err) {
+      console.log('无进行中的订单', err)
+    }
+
+    // 2. 没有进行中的订单，开始轮询查询待接单
     startPolling()
   }
 })

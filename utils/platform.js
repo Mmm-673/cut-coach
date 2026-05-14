@@ -79,31 +79,46 @@ export function getLocation(options = {}) {
     type = 'gcj02',
     altitude = false,
     highAccuracy = true,
-    timeout = 10000
+    timeout = 15000
   } = options
 
   return new Promise((resolve, reject) => {
-    // 先请求权限（APP端）
-    // #ifdef APP-PLUS
-    requestLocationPermission().then(() => {
-      doGetLocation()
-    }).catch((err) => {
-      reject(err)
-    })
-    // #endif
+    // 先使用 uni.authorize 请求权限（兼容各平台）
+    console.log('开始请求位置权限...')
 
-    // 非APP端直接获取
-    // #ifndef APP-PLUS
-    doGetLocation()
-    // #endif
+    uni.authorize({
+      scope: 'scope.userLocation',
+      success: () => {
+        console.log('uni.authorize 授权成功')
+        doGetLocation()
+      },
+      fail: (err) => {
+        console.log('uni.authorize 失败，尝试平台特定方式', err)
+        // 如果 uni.authorize 失败，使用平台特定方式
+        // #ifdef APP-PLUS
+        requestLocationPermission().then(() => {
+          doGetLocation()
+        }).catch((err) => {
+          reject(err)
+        })
+        // #endif
+
+        // #ifndef APP-PLUS
+        // 非 APP 端，直接尝试获取位置
+        doGetLocation()
+        // #endif
+      }
+    })
 
     function doGetLocation() {
+      console.log('开始获取位置...')
       uni.getLocation({
         type,
         altitude,
         isHighAccuracy: highAccuracy,
         highAccuracyExpireTime: timeout,
         success: (res) => {
+          console.log('获取位置成功', res)
           resolve({
             longitude: res.longitude,
             latitude: res.latitude,
@@ -116,10 +131,11 @@ export function getLocation(options = {}) {
           })
         },
         fail: (err) => {
+          console.error('获取位置失败', err)
           // 构建友好的错误信息
           let errorMsg = '获取位置失败'
           if (err.errMsg) {
-            if (err.errMsg.includes('auth deny') || err.errMsg.includes('auth denied')) {
+            if (err.errMsg.includes('auth deny') || err.errMsg.includes('auth denied') || err.errMsg.includes('权限')) {
               errorMsg = '位置权限被拒绝，请在设置中开启位置权限'
             } else if (err.errMsg.includes('timeout')) {
               errorMsg = '获取位置超时，请检查网络和GPS设置'
@@ -138,6 +154,34 @@ export function getLocation(options = {}) {
 }
 
 /**
+ * 检查Android权限是否已授予
+ */
+function checkAndroidPermission() {
+  // #ifdef APP-PLUS
+  try {
+    const main = plus.android.runtimeMainActivity()
+    const Context = plus.android.importClass('android.content.Context')
+    const ActivityCompat = plus.android.importClass('androidx.core.app.ActivityCompat')
+    const PackageManager = plus.android.importClass('android.content.pm.PackageManager')
+
+    const fineLocationPermission = 'android.permission.ACCESS_FINE_LOCATION'
+    const coarseLocationPermission = 'android.permission.ACCESS_COARSE_LOCATION'
+
+    const fineResult = ActivityCompat.checkSelfPermission(main, fineLocationPermission)
+    const coarseResult = ActivityCompat.checkSelfPermission(main, coarseLocationPermission)
+
+    const granted = fineResult === PackageManager.PERMISSION_GRANTED || coarseResult === PackageManager.PERMISSION_GRANTED
+    console.log('Android权限检查结果:', granted)
+    return granted
+  } catch (e) {
+    console.error('检查Android权限失败', e)
+    return false
+  }
+  // #endif
+  return false
+}
+
+/**
  * 请求位置权限（仅APP端）
  * @returns {Promise<boolean>}
  */
@@ -145,24 +189,43 @@ export function requestLocationPermission() {
   return new Promise((resolve, reject) => {
     // #ifdef APP-PLUS
     const platform = getPlatform()
+    console.log('当前平台:', platform)
 
     if (platform === 'android') {
-      // Android 权限请求
+      // Android：先检查是否已有权限
+      if (checkAndroidPermission()) {
+        console.log('已有位置权限')
+        resolve(true)
+        return
+      }
+
+      // 没有权限，请求权限
+      console.log('请求位置权限...')
       plus.android.requestPermissions(
         ['android.permission.ACCESS_FINE_LOCATION', 'android.permission.ACCESS_COARSE_LOCATION'],
         (e) => {
+          console.log('权限请求回调:', e)
           if (e.code === 0) {
-            resolve(true)
+            // 检查是否用户授予了权限
+            setTimeout(() => {
+              if (checkAndroidPermission()) {
+                resolve(true)
+              } else {
+                reject({ message: '位置权限被拒绝，请在设置中开启位置权限' })
+              }
+            }, 300)
           } else {
             reject({ message: '位置权限请求失败' })
           }
         },
         (e) => {
-          reject({ message: '位置权限请求被拒绝' })
+          console.error('权限请求错误:', e)
+          reject({ message: '位置权限请求被拒绝，请在设置中开启位置权限' })
         }
       )
     } else if (platform === 'ios') {
       // iOS 直接获取，系统会自动弹权限框
+      console.log('iOS平台，直接解析')
       resolve(true)
     } else if (platform === 'harmony') {
       // 鸿蒙权限请求
