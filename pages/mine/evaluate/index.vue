@@ -2,20 +2,19 @@
   <view class="evaluate-page">
     <!-- 顶部评分统计 -->
     <view class="score-header">
-<!---->
       <view class="score-main">
         <view class="score-num">
-          <text class="score">4.9</text>
+          <text class="score">{{ averageScore }}</text>
           <text class="total">/5.0</text>
         </view>
         <view class="stars">
           <uni-icons
               v-for="(item, index) in 5"
               :key="index"
-              :type="index < 4.9 ? 'star-filled' : 'star'"
-              size="20"
+              :type="index < Math.floor(averageScore) ? 'star-filled' : 'star'"
+              size="24"
               color="#ff9500"
-          ></uni-icons>
+              ></uni-icons>
         </view>
         <view class="score-desc">
           累计收到评价 {{ totalCount }} 条 · 好评率 {{ goodRate }}
@@ -24,14 +23,14 @@
     </view>
 
     <!-- 评价标签 -->
-    <view class="tag-card">
+    <view class="tag-card" v-if="tagList.length > 0">
       <view class="card-title">评价标签</view>
       <view class="tag-list">
         <view
             v-for="tag in tagList"
             :key="tag.name"
             class="tag-item"
-            :style="{ backgroundColor: tag.bgColor }"
+            :style="getTagStyle(tag.name)"
         >
           <text class="tag-name">{{ tag.name }}</text>
           <text class="tag-count">({{ tag.count }})</text>
@@ -45,25 +44,31 @@
       <scroll-view
           scroll-y
           class="scroll-container"
+          refresher-enabled
+          :refresher-triggered="refreshing"
+          @refresherrefresh="onRefresh"
           @scrolltolower="handleLoadMore"
       >
         <view
             v-for="(item, index) in evaluateList"
-            :key="index"
+            :key="item.reviewId"
             class="evaluate-item"
         >
           <!-- 用户信息 -->
           <view class="user-info">
-            <image class="avatar" :src="item.avatar" mode="aspectFill"></image>
+            <image v-if="item.userAvatar" class="avatar" :src="item.userAvatar" mode="aspectFill"></image>
+            <view v-else class="avatar avatar-placeholder">
+              <uni-icons type="person" size="40" color="#ccc"></uni-icons>
+            </view>
             <view class="user-detail">
-              <view class="user-name">{{ item.name }}</view>
-              <view class="time">{{ item.time }}</view>
+              <view class="user-name">{{ item.userNickname }}</view>
+              <view class="time">{{ formatTime(item.createTime) }}</view>
             </view>
             <view class="user-stars">
               <uni-icons
                   v-for="(s, i) in 5"
                   :key="i"
-                  :type="i < item.score ? 'star-filled' : 'star'"
+                  :type="i < item.star ? 'star-filled' : 'star'"
                   size="16"
                   color="#ff9500"
               ></uni-icons>
@@ -71,120 +76,222 @@
           </view>
 
           <!-- 标签 -->
-          <view class="item-tags">
-            <text v-for="t in item.tags" :key="t" class="item-tag">{{ t }}</text>
+          <view class="item-tags" v-if="item.tags && item.tags.length > 0">
+            <text v-for="t in item.tags" :key="t" class="item-tag" :style="getTagStyle(t)">{{ t }}</text>
           </view>
 
           <!-- 评价内容 -->
-          <view class="content">{{ item.content }}</view>
+          <view class="content" v-if="item.content">{{ item.content }}</view>
 
-          <!-- 服务项目 -->
-          <view class="service-info">{{ item.service }}</view>
+          <!-- 评价图片 -->
+          <view class="images-list" v-if="item.images && item.images.length > 0">
+            <image v-for="(img, idx) in item.images" :key="idx" class="review-image" :src="img" mode="aspectFill" @click="previewImage(item.images, idx)"></image>
+          </view>
         </view>
 
         <!-- 加载状态 -->
         <view v-if="loading" class="loading">加载中...</view>
-        <view v-if="!loading && hasMore" class="load-more">上拉加载更多</view>
-        <view v-if="!hasMore" class="no-more">已经到底啦~</view>
+        <view v-if="!loading && hasMore && evaluateList.length > 0" class="load-more">上拉加载更多</view>
+        <view v-if="!hasMore && evaluateList.length > 0" class="no-more">已经到底啦~</view>
+        <view v-if="!loading && evaluateList.length === 0" class="empty">暂无评价</view>
       </scroll-view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
+import { getReviewPage } from '@/api/billiard/coach'
 
 // 页面数据
-const totalCount = ref(128)
-const goodRate = ref('98%')
+const totalCount = ref(0)
+const averageScore = ref(0)
+const goodRate = ref('0%')
 
-// 评价标签数据
-const tagList = reactive([
-  { name: '球技专业', count: 86, bgColor: '#fff3e0' },
-  { name: '态度友好', count: 78, bgColor: '#e6f0ff' },
-  { name: '准时到达', count: 72, bgColor: '#e6ffe6' },
-  { name: '教学耐心', count: 65, bgColor: '#f3e6ff' },
-  { name: '经验丰富', count: 58, bgColor: '#ffe6e6' }
-])
+// 评价标签数据（临时）
+const tagList = reactive([])
 
-// 评价列表数据（模拟接口数据）
-const evaluateList = reactive([
-  {
-    name: '李先生',
-    avatar: '/static/avatar1.jpg',
-    time: '今天 15:35',
-    score: 5,
-    tags: ['球技专业', '态度友好', '准时到达'],
-    content: '张教练球技非常专业，教学也很有耐心，纠正了我很多错误动作，一个小时收获很大，下次还会约！',
-    service: '服务项目：中式八球陪练 1小时 · XX台球厅（XX路店）'
-  },
-  {
-    name: '王女士',
-    avatar: '/static/avatar2.jpg',
-    time: '昨天 12:15',
-    score: 4.5,
-    tags: ['教学耐心', '经验丰富'],
-    content: '作为新手第一次学台球，张教练教的很细致，从握杆姿势到瞄准方法都讲的很清楚，两个小时就能打进球了，非常满意！',
-    service: '服务项目：斯诺克教学 2小时 · XX台球俱乐部'
-  },
-  {
-    name: '陈先生',
-    avatar: '/static/avatar1.jpg',
-    time: '2026-03-20 21:30',
-    score: 5,
-    tags: ['球技专业', '准时到达'],
-    content: '陪练水平很高，打起来很过瘾，还教了我很多实战技巧，非常不错的体验。',
-    service: '服务项目：中式八球陪练 2小时 · XX台球会所'
-  }
-])
+// 评价列表数据
+const evaluateList = ref([])
 
 // 分页加载状态
 const loading = ref(false)
+const refreshing = ref(false)
 const hasMore = ref(true)
+const pageNo = ref(1)
+const pageSize = ref(10)
 
-// 页面交互逻辑
-const handleBack = () => {
-  uni.navigateBack()
+// 标签颜色配置
+const tagColors = [
+  { bg: '#e3f2fd', color: '#1976d2' },    // 蓝色
+  { bg: '#f3e5f5', color: '#7b1fa2' },    // 紫色
+  { bg: '#e8f5e9', color: '#388e3c' },    // 绿色
+  { bg: '#fff3e0', color: '#f57c00' },    // 橙色
+  { bg: '#ffebee', color: '#d32f2f' },    // 红色
+  { bg: '#fffde7', color: '#fbc02d' },    // 黄色
+  { bg: '#e0f7fa', color: '#0097a7' },    // 青色
+  { bg: '#fce4ec', color: '#c2185b' },    // 粉色
+]
+
+// 根据标签文本获取颜色（相同标签始终获得相同颜色）
+const getTagStyle = (tagText) => {
+  let hash = 0
+  for (let i = 0; i < tagText.length; i++) {
+    hash = tagText.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const index = Math.abs(hash) % tagColors.length
+  return {
+    backgroundColor: tagColors[index].bg,
+    color: tagColors[index].color
+  }
 }
 
-const handleLoadMore = () => {
-  if (loading.value || !hasMore.value) return
+// 格式化时间
+const formatTime = (timestamp) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+  const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`
+  const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
+  const time = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
+
+  if (dateStr === today) {
+    return `今天 ${time}`
+  } else if (dateStr === yesterdayStr) {
+    return `昨天 ${time}`
+  }
+  return `${dateStr} ${time}`
+}
+
+// 图片预览
+const previewImage = (urls, currentIndex) => {
+  uni.previewImage({
+    urls: urls,
+    current: currentIndex
+  })
+}
+
+// 获取评价列表
+const fetchReviewList = async (reset = false) => {
+  if (loading.value) return
+
+  if (reset) {
+    pageNo.value = 1
+    hasMore.value = true
+  }
 
   loading.value = true
-  // 模拟接口请求
-  setTimeout(() => {
-    // 模拟追加数据
-    const newData = [
-      {
-        name: '赵先生',
-        avatar: '/static/avatar3.jpg',
-        time: '2026-03-18 19:20',
-        score: 5,
-        tags: ['经验丰富', '态度友好'],
-        content: '教练很专业，讲解清晰，对新手非常友好，强烈推荐！',
-        service: '服务项目：中式八球教学 1小时 · XX台球城'
+  try {
+    const res = await getReviewPage({
+      pageNo: pageNo.value,
+      pageSize: pageSize.value
+    })
+
+    if (res.data && res.data.list) {
+      const list = res.data.list
+
+      if (reset) {
+        evaluateList.value = list
+      } else {
+        evaluateList.value = [...evaluateList.value, ...list]
       }
-    ]
-    evaluateList.push(...newData)
-    loading.value = false
-    // 模拟没有更多数据
-    if (evaluateList.length >= 10) {
-      hasMore.value = false
+
+      // 更新总数（第一页）
+      if (reset && res.data.total) {
+        totalCount.value = res.data.total
+      }
+
+      // 计算平均分（临时简单计算）
+      if (evaluateList.value.length > 0) {
+        const sum = evaluateList.value.reduce((acc, item) => acc + (item.star || 0), 0)
+        averageScore.value = (sum / evaluateList.value.length).toFixed(1)
+        const goodCount = evaluateList.value.filter(item => item.star >= 4).length
+        goodRate.value = Math.round(goodCount / evaluateList.value.length * 100) + '%'
+      }
+
+      // 判断是否还有更多
+      hasMore.value = list.length >= pageSize.value
+      if (!reset) {
+        pageNo.value++
+      }
+
+      // 从评价列表提取所有标签并统计
+      updateTagList()
     }
-  }, 800)
+  } catch (err) {
+    console.error('获取评价列表失败', err)
+    uni.showToast({
+      title: '获取评价失败',
+      icon: 'none'
+    })
+  } finally {
+    loading.value = false
+    refreshing.value = false
+  }
 }
+
+// 下拉刷新
+const onRefresh = async () => {
+  refreshing.value = true
+  await fetchReviewList(true)
+}
+
+// 更新标签列表（从评价中提取）
+const updateTagList = () => {
+  const tagMap = new Map()
+
+  // 遍历所有评价，收集标签
+  evaluateList.value.forEach(item => {
+    if (item.tags && item.tags.length > 0) {
+      item.tags.forEach(tag => {
+        if (tagMap.has(tag)) {
+          tagMap.set(tag, tagMap.get(tag) + 1)
+        } else {
+          tagMap.set(tag, 1)
+        }
+      })
+    }
+  })
+
+  // 转换为数组并按数量降序排序
+  tagList.length = 0
+  tagMap.forEach((count, name) => {
+    tagList.push({ name, count })
+  })
+
+  // 按数量降序排序
+  tagList.sort((a, b) => b.count - a.count)
+}
+
+// 加载更多
+const handleLoadMore = () => {
+  if (loading.value || !hasMore.value) return
+  fetchReviewList(false)
+}
+
+onMounted(() => {
+  fetchReviewList(true)
+})
+
+onShow(() => {
+  fetchReviewList(true)
+})
 </script>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
 .evaluate-page {
   min-height: 100vh;
-  background-color: #f7f8fa;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
 }
 
 /* 顶部评分栏 */
 .score-header {
-  background-color: #fff;
-  padding: 30rpx;
+  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  padding: 60rpx 40rpx 80rpx;
+  padding-top: calc(60rpx + var(--status-bar-height, 0px));
   position: relative;
   text-align: center;
 }
@@ -203,7 +310,7 @@ const handleLoadMore = () => {
 .score-num {
   font-size: 120rpx;
   font-weight: bold;
-  color: #ff9500;
+  color: #ffffff;
   line-height: 1.2;
   margin-bottom: 20rpx;
 }
@@ -214,59 +321,68 @@ const handleLoadMore = () => {
 
 .total {
   font-size: 32rpx;
-  color: #999;
+  color: rgba(255, 255, 255, 0.7);
   font-weight: normal;
 }
 
 .stars {
   display: flex;
   justify-content: center;
-  gap: 8rpx;
-  margin-bottom: 20rpx;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
 }
 
 .score-desc {
-  font-size: 32rpx;
-  color: #666;
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* 标签卡片 */
 .tag-card {
-  background-color: #fff;
-  margin: 30rpx;
-  border-radius: 20rpx;
-  padding: 30rpx;
+  background: #ffffff;
+  margin: -40rpx 30rpx 30rpx;
+  border-radius: 24rpx;
+  padding: 36rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 10;
 }
 
 .card-title {
-  font-size: 36rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 30rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 28rpx;
 }
 
 .tag-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 20rpx;
+  gap: 16rpx;
 }
 
 .tag-item {
-  padding: 12rpx 24rpx;
+  padding: 14rpx 28rpx;
   border-radius: 40rpx;
-  font-size: 32rpx;
+  font-size: 28rpx;
   display: flex;
   align-items: center;
-  gap: 4rpx;
+  gap: 6rpx;
+  font-weight: 500;
+  transition: transform 0.2s;
+
+  &:active {
+    transform: scale(0.95);
+  }
 }
 
 .tag-name {
-  color: #333;
   font-weight: 500;
 }
 
 .tag-count {
-  color: #666;
+  opacity: 0.8;
+  font-size: 26rpx;
 }
 
 /* 评价列表 */
@@ -276,34 +392,47 @@ const handleLoadMore = () => {
 }
 
 .list-title {
-  font-size: 36rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 20rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 24rpx;
 }
 
 .scroll-container {
-  height: calc(100vh - 500rpx);
+  height: calc(100vh - 520rpx);
 }
 
 .evaluate-item {
-  background-color: #fff;
-  border-radius: 20rpx;
-  padding: 30rpx;
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 32rpx;
   margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
 }
 
 .avatar {
-  width: 80rpx;
-  height: 80rpx;
+  width: 88rpx;
+  height: 88rpx;
   border-radius: 50%;
   margin-right: 20rpx;
+  border: 3rpx solid #f3f4f6;
+  &-placeholder {
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 .user-detail {
@@ -314,14 +443,14 @@ const handleLoadMore = () => {
 }
 
 .user-name {
-  font-size: 34rpx;
-  font-weight: 500;
-  color: #333;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1f2937;
 }
 
 .time {
-  font-size: 28rpx;
-  color: #999;
+  font-size: 26rpx;
+  color: #9ca3af;
 }
 
 .user-stars {
@@ -331,35 +460,43 @@ const handleLoadMore = () => {
 
 .item-tags {
   display: flex;
-  gap: 16rpx;
-  margin-bottom: 20rpx;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
 }
 
 .item-tag {
-  background-color: #f0f0f0;
-  padding: 8rpx 20rpx;
-  border-radius: 8rpx;
-  font-size: 28rpx;
-  color: #666;
+  padding: 10rpx 24rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  font-weight: 500;
 }
 
 .content {
-  font-size: 32rpx;
-  color: #333;
-  line-height: 1.6;
-  margin-bottom: 30rpx;
+  font-size: 30rpx;
+  color: #4b5563;
+  line-height: 1.7;
+  margin-bottom: 24rpx;
 }
 
-.service-info {
-  font-size: 28rpx;
-  color: #999;
+.images-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.review-image {
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 16rpx;
+  border: 2rpx solid #f3f4f6;
 }
 
 /* 加载状态 */
-.loading, .load-more, .no-more {
+.loading, .load-more, .no-more, .empty {
   text-align: center;
-  padding: 30rpx 0;
+  padding: 50rpx 0;
   font-size: 28rpx;
-  color: #999;
+  color: #9ca3af;
 }
 </style>

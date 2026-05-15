@@ -1,52 +1,62 @@
 <template>
   <view class="appeal-page">
-
     <!-- 扣款信息卡片 -->
     <view class="info-card">
-      <view class="card-item">
-        <text>扣款类型</text>
-        <text class="text-dark">扣款申诉</text>
+      <view class="card-header">
+        <uni-icons type="info" size="20" color="#2f6bee"></uni-icons>
+        <text class="card-title">扣款信息</text>
       </view>
       <view class="card-item">
-        <text>扣款金额</text>
-        <text class="text-red">¥{{ formatAmount(deductAmount) }}</text>
+        <text class="item-label">扣款类型</text>
+        <text class="item-value">扣款申诉</text>
       </view>
       <view class="card-item">
-        <text>订单编号</text>
-        <text class="text-dark">{{ orderId || '-' }}</text>
+        <text class="item-label">扣款金额</text>
+        <text class="item-value red">¥{{ formatAmount(deductAmount) }}</text>
       </view>
       <view class="card-item">
-        <text>扣款原因</text>
-        <text class="text-dark">{{ deductReason || '-' }}</text>
+        <text class="item-label">订单编号</text>
+        <text class="item-value">{{ orderId || '-' }}</text>
+      </view>
+      <view class="card-item">
+        <text class="item-label">扣款原因</text>
+        <text class="item-value">{{ deductReason || '-' }}</text>
       </view>
     </view>
 
     <!-- 申诉表单 -->
-    <view class="form-box">
-      <view class="form-title">申诉信息</view>
+    <view class="form-card">
+      <view class="form-header">
+        <uni-icons type="compose" size="20" color="#2f6bee"></uni-icons>
+        <text class="form-title">申诉信息</text>
+      </view>
 
       <!-- 申诉内容 -->
       <view class="form-item">
-        <text class="label">申诉说明</text>
+        <text class="form-label">申诉说明</text>
         <textarea
-            v-model="form.content"
-            class="textarea"
-            placeholder="请详细描述申诉原因，越详细处理越快"
-            max-length="200"
-        />
-        <view class="count">{{ form.content.length }}/200</view>
+          v-model="form.content"
+          class="form-textarea"
+          placeholder="请详细描述申诉原因，越详细处理越快（至少5个字）"
+          :maxlength="200"
+          :show-confirm-bar="false"
+          :auto-height="true"
+          :min-height="200"
+        ></textarea>
+        <view class="char-count">{{ form.content.length }}/200</view>
       </view>
     </view>
 
     <!-- 提交按钮 -->
-    <view class="btn-box">
+    <view class="submit-section">
       <button
-          class="submit-btn"
-          :class="{ disabled: !canSubmit }"
-          :loading="submitting"
-          @click="handleSubmit"
+        class="submit-btn"
+        :class="{ disabled: !canSubmit || submitting }"
+        :disabled="!canSubmit || submitting"
+        :loading="submitting"
+        @click="handleSubmit"
       >
-        提交申诉
+        {{ submitting ? '提交中...' : '提交申诉' }}
       </button>
     </view>
   </view>
@@ -73,8 +83,9 @@ onMounted(() => {
 })
 
 // 格式化金额
-const formatAmount = (fen) => {
-  return (fen / 100).toFixed(2)
+const formatAmount = (amount) => {
+  if (!amount && amount !== 0) return '0.00'
+  return (Number(amount) / 100).toFixed(2)
 }
 
 // 表单数据
@@ -90,21 +101,15 @@ const canSubmit = computed(() => {
   return form.value.content.trim().length >= 5 && !submitting.value
 })
 
-// 返回
-const handleBack = () => {
-  uni.navigateBack()
-}
-
 // 提交申诉
 const handleSubmit = async () => {
-  if (!canSubmit.value) return
-
-  // 校验长度
-  if (form.value.content.length < 5) {
-    uni.showToast({
-      title: '申诉说明至少5个字',
-      icon: 'none'
-    })
+  if (!canSubmit.value) {
+    if (form.value.content.trim().length < 5) {
+      uni.showToast({
+        title: '申诉说明至少5个字',
+        icon: 'none'
+      })
+    }
     return
   }
 
@@ -123,175 +128,176 @@ const handleSubmit = async () => {
       }
     })
   } catch (err) {
-    uni.showToast({ title: '提交失败', icon: 'none' })
+    console.error('提交申诉失败', err)
+    uni.showToast({
+      title: err?.msg || '提交失败，请重试',
+      icon: 'none'
+    })
   } finally {
     submitting.value = false
   }
 }
 </script>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
 .appeal-page {
   min-height: 100vh;
-  background-color: #f7f8fa;
-  padding-bottom: 120rpx;
-}
-
-/* 顶部导航 */
-.page-header {
-  background: #fff;
-  height: 90rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-.back-btn {
-  position: absolute;
-  left: 30rpx;
-  top: 50%;
-  transform: translateY(-50%);
-}
-.title {
-  font-size: 34rpx;
-  font-weight: 500;
-  color: #333;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  padding: 24rpx;
+  padding-bottom: 160rpx;
 }
 
 /* 扣款信息卡片 */
 .info-card {
   background: #fff;
-  margin: 30rpx;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   padding: 30rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
 }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 24rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #f3f4f6;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
+
 .card-item {
   display: flex;
   justify-content: space-between;
-  padding: 24rpx 0;
-  font-size: 30rpx;
-  color: #666;
-  border-bottom: 1rpx solid #f5f5f5;
+  align-items: center;
+  padding: 20rpx 0;
 
-  &:last-child {
-    border-bottom: none;
+  &:not(:last-child) {
+    border-bottom: 1rpx solid #f9fafb;
   }
 }
-.text-dark {
-  color: #333;
-  font-weight: 500;
-}
-.text-red {
-  color: #ff3b30;
-  font-weight: 500;
+
+.item-label {
+  font-size: 28rpx;
+  color: #6b7280;
 }
 
-/* 表单 */
-.form-box {
-  background: #fff;
-  margin: 0 30rpx 30rpx;
-  border-radius: 20rpx;
-  padding: 30rpx;
+.item-value {
+  font-size: 28rpx;
+  color: #1f2937;
+  font-weight: 500;
+  max-width: 400rpx;
+  text-align: right;
+  word-break: break-all;
+
+  &.red {
+    color: #ef4444;
+  }
 }
+
+/* 表单卡片 */
+.form-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 24rpx;
+}
+
 .form-title {
   font-size: 32rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 30rpx;
-}
-.form-item {
-  margin-bottom: 40rpx;
-}
-.label {
-  display: block;
-  font-size: 30rpx;
-  color: #333;
-  margin-bottom: 20rpx;
+  font-weight: 600;
+  color: #1f2937;
 }
 
-/* 多行输入 */
-.textarea {
-  width: 100%;
-  min-height: 240rpx;
-  background: #f7f8fa;
-  border-radius: 12rpx;
-  padding: 24rpx;
-  font-size: 30rpx;
-  box-sizing: border-box;
+.form-item {
+  margin-bottom: 10rpx;
 }
-.count {
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  color: #374151;
+  margin-bottom: 16rpx;
+  font-weight: 500;
+}
+
+.form-textarea {
+  width: 100%;
+  min-height: 200rpx;
+  background: #f8fafc;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  font-size: 28rpx;
+  color: #1f2937;
+  line-height: 1.6;
+  box-sizing: border-box;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+
+  &:focus {
+    background: #fff;
+    border-color: #2f6bee;
+  }
+}
+
+.char-count {
   text-align: right;
-  font-size: 26rpx;
-  color: #999;
+  font-size: 24rpx;
+  color: #9ca3af;
   margin-top: 12rpx;
 }
 
-/* 上传 */
-.upload-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20rpx;
-}
-.upload-item {
-  width: 140rpx;
-  height: 140rpx;
-  position: relative;
-}
-.upload-img {
-  width: 100%;
-  height: 100%;
-  border-radius: 12rpx;
-}
-.del-btn {
-  position: absolute;
-  top: -12rpx;
-  right: -12rpx;
-  width: 40rpx;
-  height: 40rpx;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.upload-add {
-  width: 140rpx;
-  height: 140rpx;
-  border-radius: 12rpx;
-  background: #f7f8fa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.tip {
-  font-size: 26rpx;
-  color: #999;
-  margin-top: 16rpx;
-  display: block;
-}
-
-/* 提交按钮 */
-.btn-box {
-  padding: 0 30rpx;
+/* 提交按钮区域 */
+.submit-section {
   position: fixed;
-  bottom: 40rpx;
+  bottom: 0;
   left: 0;
   right: 0;
+  padding: 24rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.05);
 }
+
 .submit-btn {
   width: 100%;
-  height: 88rpx;
-  line-height: 88rpx;
-  background: #007aff;
+  height: 96rpx;
+  line-height: 96rpx;
+  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
   color: #fff;
-  border-radius: 16rpx;
-  font-size: 34rpx;
+  border-radius: 24rpx;
+  font-size: 32rpx;
+  font-weight: 600;
   border: none;
+  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  transition: all 0.2s;
+
+  &::after {
+    border: none;
+  }
+
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
 
   &.disabled {
-    background: #ccc;
-    color: #fff;
+    background: #e5e7eb;
+    color: #9ca3af;
+    box-shadow: none;
   }
 }
 </style>

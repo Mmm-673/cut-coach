@@ -1,365 +1,380 @@
 <template>
-  <view class="evaluate-page">
-    <!-- 顶部评分统计 -->
-    <view class="score-header">
-<!---->
-      <view class="score-main">
-        <view class="score-num">
-          <text class="score">4.9</text>
-          <text class="total">/5.0</text>
+  <view class="wallet-page">
+    <!-- 顶部余额卡片 -->
+    <view class="balance-card">
+      <view class="card-label">可提现余额</view>
+      <view class="balance-amount">¥{{ formatAmount(balance) }}</view>
+      <view class="frozen-info" v-if="frozen > 0">
+        <text class="frozen-label">冻结金额：</text>
+        <text class="frozen-amount">¥{{ formatAmount(frozen) }}</text>
+      </view>
+    </view>
+
+    <!-- 快捷操作区域 -->
+    <view class="action-section">
+      <view class="action-item" @click="goWithdraw">
+        <view class="action-icon withdraw-icon">
+          <uni-icons type="redo" size="32" color="#fff"></uni-icons>
         </view>
-        <view class="stars">
-          <uni-icons
-              v-for="(item, index) in 5"
-              :key="index"
-              :type="index < 4.9 ? 'star-filled' : 'star'"
-              size="20"
-              color="#ff9500"
-          ></uni-icons>
+        <text class="action-label">申请提现</text>
+      </view>
+      <view class="action-item" @click="goWithdrawRecord">
+        <view class="action-icon record-icon">
+          <uni-icons type="list" size="32" color="#fff"></uni-icons>
         </view>
-        <view class="score-desc">
-          累计收到评价 {{ totalCount }} 条 · 好评率 {{ goodRate }}
+        <text class="action-label">提现记录</text>
+      </view>
+      <view class="action-item" @click="goDeduction">
+        <view class="action-icon deduct-icon">
+          <uni-icons type="info" size="32" color="#fff"></uni-icons>
+        </view>
+        <text class="action-label">扣款记录</text>
+      </view>
+    </view>
+
+    <!-- 最近记录预览 -->
+    <view class="recent-section" v-if="recentRecords.length > 0">
+      <view class="section-header">
+        <text class="section-title">最近记录</text>
+        <text class="see-more" @click="goWithdrawRecord">查看全部</text>
+      </view>
+      <view class="record-list">
+        <view class="record-item" v-for="item in recentRecords" :key="item.id">
+          <view class="record-left">
+            <view class="record-type">{{ getAccountTypeText(item.accountType) }}</view>
+            <view class="record-time">{{ formatTime(item.applyTime) }}</view>
+          </view>
+          <view class="record-right">
+            <view class="record-amount">-¥{{ formatAmount(item.withdrawAmount) }}</view>
+            <view class="record-status" :class="getStatusClass(item.status)">
+              {{ getStatusText(item.status) }}
+            </view>
+          </view>
         </view>
       </view>
     </view>
 
-    <!-- 评价标签 -->
-    <view class="tag-card">
-      <view class="card-title">评价标签</view>
-      <view class="tag-list">
-        <view
-            v-for="tag in tagList"
-            :key="tag.name"
-            class="tag-item"
-            :style="{ backgroundColor: tag.bgColor }"
-        >
-          <text class="tag-name">{{ tag.name }}</text>
-          <text class="tag-count">({{ tag.count }})</text>
-        </view>
-      </view>
+    <!-- 空状态 -->
+    <view class="empty-state" v-if="!loading && recentRecords.length === 0">
+      <uni-icons type="list" size="64" color="#d1d5db"></uni-icons>
+      <text class="empty-text">暂无记录</text>
     </view>
 
-    <!-- 全部评价列表 -->
-    <view class="evaluate-list">
-      <view class="list-title">全部评价</view>
-      <scroll-view
-          scroll-y
-          class="scroll-container"
-          @scrolltolower="handleLoadMore"
-      >
-        <view
-            v-for="(item, index) in evaluateList"
-            :key="index"
-            class="evaluate-item"
-        >
-          <!-- 用户信息 -->
-          <view class="user-info">
-            <image class="avatar" :src="item.avatar" mode="aspectFill"></image>
-            <view class="user-detail">
-              <view class="user-name">{{ item.name }}</view>
-              <view class="time">{{ item.time }}</view>
-            </view>
-            <view class="user-stars">
-              <uni-icons
-                  v-for="(s, i) in 5"
-                  :key="i"
-                  :type="i < item.score ? 'star-filled' : 'star'"
-                  size="16"
-                  color="#ff9500"
-              ></uni-icons>
-            </view>
-          </view>
-
-          <!-- 标签 -->
-          <view class="item-tags">
-            <text v-for="t in item.tags" :key="t" class="item-tag">{{ t }}</text>
-          </view>
-
-          <!-- 评价内容 -->
-          <view class="content">{{ item.content }}</view>
-
-          <!-- 服务项目 -->
-          <view class="service-info">{{ item.service }}</view>
-        </view>
-
-        <!-- 加载状态 -->
-        <view v-if="loading" class="loading">加载中...</view>
-        <view v-if="!loading && hasMore" class="load-more">上拉加载更多</view>
-        <view v-if="!hasMore" class="no-more">已经到底啦~</view>
-      </scroll-view>
+    <!-- 加载状态 -->
+    <view class="loading-state" v-if="loading">
+      <text>加载中...</text>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
+import { getWalletBalance, getWithdrawalPage } from '@/api/billiard/wallet'
 
-// 页面数据
-const totalCount = ref(128)
-const goodRate = ref('98%')
-
-// 评价标签数据
-const tagList = reactive([
-  { name: '球技专业', count: 86, bgColor: '#fff3e0' },
-  { name: '态度友好', count: 78, bgColor: '#e6f0ff' },
-  { name: '准时到达', count: 72, bgColor: '#e6ffe6' },
-  { name: '教学耐心', count: 65, bgColor: '#f3e6ff' },
-  { name: '经验丰富', count: 58, bgColor: '#ffe6e6' }
-])
-
-// 评价列表数据（模拟接口数据）
-const evaluateList = reactive([
-  {
-    name: '李先生',
-    avatar: '/static/avatar1.jpg',
-    time: '今天 15:35',
-    score: 5,
-    tags: ['球技专业', '态度友好', '准时到达'],
-    content: '张教练球技非常专业，教学也很有耐心，纠正了我很多错误动作，一个小时收获很大，下次还会约！',
-    service: '服务项目：中式八球陪练 1小时 · XX台球厅（XX路店）'
-  },
-  {
-    name: '王女士',
-    avatar: '/static/avatar2.jpg',
-    time: '昨天 12:15',
-    score: 4.5,
-    tags: ['教学耐心', '经验丰富'],
-    content: '作为新手第一次学台球，张教练教的很细致，从握杆姿势到瞄准方法都讲的很清楚，两个小时就能打进球了，非常满意！',
-    service: '服务项目：斯诺克教学 2小时 · XX台球俱乐部'
-  },
-  {
-    name: '陈先生',
-    avatar: '/static/avatar1.jpg',
-    time: '2026-03-20 21:30',
-    score: 5,
-    tags: ['球技专业', '准时到达'],
-    content: '陪练水平很高，打起来很过瘾，还教了我很多实战技巧，非常不错的体验。',
-    service: '服务项目：中式八球陪练 2小时 · XX台球会所'
-  }
-])
-
-// 分页加载状态
+const balance = ref(0)
+const frozen = ref(0)
+const recentRecords = ref([])
 const loading = ref(false)
-const hasMore = ref(true)
 
-// 页面交互逻辑
-const handleBack = () => {
-  uni.navigateBack()
+const formatAmount = (amount) => {
+  if (!amount && amount !== 0) return '0.00'
+  return (Number(amount) / 100).toFixed(2)
 }
 
-const handleLoadMore = () => {
-  if (loading.value || !hasMore.value) return
+const formatTime = (time) => {
+  if (!time) return '-'
+  const date = new Date(time)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
 
+const getAccountTypeText = (type) => {
+  const map = { 1: '微信', 2: '支付宝' }
+  return map[type] || '银行卡'
+}
+
+const statusTextMap = {
+  0: '申请中',
+  1: '处理中',
+  2: '已到账',
+  3: '已拒绝'
+}
+
+const statusClassMap = {
+  0: 'pending',
+  1: 'processing',
+  2: 'success',
+  3: 'rejected'
+}
+
+const getStatusText = (status) => {
+  return statusTextMap[status] || '未知'
+}
+
+const getStatusClass = (status) => {
+  return statusClassMap[status] || ''
+}
+
+const fetchWalletData = async () => {
   loading.value = true
-  // 模拟接口请求
-  setTimeout(() => {
-    // 模拟追加数据
-    const newData = [
-      {
-        name: '赵先生',
-        avatar: '/static/avatar3.jpg',
-        time: '2026-03-18 19:20',
-        score: 5,
-        tags: ['经验丰富', '态度友好'],
-        content: '教练很专业，讲解清晰，对新手非常友好，强烈推荐！',
-        service: '服务项目：中式八球教学 1小时 · XX台球城'
-      }
-    ]
-    evaluateList.push(...newData)
-    loading.value = false
-    // 模拟没有更多数据
-    if (evaluateList.length >= 10) {
-      hasMore.value = false
+  try {
+    const [balanceRes, recordRes] = await Promise.all([
+      getWalletBalance(),
+      getWithdrawalPage({ pageNo: 1, pageSize: 5 })
+    ])
+
+    if (balanceRes && balanceRes.data) {
+      balance.value = balanceRes.data.balance || 0
+      frozen.value = balanceRes.data.frozen || 0
     }
-  }, 800)
+
+    if (recordRes && recordRes.data && recordRes.data.list) {
+      recentRecords.value = recordRes.data.list
+    }
+  } catch (err) {
+    console.error('获取钱包数据失败', err)
+  } finally {
+    loading.value = false
+  }
 }
+
+const goWithdraw = () => {
+  uni.navigateTo({ url: '/pages/mine/wallet/withdraw/index' })
+}
+
+const goWithdrawRecord = () => {
+  uni.navigateTo({ url: '/pages/mine/wallet/withdraw-record/index' })
+}
+
+const goDeduction = () => {
+  uni.navigateTo({ url: '/pages/mine/wallet/deduct/index' })
+}
+
+onShow(() => {
+  fetchWalletData()
+})
+
+onMounted(() => {
+  fetchWalletData()
+})
 </script>
 
-<style scoped lang="scss">
-.evaluate-page {
+<style lang="scss" scoped>
+.wallet-page {
   min-height: 100vh;
-  background-color: #f7f8fa;
-}
-
-/* 顶部评分栏 */
-.score-header {
-  background-color: #fff;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
   padding: 30rpx;
-  position: relative;
-  text-align: center;
 }
 
-.back-btn {
-  position: absolute;
-  left: 30rpx;
-  top: 30rpx;
-  z-index: 10;
+/* 余额卡片 */
+.balance-card {
+  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  border-radius: 32rpx;
+  padding: 60rpx 40rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 8rpx 24rpx rgba(47, 107, 238, 0.25);
 }
 
-.score-main {
-  padding: 20rpx 0;
+.card-label {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 16rpx;
 }
 
-.score-num {
-  font-size: 120rpx;
+.balance-amount {
+  font-size: 72rpx;
   font-weight: bold;
-  color: #ff9500;
+  color: #fff;
   line-height: 1.2;
   margin-bottom: 20rpx;
 }
 
-.score {
-  font-size: 120rpx;
-}
-
-.total {
-  font-size: 32rpx;
-  color: #999;
-  font-weight: normal;
-}
-
-.stars {
+.frozen-info {
   display: flex;
-  justify-content: center;
+  align-items: center;
   gap: 8rpx;
-  margin-bottom: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.2);
 }
 
-.score-desc {
-  font-size: 32rpx;
-  color: #666;
+.frozen-label {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-/* 标签卡片 */
-.tag-card {
-  background-color: #fff;
-  margin: 30rpx;
-  border-radius: 20rpx;
-  padding: 30rpx;
-}
-
-.card-title {
-  font-size: 36rpx;
+.frozen-amount {
+  font-size: 28rpx;
+  color: #fcd34d;
   font-weight: 500;
-  color: #333;
-  margin-bottom: 30rpx;
 }
 
-.tag-list {
+/* 快捷操作 */
+.action-section {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 40rpx 30rpx;
+  margin-bottom: 30rpx;
   display: flex;
-  flex-wrap: wrap;
+  justify-content: space-around;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.action-icon {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.withdraw-icon {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.record-icon {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.deduct-icon {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.action-label {
+  font-size: 26rpx;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* 最近记录 */
+.recent-section {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.see-more {
+  font-size: 26rpx;
+  color: #2f6bee;
+}
+
+.record-list {
+  display: flex;
+  flex-direction: column;
   gap: 20rpx;
 }
 
-.tag-item {
-  padding: 12rpx 24rpx;
-  border-radius: 40rpx;
-  font-size: 32rpx;
+.record-item {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 4rpx;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f3f4f6;
+
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
-.tag-name {
-  color: #333;
-  font-weight: 500;
-}
-
-.tag-count {
-  color: #666;
-}
-
-/* 评价列表 */
-.evaluate-list {
-  flex: 1;
-  padding: 0 30rpx 40rpx;
-}
-
-.list-title {
-  font-size: 36rpx;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 20rpx;
-}
-
-.scroll-container {
-  height: calc(100vh - 500rpx);
-}
-
-.evaluate-item {
-  background-color: #fff;
-  border-radius: 20rpx;
-  padding: 30rpx;
-  margin-bottom: 20rpx;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20rpx;
-}
-
-.avatar {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 50%;
-  margin-right: 20rpx;
-}
-
-.user-detail {
-  flex: 1;
+.record-left {
   display: flex;
   flex-direction: column;
   gap: 8rpx;
 }
 
-.user-name {
-  font-size: 34rpx;
+.record-type {
+  font-size: 30rpx;
+  color: #1f2937;
   font-weight: 500;
-  color: #333;
 }
 
-.time {
-  font-size: 28rpx;
-  color: #999;
+.record-time {
+  font-size: 24rpx;
+  color: #9ca3af;
 }
 
-.user-stars {
+.record-right {
   display: flex;
-  gap: 4rpx;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8rpx;
 }
 
-.item-tags {
-  display: flex;
-  gap: 16rpx;
-  margin-bottom: 20rpx;
-}
-
-.item-tag {
-  background-color: #f0f0f0;
-  padding: 8rpx 20rpx;
-  border-radius: 8rpx;
-  font-size: 28rpx;
-  color: #666;
-}
-
-.content {
+.record-amount {
   font-size: 32rpx;
-  color: #333;
-  line-height: 1.6;
-  margin-bottom: 30rpx;
+  font-weight: bold;
+  color: #ef4444;
 }
 
-.service-info {
+.record-status {
+  font-size: 24rpx;
+
+  &.pending {
+    color: #f59e0b;
+  }
+
+  &.processing {
+    color: #2f6bee;
+  }
+
+  &.success {
+    color: #10b981;
+  }
+
+  &.rejected {
+    color: #ef4444;
+  }
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+  gap: 20rpx;
+}
+
+.empty-text {
   font-size: 28rpx;
-  color: #999;
+  color: #9ca3af;
 }
 
 /* 加载状态 */
-.loading, .load-more, .no-more {
-  text-align: center;
-  padding: 30rpx 0;
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 0;
   font-size: 28rpx;
-  color: #999;
+  color: #9ca3af;
 }
 </style>

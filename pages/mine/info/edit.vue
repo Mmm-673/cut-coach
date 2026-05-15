@@ -1,124 +1,336 @@
 <template>
-  <view class="container">
-    <view class="example">
-      <uni-forms ref="form" :model="user" labelWidth="80px">
-        <uni-forms-item label="用户昵称" name="nickName">
-          <uni-easyinput v-model="user.nickName" placeholder="请输入昵称" />
-        </uni-forms-item>
-        <uni-forms-item label="手机号码" name="phonenumber">
-          <uni-easyinput v-model="user.phonenumber" placeholder="请输入手机号码" />
-        </uni-forms-item>
-        <uni-forms-item label="邮箱" name="email">
-          <uni-easyinput v-model="user.email" placeholder="请输入邮箱" />
-        </uni-forms-item>
-        <uni-forms-item label="性别" name="sex" required>
-          <uni-data-checkbox v-model="user.sex" :localdata="sexs" />
-        </uni-forms-item>
-      </uni-forms>
-      <button type="primary" @click="submit">提交</button>
+  <view class="edit-page">
+    <!-- 头部提示 -->
+    <view class="header-tip">
+      <uni-icons type="info" size="18" color="#2f6bee"></uni-icons>
+      <text>完善您的个人信息，让更多用户了解您</text>
+    </view>
+
+    <!-- 表单区域 -->
+    <view class="form-section">
+      <!-- 昵称 -->
+      <view class="form-item">
+        <view class="form-label">
+          <text class="required">*</text>
+          <text>用户昵称</text>
+        </view>
+        <input
+          class="form-input"
+          v-model="user.nickName"
+          placeholder="请输入昵称"
+          placeholder-class="placeholder"
+        />
+      </view>
+
+      <!-- 手机号 -->
+      <view class="form-item">
+        <view class="form-label">
+          <text class="required">*</text>
+          <text>手机号码</text>
+        </view>
+        <input
+          class="form-input"
+          v-model="user.phonenumber"
+          type="number"
+          placeholder="请输入手机号码"
+          placeholder-class="placeholder"
+          :maxlength="11"
+        />
+      </view>
+
+      <!-- 邮箱 -->
+      <view class="form-item">
+        <view class="form-label">
+          <text class="required">*</text>
+          <text>邮箱地址</text>
+        </view>
+        <input
+          class="form-input"
+          v-model="user.email"
+          placeholder="请输入邮箱"
+          placeholder-class="placeholder"
+        />
+      </view>
+
+      <!-- 性别 -->
+      <view class="form-item">
+        <view class="form-label">
+          <text class="required">*</text>
+          <text>性别</text>
+        </view>
+        <view class="gender-selector">
+          <view
+            class="gender-option"
+            :class="{ active: user.sex === '0' }"
+            @click="user.sex = '0'"
+          >
+            <uni-icons type="person" :size="20" :color="user.sex === '0' ? '#2f6bee' : '#9ca3af'"></uni-icons>
+            <text>男</text>
+          </view>
+          <view
+            class="gender-option"
+            :class="{ active: user.sex === '1' }"
+            @click="user.sex = '1'"
+          >
+            <uni-icons type="person" :size="20" :color="user.sex === '1' ? '#ec4899' : '#9ca3af'"></uni-icons>
+            <text>女</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 提交按钮 -->
+    <view class="submit-section">
+      <button
+        class="submit-btn"
+        :class="{ disabled: !canSubmit || isSubmitting }"
+        :disabled="!canSubmit || isSubmitting"
+        :loading="isSubmitting"
+        @click="handleSubmit"
+      >
+        {{ isSubmitting ? '提交中...' : '保存修改' }}
+      </button>
     </view>
   </view>
 </template>
 
 <script setup>
-  import { getUserProfile } from "@/api/system/user"
-  import { updateUserProfile } from "@/api/system/user"
-  import { ref , getCurrentInstance } from "vue"
-  import { onReady } from  "@dcloudio/uni-app"
+import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
+import { getUserProfile, updateUserProfile } from '@/api/system/user'
 
-  const { proxy } = getCurrentInstance()
-  const user = ref({
-    nickName: "",
-    phonenumber: "",
-    email: "",
-    sex: ""
-  })
-  const sexs = [{
-    text: '男',
-    value: "0"
-  }, {
-    text: '女',
-    value: "1"
-  }]
-  const rules = ref({
-    nickName: {
-      rules: [{
-        required: true,
-        errorMessage: '用户昵称不能为空'
-      }]
-    },
-    phonenumber: {
-      rules: [{
-        required: true,
-        errorMessage: '手机号码不能为空'
-      }, {
-        pattern: /^1[3|4|5|6|7|8|9][0-9]\d{8}$/,
-        errorMessage: '请输入正确的手机号码'
-      }]
-    },
-    email: {
-      rules: [{
-        required: true,
-        errorMessage: '邮箱地址不能为空'
-      }, {
-        format: 'email',
-        errorMessage: '请输入正确的邮箱地址'
-      }]
+const user = ref({
+  nickName: '',
+  phonenumber: '',
+  email: '',
+  sex: ''
+})
+
+const isSubmitting = ref(false)
+
+const canSubmit = computed(() => {
+  return user.value.nickName &&
+    user.value.phonenumber &&
+    /^1[3-9]\d{9}$/.test(user.value.phonenumber) &&
+    user.value.email &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.value.email) &&
+    user.value.sex !== ''
+})
+
+const getUserInfo = async () => {
+  try {
+    const res = await getUserProfile()
+    if (res.data) {
+      user.value = {
+        nickName: res.data.nickName || '',
+        phonenumber: res.data.phonenumber || '',
+        email: res.data.email || '',
+        sex: res.data.sex !== undefined && res.data.sex !== null ? String(res.data.sex) : ''
+      }
     }
-  })
+  } catch (err) {
+    console.error('获取用户信息失败', err)
+  }
+}
 
-  function getUser() {
-    getUserProfile().then(response => {
-      user.value = response.data
-    })
+const handleSubmit = async () => {
+  if (!canSubmit.value) {
+    if (!user.value.nickName) {
+      uni.showToast({ title: '请输入昵称', icon: 'none' })
+      return
+    }
+    if (!user.value.phonenumber) {
+      uni.showToast({ title: '请输入手机号', icon: 'none' })
+      return
+    }
+    if (!/^1[3-9]\d{9}$/.test(user.value.phonenumber)) {
+      uni.showToast({ title: '请输入正确的手机号', icon: 'none' })
+      return
+    }
+    if (!user.value.email) {
+      uni.showToast({ title: '请输入邮箱', icon: 'none' })
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.value.email)) {
+      uni.showToast({ title: '请输入正确的邮箱', icon: 'none' })
+      return
+    }
+    if (user.value.sex === '') {
+      uni.showToast({ title: '请选择性别', icon: 'none' })
+      return
+    }
+    return
   }
 
-  function submit(ref) {
-    proxy.$refs.form.validate().then(res => {
-      updateUserProfile(user.value).then(response => {
-        proxy.$modal.msgSuccess("修改成功")
-      })
-    })
+  isSubmitting.value = true
+  try {
+    await updateUserProfile(user.value)
+    uni.showToast({ title: '修改成功', icon: 'success' })
+    setTimeout(() => {
+      uni.navigateBack()
+    }, 1500)
+  } catch (err) {
+    console.error('更新失败', err)
+    uni.showToast({ title: err?.msg || '修改失败，请重试', icon: 'none' })
+  } finally {
+    isSubmitting.value = false
   }
+}
 
-  onReady(() => {
-    proxy.$refs.form.setRules(rules.value)
-  })
+onShow(() => {
+  getUserInfo()
+})
 
-  getUser()
+onMounted(() => {
+  getUserInfo()
+})
 </script>
 
 <style lang="scss" scoped>
-  page {
-    background-color: #ffffff;
-  }
+.edit-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  padding: 24rpx 24rpx 180rpx;
+}
 
-  .example {
-    padding: 15px;
-    background-color: #fff;
-  }
+.header-tip {
+  background: linear-gradient(135deg, #e6f0ff 0%, #f0f7ff 100%);
+  border-radius: 18rpx;
+  padding: 24rpx;
+  margin-bottom: 30rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
 
-  .segmented-control {
-    margin-bottom: 15px;
-  }
-
-  .button-group {
-    margin-top: 15px;
-    display: flex;
-    justify-content: space-around;
-  }
-
-  .form-item {
-    display: flex;
-    align-items: center;
+  text {
+    font-size: 26rpx;
+    color: #2f6bee;
     flex: 1;
+    line-height: 1.6;
+  }
+}
+
+.form-section {
+  background: #fff;
+  border-radius: 28rpx;
+  padding: 32rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.form-item {
+  margin-bottom: 36rpx;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 16rpx;
+  font-size: 28rpx;
+  color: #374151;
+  font-weight: 500;
+
+  .required {
+    color: #ef4444;
+    font-size: 32rpx;
+    line-height: 1;
+  }
+}
+
+.form-input {
+  width: 100%;
+  height: 96rpx;
+  background: #f8fafc;
+  border-radius: 18rpx;
+  padding: 0 28rpx;
+  font-size: 30rpx;
+  color: #1f2937;
+  box-sizing: border-box;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+
+  &:focus {
+    background: #fff;
+    border-color: #2f6bee;
+    box-shadow: 0 0 0 6rpx rgba(47, 107, 238, 0.1);
+  }
+}
+
+.placeholder {
+  color: #9ca3af;
+}
+
+.gender-selector {
+  display: flex;
+  gap: 20rpx;
+}
+
+.gender-option {
+  flex: 1;
+  height: 96rpx;
+  background: #f8fafc;
+  border-radius: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  font-size: 30rpx;
+  color: #6b7280;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+
+  &:active {
+    transform: scale(0.98);
   }
 
-  .button {
-    display: flex;
-    align-items: center;
-    height: 35px;
-    line-height: 35px;
-    margin-left: 10px;
+  &.active {
+    background: linear-gradient(135deg, #e6f0ff 0%, #f0f7ff 100%);
+    color: #2f6bee;
+    border-color: #2f6bee;
+    font-weight: 600;
   }
+}
+
+.submit-section {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
+.submit-btn {
+  width: 100%;
+  height: 100rpx;
+  line-height: 100rpx;
+  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  color: #fff;
+  border-radius: 24rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  transition: all 0.2s;
+
+  &::after {
+    border: none;
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &.disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    box-shadow: none;
+  }
+}
 </style>

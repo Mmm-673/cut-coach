@@ -94,6 +94,10 @@
 
     <!-- 确认提现按钮 -->
     <view class="footer">
+      <view class="balance-zero-tip" v-if="parseFloat(usableBalance) <= 0">
+        <uni-icons type="info" size="16" color="#999" />
+        <text>您的可提现余额为0元，暂无法发起提现</text>
+      </view>
       <view class="btn-row">
         <button
             class="btn-primary"
@@ -536,6 +540,20 @@ const viewAllRecord = () => uni.navigateTo({ url: '/pages/mine/wallet/withdraw-r
   flex-direction: column;
   gap: 16rpx;
   z-index: 99;
+
+  .balance-zero-tip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    padding: 12rpx;
+    background-color: #fff3cd;
+    border-radius: 12rpx;
+    text {
+      font-size: 26rpx;
+      color: #856404;
+    }
+  }
 
   .btn-row {
     display: flex;

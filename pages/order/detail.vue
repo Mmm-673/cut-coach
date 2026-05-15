@@ -56,7 +56,7 @@
     <!-- 教学地点卡片 -->
     <view class="card" v-if="orderInfo.venueName && orderInfo.venueName !== '-'">
       <view class="card-title">教学地点</view>
-      <image class="shop-img" :src="orderInfo.venueImg || 'https://picsum.photos/750/300'" mode="aspectFill"></image>
+      <image class="shop-img" :src="orderInfo.venuePhotoUrl || orderInfo.venueImg || '/static/images/banner/billiards_2.jpg'" mode="aspectFill"></image>
       <view class="shop-info">
         <view class="shop-left">
           <text class="shop-name">{{ orderInfo.venueName }}</text>
@@ -97,31 +97,45 @@
       </template>
       <!-- 已接单状态（待出发/已出发/已到达） -->
       <template v-else-if="orderStatus === ORDER_STATUS.ACCEPTED">
-        <!-- 未确认出发 -->
-        <template v-if="!departureConfirmTime">
-          <view class="btn-single">
-            <button class="btn-primary" @click="confirmDeparture">确认出发</button>
-          </view>
+        <!-- 陪练完整流程 -->
+        <template v-if="orderInfo.serviceType === 1">
+          <!-- 未确认出发 -->
+          <template v-if="!departureConfirmTime">
+            <view class="btn-single">
+              <button class="btn-primary" @click="confirmDeparture">确认出发</button>
+            </view>
+          </template>
+          <!-- 已确认出发，未到达 -->
+          <template v-else-if="departureConfirmTime && !arriveTime">
+            <view class="status-hint">
+              <uni-icons type="checkmarkempty" size="20" color="#10b981"></uni-icons>
+              <text class="hint-text">已确认出发，请尽快前往约定地点</text>
+            </view>
+            <view class="btn-single">
+              <button class="btn-success" @click="arrive">到达约定地点</button>
+            </view>
+          </template>
+          <!-- 已到达，未开始教学 -->
+          <template v-else-if="arriveTime && !startTime">
+            <view class="status-hint">
+              <uni-icons type="checkmarkempty" size="20" color="#10b981"></uni-icons>
+              <text class="hint-text">已到达约定地点，开始教学</text>
+            </view>
+            <view class="btn-row">
+              <button class="btn-warning" @click="showReportException">报告异常</button>
+              <button class="btn-primary" @click="startService">开始教学</button>
+            </view>
+          </template>
         </template>
-        <!-- 已确认出发，未到达 -->
-        <template v-else-if="departureConfirmTime && !arriveTime">
+
+        <!-- 陪游简化流程：接单后直接可以开始 -->
+        <template v-else>
           <view class="status-hint">
-            <uni-icons type="checkmarkempty" size="20" color="#10b981"></uni-icons>
-            <text class="hint-text">已确认出发，请尽快前往约定地点</text>
+            <uni-icons type="info" size="20" color="#007AFF"></uni-icons>
+            <text class="hint-text">准备就绪，请开始服务</text>
           </view>
-          <view class="btn-single">
-            <button class="btn-success" @click="arrive">到达约定地点</button>
-          </view>
-        </template>
-        <!-- 已到达，未开始教学 -->
-        <template v-else-if="arriveTime && !startTime">
-          <view class="status-hint">
-            <uni-icons type="checkmarkempty" size="20" color="#10b981"></uni-icons>
-            <text class="hint-text">已到达约定地点，开始教学</text>
-          </view>
-          <view class="btn-row">
-            <button class="btn-warning" @click="showReportException">报告异常</button>
-            <button class="btn-primary" @click="startService">开始教学</button>
+          <view class="btn-row" v-if="!startTime">
+            <button class="btn-primary" @click="startService">开始服务</button>
           </view>
         </template>
       </template>
@@ -129,6 +143,12 @@
       <template v-else-if="orderStatus === ORDER_STATUS.PROCESSING">
         <view class="btn-single">
           <button class="btn-end" @click="endService">结束教学</button>
+        </view>
+      </template>
+      <!-- 待评价状态显示去评价按钮 -->
+      <template v-else-if="orderStatus === ORDER_STATUS.PENDING_REVIEW">
+        <view class="btn-single">
+          <button class="btn-primary" @click="goEvaluate">查看评价</button>
         </view>
       </template>
       <!-- 其他状态显示联系客服 -->
@@ -143,7 +163,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onLoad, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onUnload, onShow } from '@dcloudio/uni-app'
 import { openMapNavigation } from '@/utils/platform'
 import { getOrderDetail, finishService, acceptOrder as acceptOrderApi, rejectOrder as rejectOrderApi, confirmDeparture as confirmDepartureApi, arrive as arriveApi, startService as startServiceApi, reportException as reportExceptionApi, startTimer as startTimerApi, endTimer as endTimerApi, getInProgressOrder } from '@/api/billiard/order'
 import { getLocation, showLocationPermissionGuide } from '@/utils/platform'
@@ -265,10 +285,6 @@ const getStatusSubText = (status) => {
   }
 }
 
-// 计时器实例
-let usedTimer = null
-let leftTimer = null
-
 // 时间格式化函数
 const fmtMMSS = (s) => {
   const m = Math.floor(s / 60)
@@ -287,65 +303,18 @@ const formatTime = (timestamp) => {
 
   let date
   if (typeof timestamp === 'number') {
-    // 如果是毫秒时间戳，直接使用
     date = new Date(timestamp)
   } else if (typeof timestamp === 'string') {
-    // 如果是字符串，尝试解析
     date = new Date(timestamp)
   } else {
     return ''
   }
 
-  // 检查日期是否有效
   if (isNaN(date.getTime())) {
     return ''
   }
 
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
-}
-
-// 获取平台位置
-const getPlatformLocation = () => {
-  return getLocation({
-    type: 'gcj02',
-    highAccuracy: true,
-    timeout: 10000
-  })
-}
-
-// 计算两点距离（米）
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371000
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
-}
-
-// 校验位置是否在范围内
-const checkLocationInRange = (targetLat, targetLon, maxDistance = 200) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const loc = await getPlatformLocation()
-      const distance = calculateDistance(
-        loc.latitude,
-        loc.longitude,
-        targetLat,
-        targetLon
-      )
-      console.log(`当前位置与球厅距离: ${Math.round(distance)}米`)
-      if (distance <= maxDistance) {
-        resolve(distance)
-      } else {
-        reject(new Error(`距离球厅${Math.round(distance)}米，超出打卡范围${maxDistance}米`))
-      }
-    } catch (err) {
-      reject(err)
-    }
-  })
 }
 
 // 获取订单详情
@@ -356,8 +325,6 @@ const fetchOrderDetail = async () => {
     const res = await getOrderDetail(orderId.value)
     if (res.data) {
       console.log('订单详情数据:', res.data)
-      console.log('bookingTime:', res.data.bookingTime, '类型:', typeof res.data.bookingTime)
-      console.log('createTime:', res.data.createTime, '类型:', typeof res.data.createTime)
 
       orderInfo.value = {
         ...res.data,
@@ -372,15 +339,12 @@ const fetchOrderDetail = async () => {
 
       // 如果是进行中订单，启动计时
       if (orderStatus.value === ORDER_STATUS.PROCESSING) {
-        // 计算已教学时长
         if (res.data.startTime) {
           usedSec.value = Math.floor((Date.now() - new Date(res.data.startTime).getTime()) / 1000)
         }
-        // 计算剩余时长
         if (res.data.remainingMinutes) {
           leftSec.value = res.data.remainingMinutes * 60
         } else if (res.data.serviceDuration && res.data.startTime) {
-          // 根据预定时长和开始时间计算剩余
           const elapsed = Math.floor((Date.now() - new Date(res.data.startTime).getTime()) / 1000)
           const total = res.data.serviceDuration * 60
           leftSec.value = Math.max(0, total - elapsed)
@@ -395,19 +359,15 @@ const fetchOrderDetail = async () => {
   }
 }
 
-// 本地秒级递减计时器
 const startLocalTimer = () => {
   stopLocalTimer()
-  // 初始化显示
   usedText.value = fmtMMSS(usedSec.value)
   leftText.value = fmtHHMMSS(leftSec.value)
 
   localTimer = setInterval(() => {
-    // 已教学时长递增
     usedSec.value++
     usedText.value = fmtMMSS(usedSec.value)
 
-    // 剩余时长递减
     if (leftSec.value > 0) {
       leftSec.value--
       leftText.value = fmtHHMMSS(leftSec.value)
@@ -422,7 +382,6 @@ const stopLocalTimer = () => {
   }
 }
 
-// 进行中订单轮询（5秒一次）
 const startInProgressPolling = () => {
   fetchInProgressOrder()
   if (timerPollTimer) clearInterval(timerPollTimer)
@@ -443,24 +402,17 @@ const fetchInProgressOrder = async () => {
   try {
     const resp = await getInProgressOrder()
     if (resp && resp.data) {
-      console.log('进行中订单:', resp.data)
       const data = resp.data
-
-      // 更新订单信息
       orderInfo.value = {
         ...orderInfo.value,
         ...data,
         bookingTimeText: formatTime(data.bookingTime),
         createTimeText: formatTime(data.createTime)
       }
-
-      // 更新剩余时长（以服务端返回为准）
       if (data.remainingMinutes !== undefined && data.remainingMinutes !== null) {
         leftSec.value = data.remainingMinutes * 60
         leftText.value = fmtHHMMSS(leftSec.value)
       }
-
-      // 更新已教学时长
       if (data.startTime) {
         usedSec.value = Math.floor((Date.now() - new Date(data.startTime).getTime()) / 1000)
         usedText.value = fmtMMSS(usedSec.value)
@@ -471,7 +423,6 @@ const fetchInProgressOrder = async () => {
   }
 }
 
-// 确认出发
 const confirmDeparture = async () => {
   try {
     await confirmDepartureApi({
@@ -479,7 +430,6 @@ const confirmDeparture = async () => {
     })
     departureConfirmTime.value = new Date().toISOString()
     uni.showToast({ title: '已确认出发', icon: 'success' })
-    // 刷新详情
     await fetchOrderDetail()
   } catch (err) {
     console.error('确认出发失败', err)
@@ -487,40 +437,9 @@ const confirmDeparture = async () => {
   }
 }
 
-// 到达教学地址
 const arrive = async () => {
   uni.showLoading({ title: '校验位置...' })
-    uni.hideLoading()
-  // try {
-  //   await checkLocationInRange(
-  //     orderInfo.value.venueLatitude,
-  //     orderInfo.value.venueLongitude,
-  //     200
-  //   )
-  //   uni.hideLoading()
-  // } catch (err) {
-  //   uni.hideLoading()
-  //   if (err.message?.includes('距离')) {
-  //     uni.showModal({
-  //       title: '位置不在范围内',
-  //       content: err.message + '，请确认已到达球厅地址',
-  //       showCancel: false
-  //     })
-  //   } else {
-  //     uni.showModal({
-  //       title: '需要位置权限',
-  //       content: '确认到达需要获取位置信息，请授权位置权限',
-  //       confirmText: '去设置',
-  //       cancelText: '取消',
-  //       success: (res) => {
-  //         if (res.confirm) {
-  //           showLocationPermissionGuide()
-  //         }
-  //       }
-  //     })
-  //   }
-  //   return
-  // }
+  uni.hideLoading()
 
   try {
     await arriveApi({
@@ -535,7 +454,6 @@ const arrive = async () => {
   }
 }
 
-// 开始教学
 const startService = async () => {
   try {
     await startServiceApi({
@@ -548,13 +466,9 @@ const startService = async () => {
     orderStatus.value = ORDER_STATUS.PROCESSING
     startTime.value = new Date().toISOString()
 
-    // 先获取一次进行中订单来初始化时间
     await fetchInProgressOrder()
-
-    // 启动本地秒级递减和服务端轮询
     startLocalTimer()
     startInProgressPolling()
-
     uni.showToast({ title: '教学已开始', icon: 'success' })
   } catch (err) {
     console.error('开始教学失败', err)
@@ -562,7 +476,6 @@ const startService = async () => {
   }
 }
 
-// 报告异常
 const showReportException = () => {
   const exceptionTypes = [
     { label: '联系不到客户', value: 1 },
@@ -596,17 +509,13 @@ const showReportException = () => {
   })
 }
 
-
-// 页面加载时接收参数
 onLoad((options) => {
   orderId.value = options.orderId ? parseInt(options.orderId) : null
   orderStatus.value = options.status ? parseInt(options.status) : null
 
-  // 如果有订单ID，通过API获取详情
   if (orderId.value) {
     fetchOrderDetail()
   } else {
-    // 兜底：使用传入的信息（兼容没有orderId的情况）
     orderInfo.value = {
       orderNo: options.orderNo || '-',
       serviceType: options.serviceType ? parseInt(options.serviceType) : null,
@@ -622,9 +531,7 @@ onLoad((options) => {
   }
 })
 
-// 导航
 const navigate = () => {
-
   const { venueLatitude, venueLongitude, venueName, venueAddress } = orderInfo.value
   if (!venueLatitude || !venueLongitude) {
     return uni.showToast({ title: '地址信息有误', icon: 'none' })
@@ -639,7 +546,6 @@ const navigate = () => {
   })
 }
 
-// 打电话
 const makeCall = () => {
   const realMobile = orderInfo.value.userRealMobile || orderInfo.value.userPhone
   if (!realMobile) {
@@ -655,12 +561,14 @@ const makeCall = () => {
   })
 }
 
-// 联系客服
 const contactService = () => {
   uni.showToast({ title: '正在联系客服', icon: 'none' })
 }
 
-// 接单
+const goEvaluate = () => {
+  uni.navigateTo({ url: '/pages/mine/evaluate/index' })
+}
+
 const acceptOrder = async () => {
   uni.showLoading({ title: '接单中...' })
   try {
@@ -669,7 +577,6 @@ const acceptOrder = async () => {
     })
     uni.hideLoading()
     uni.showToast({ title: '接单成功', icon: 'success' })
-    // 刷新详情
     await fetchOrderDetail()
   } catch (err) {
     uni.hideLoading()
@@ -678,7 +585,6 @@ const acceptOrder = async () => {
   }
 }
 
-// 拒单
 const rejectOrder = () => {
   uni.showModal({
     title: '确认拒单',
@@ -693,7 +599,6 @@ const rejectOrder = () => {
             rejectReason: res.content || ''
           })
           uni.showToast({ title: '已拒绝', icon: 'success' })
-          // 刷新详情
           await fetchOrderDetail()
         } catch (err) {
           console.error('拒单失败', err)
@@ -704,7 +609,6 @@ const rejectOrder = () => {
   })
 }
 
-// 结束教学
 const endService = () => {
   uni.showModal({
     title: '确认结束',
@@ -712,27 +616,21 @@ const endService = () => {
     success: async (res) => {
       if (res.confirm) {
         try {
-          // 结束计时器
           const timerResp = await endTimerApi({
             orderId: orderId.value
           })
           console.log('计时器已结束:', timerResp)
-          // 结束教学
           await finishService({
             orderId: orderId.value
           })
-          // 停止本地计时器和轮询
           stopLocalTimer()
           stopInProgressPolling()
-          // 更新状态
           orderStatus.value = ORDER_STATUS.FINISHED
-          // 通知工作台教学已结束
           uni.$emit('serviceEnded', {
             orderId: orderId.value,
             usedTime: usedText.value
           })
           uni.showToast({ title: '教学已结束', icon: 'success' })
-          // 延迟返回
           setTimeout(() => {
             uni.navigateBack()
           }, 1000)
@@ -745,7 +643,12 @@ const endService = () => {
   })
 }
 
-// 页面卸载时清空计时器
+onShow(() => {
+  if (orderId.value) {
+    fetchOrderDetail()
+  }
+})
+
 onUnload(() => {
   stopLocalTimer()
   stopInProgressPolling()
@@ -755,55 +658,54 @@ onUnload(() => {
 <style lang="scss" scoped>
 .order-detail-wrapper {
   min-height: 100vh;
-  background: $bg-page;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
   padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
+
 .order-detail-finished {
   padding-bottom: calc(100rpx + env(safe-area-inset-bottom));
 }
 
-:deep(.uni-nav-bar) {
-  background: $bg-card !important;
-  border-bottom: 1rpx solid $border-light !important;
-}
-
-/* 进行中计时区域 */
 .timer-section {
-  background: $bg-card;
+  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
   text-align: center;
-  padding: 32rpx 24rpx 48rpx;
-  margin-bottom: 24rpx;
-  box-shadow: $shadow-sm;
+  padding: 50rpx 30rpx 60rpx;
+  padding-top: calc(50rpx + var(--status-bar-height, 0px));
+  margin-bottom: -20rpx;
+
   .status-tag {
-    margin-bottom: 16rpx;
+    margin-bottom: 24rpx;
   }
+
   .big-time {
-    font-size: 96rpx;
+    font-size: 100rpx;
     font-weight: bold;
-    color: $text-primary;
+    color: #fff;
     display: block;
     line-height: 1;
-    margin: 16rpx;
+    margin: 20rpx 0;
   }
+
   .time-label {
     font-size: 26rpx;
-    color: $text-tertiary;
+    color: rgba(255, 255, 255, 0.8);
     display: block;
     margin-bottom: 16rpx;
   }
+
   .left-time {
     font-size: 28rpx;
-    color: $danger;
+    color: #ffeb3b;
     font-weight: bold;
   }
 }
 
-/* 状态区域 */
 .status-section {
-  background: $bg-card;
-  padding: 40rpx 32rpx;
-  margin-bottom: 24rpx;
+  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  padding: 50rpx 32rpx;
+  padding-top: calc(50rpx + var(--status-bar-height, 0px));
+  margin-bottom: -20rpx;
   text-align: center;
 
   .status-header {
@@ -819,14 +721,7 @@ onUnload(() => {
     font-size: 28rpx;
     font-weight: bold;
     color: #fff;
-
-    &.badge-10 { background: linear-gradient(135deg, #FF9500 0%, #FF6B00 100%); } // 待付款-橙色
-    &.badge-20 { background: linear-gradient(135deg, #007AFF 0%, #0056FF 100%); } // 待接单-蓝色
-    &.badge-30 { background: linear-gradient(135deg, #8E8E93 0%, #636366 100%); } // 已接单-灰色
-    &.badge-40 { background: linear-gradient(135deg, #34C759 0%, #28A745 100%); } // 进行中-绿色
-    &.badge-50 { background: linear-gradient(135deg, #FF2D55 0%, #E91E63 100%); } // 待评价-粉红色
-    &.badge-60 { background: linear-gradient(135deg, #5856D6 0%, #3F3F98 100%); } // 已完成-紫色
-    &.badge-70 { background: linear-gradient(135deg, #8E8E93 0%, #636366 100%); } // 已取消-灰色
+    background: rgba(255, 255, 255, 0.2);
   }
 
   .status-content {
@@ -836,145 +731,159 @@ onUnload(() => {
   }
 
   .status-main-text {
-    font-size: 32rpx;
+    font-size: 34rpx;
     font-weight: bold;
-    color: $text-primary;
+    color: #fff;
   }
 
   .status-sub-text {
     font-size: 26rpx;
-    color: $text-tertiary;
+    color: rgba(255, 255, 255, 0.85);
   }
 }
 
-/* 通用卡片样式 */
 .card {
-  background: $bg-card;
-  border-radius: $radius-xl;
-  padding: 24rpx;
-  margin: 0 24rpx 24rpx;
-  box-shadow: $shadow-sm;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin: 30rpx 24rpx 0;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+
   .card-title {
-    font-size: 30rpx;
-    font-weight: bold;
-    color: $text-primary;
-    margin-bottom: 24rpx;
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 28rpx;
   }
 }
 
-/* 订单信息行 */
 .info-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16rpx 0;
-  border-bottom: 1rpx solid $bg-page;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #f3f4f6;
+
   &:last-child {
     border-bottom: none;
   }
+
   .label {
-    font-size: 26rpx;
-    color: $text-tertiary;
+    font-size: 28rpx;
+    color: #6b7280;
   }
+
   .value {
-    font-size: 26rpx;
-    color: $text-secondary;
+    font-size: 28rpx;
+    color: #374151;
+    font-weight: 500;
   }
+
   .price {
-    color: $primary;
+    color: #2f6bee;
     font-weight: bold;
+    font-size: 32rpx;
   }
 }
 
-/* 教学地点样式 */
 .shop-img {
   width: 100%;
-  height: 300rpx;
-  border-radius: $radius-base;
-  margin-bottom: 20rpx;
+  height: 320rpx;
+  border-radius: 16rpx;
+  margin-bottom: 24rpx;
+  border: 2rpx solid #f3f4f6;
 }
+
 .shop-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
   .shop-left {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    gap: 10rpx;
+
     .shop-name {
-      font-size: 28rpx;
-      font-weight: bold;
-      color: $text-primary;
+      font-size: 30rpx;
+      font-weight: 600;
+      color: #1f2937;
     }
+
     .shop-address {
-      font-size: 24rpx;
-      color: $text-secondary;
+      font-size: 26rpx;
+      color: #6b7280;
     }
   }
+
   .nav-btn {
-    width: 80rpx;
-    height: 80rpx;
+    width: 84rpx;
+    height: 84rpx;
     border-radius: 50%;
-    background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+    background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
     margin: 0;
-    transition: transform $duration-fast;
+    box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+    transition: transform 0.2s;
+
     &:active {
       transform: scale(0.95);
     }
   }
 }
 
-/* 客户信息样式 */
 .customer-info {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: 20rpx;
+
   .avatar {
-    width: 80rpx;
-    height: 80rpx;
+    width: 92rpx;
+    height: 92rpx;
     border-radius: 50%;
+    border: 2rpx solid #f3f4f6;
   }
+
   .customer-left {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 6rpx;
+    gap: 8rpx;
+
     .customer-name {
-      font-size: 28rpx;
-      font-weight: bold;
-      color: $text-primary;
+      font-size: 30rpx;
+      font-weight: 600;
+      color: #1f2937;
     }
+
     .customer-phone {
-      font-size: 24rpx;
-      color: $text-secondary;
+      font-size: 26rpx;
+      color: #6b7280;
     }
   }
+
   .call-btn {
-    width: 72rpx;
-    height: 72rpx;
+    width: 80rpx;
+    height: 80rpx;
     border-radius: 50%;
-    background: $success-light;
+    background: rgba(16, 185, 129, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
     margin: 0;
-    transition: transform $duration-fast;
+    transition: transform 0.2s;
+
     &:active {
       transform: scale(0.95);
     }
   }
 }
-.card:last-of-type {
-  margin-bottom: 20rpx;
-}
 
-/* 底部操作区 */
 .footer {
   position: fixed;
   bottom: 0;
@@ -982,9 +891,9 @@ onUnload(() => {
   right: 0;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(10px);
-  padding: 20rpx 0;
-  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid $border-light;
+  padding: 24rpx 0;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid #f3f4f6;
   display: flex;
   flex-direction: column;
   gap: 16rpx;
@@ -1002,72 +911,77 @@ onUnload(() => {
 
   .btn-danger, .btn-primary, .btn-success, .btn-warning, .btn-end, .btn-service {
     width: 100%;
-    height: 88rpx;
-    line-height: 88rpx;
-    border-radius: $radius-base;
+    height: 96rpx;
+    line-height: 96rpx;
+    border-radius: 20rpx;
     font-size: 32rpx;
     font-weight: 600;
     border: none;
-    transition: transform $duration-fast;
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+
     &:active {
       transform: scale(0.98);
+      box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
     }
-    &::after { border: none; }
+
+    &::after {
+      border: none;
+    }
   }
 
   .btn-danger {
-    background: $danger;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: #fff;
-    box-shadow: 0 8rpx 20rpx rgba(245, 63, 63, 0.2);
+    box-shadow: 0 8rpx 20rpx rgba(245, 63, 63, 0.25);
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+    background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
     color: #fff;
-    box-shadow: 0 8rpx 20rpx rgba($primary, 0.3);
+    box-shadow: 0 8rpx 20rpx rgba(47, 107, 238, 0.3);
   }
 
   .btn-success {
-    background: linear-gradient(135deg, $success 0%, #10b981 100%);
+    background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
     color: #fff;
-    box-shadow: 0 8rpx 20rpx rgba(16, 185, 129, 0.3);
+    box-shadow: 0 8rpx 20rpx rgba(16, 185, 129, 0.25);
   }
 
   .btn-warning {
-    background: linear-gradient(135deg, $warning 0%, #f59e0b 100%);
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     color: #fff;
-    box-shadow: 0 8rpx 20rpx rgba(245, 158, 11, 0.3);
+    box-shadow: 0 8rpx 20rpx rgba(245, 158, 11, 0.25);
   }
 
   .btn-end {
-    background: $danger;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: #fff;
-    box-shadow: 0 8rpx 20rpx rgba(245, 63, 63, 0.2);
+    box-shadow: 0 8rpx 20rpx rgba(245, 63, 63, 0.25);
   }
 
   .btn-service {
-    background: $bg-card;
-    color: $text-secondary;
-    border: 2rpx solid $border-light;
+    background: #fff;
+    color: #374151;
+    border: 2rpx solid #e5e7eb;
     font-weight: 500;
-  }
-
-  .status-hint {
-    margin: 0 24rpx;
+    box-shadow: none;
   }
 
   .status-hint {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8rpx;
-    padding: 20rpx;
-    background: $success-light;
-    border-radius: $radius-base;
-    margin-bottom: 16rpx;
+    gap: 10rpx;
+    padding: 24rpx;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 16rpx;
+    margin: 0 24rpx 16rpx;
+
     .hint-text {
       font-size: 26rpx;
-      color: $success;
+      color: #10b981;
+      font-weight: 500;
     }
   }
 }

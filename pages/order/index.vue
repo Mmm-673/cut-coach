@@ -32,7 +32,7 @@
             @click="goToDetail(order)"
         >
           <view class="order-header">
-            <text class="order-no">订单号：{{order.orderNo}}</text>
+            <text class="order-no">订单编号：{{order.orderNo}}</text>
             <uni-tag
                 :text="getStatusText(order.status)"
                 :type="getStatusType(order.status)"
@@ -41,24 +41,26 @@
           </view>
           <view class="order-body">
             <view class="order-info-row">
-              <text class="label">服务类型：</text>
+              <text class="label">服务类型</text>
               <text class="value">{{order.serviceType === 1 ? '台球陪练' : '陪游'}}</text>
             </view>
             <view class="order-info-row">
-              <text class="label">预约时间：</text>
-              <text class="value">{{order.bookingTimeText}}</text>
+              <text class="label">预约时间</text>
+              <text class="value">{{order.bookingTimeText || '-'}}</text>
             </view>
             <view class="order-info-row">
-              <text class="label">金额：</text>
+              <text class="label">订单金额</text>
               <text class="value price">¥{{(order.totalAmount / 100).toFixed(2)}}</text>
             </view>
           </view>
           <view class="order-footer">
-            <text class="arrow">查看详情 ＞</text>
+            <text class="arrow">查看详情</text>
+            <uni-icons type="right" size="16" color="#9ca3af" />
           </view>
         </view>
         <view class="empty-tip" v-if="!displayOrders.length && !loading">
-          暂无订单
+          <uni-icons type="info" size="48" color="#d1d5db" />
+          <text>暂无订单</text>
         </view>
         <view class="loading-tip" v-if="loading">
           <text>加载中...</text>
@@ -73,6 +75,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { getOrderPage } from '@/api/billiard/order'
 
 const tabs = [
@@ -96,7 +99,7 @@ const hasMore = ref(true)
 
 const displayOrders = computed(() => {
   if (currentTab.value === 0) {
-    return orderList.value // 全部订单不过滤
+    return orderList.value
   }
   return orderList.value.filter(order => order.status === currentTab.value)
 })
@@ -143,8 +146,21 @@ const fetchOrders = async (reset = false) => {
 
 // 格式化时间
 const formatTime = (timestamp) => {
-  if (!timestamp) return ''
-  const date = new Date(timestamp)
+  if (!timestamp && timestamp !== 0) return ''
+
+  let date
+  if (typeof timestamp === 'number') {
+    date = new Date(timestamp)
+  } else if (typeof timestamp === 'string') {
+    date = new Date(timestamp)
+  } else {
+    return ''
+  }
+
+  if (isNaN(date.getTime())) {
+    return ''
+  }
+
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
 }
 
@@ -207,7 +223,7 @@ const onLoadMore = () => {
   }
 }
 
-onMounted(() => {
+onShow(() => {
   fetchOrders(true)
 })
 </script>
@@ -215,39 +231,40 @@ onMounted(() => {
 <style lang="scss" scoped>
 .order-list-wrapper {
   min-height: 100vh;
-  background: $bg-page;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
   display: flex;
   flex-direction: column;
 }
+
 .tab-bar-wrapper {
   width: 100%;
   position: sticky;
   top: 0;
   z-index: 99;
-  background: $bg-card;
+  background: #fff;
 }
+
 .tab-bar {
   white-space: nowrap;
-  background: $bg-card;
-  padding: 0 16rpx;
-  box-shadow: $shadow-sm;
+  background: #fff;
+  padding: 0 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
-.order-list-scroll {
-  flex: 1;
-  height: calc(100vh - 88rpx);
-}
+
 .tab-item {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 28rpx;
-  color: $text-secondary;
-  padding: 24rpx 24rpx;
+  color: #6b7280;
+  padding: 28rpx 24rpx;
   position: relative;
-  transition: color $duration-fast;
+  transition: color 0.2s;
+
   &.active {
-    color: $primary;
+    color: #2f6bee;
     font-weight: bold;
+
     &::after {
       content: '';
       position: absolute;
@@ -256,72 +273,107 @@ onMounted(() => {
       transform: translateX(-50%);
       width: 40rpx;
       height: 6rpx;
-      background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+      background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
       border-radius: 3rpx;
     }
   }
 }
+
+.order-list-scroll {
+  flex: 1;
+  height: calc(100vh - 100rpx);
+}
+
 .order-list {
   padding: 24rpx;
 }
+
 .order-item {
-  background: $bg-card;
-  border-radius: $radius-xl;
-  padding: 24rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 28rpx;
   margin-bottom: 20rpx;
-  box-shadow: $shadow-sm;
-  transition: transform $duration-base, box-shadow $duration-base;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+
   &:active {
     transform: scale(0.98);
   }
-  .order-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 16rpx;
-    border-bottom: 1rpx solid $border-light;
-    margin-bottom: 16rpx;
-    .order-no {
-      font-size: 26rpx;
-      color: $text-primary;
-    }
-  }
-  .order-info-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 12rpx;
-    .label {
-      font-size: 26rpx;
-      color: $text-tertiary;
-    }
-    .value {
-      font-size: 26rpx;
-      color: $text-secondary;
-    }
-    .price {
-      color: $primary;
-      font-weight: bold;
-    }
-  }
-  .order-footer {
-    text-align: right;
-    padding-top: 12rpx;
-    .arrow {
-      font-size: 26rpx;
-      color: $text-tertiary;
-    }
-  }
 }
-.empty-tip, .loading-tip {
-  text-align: center;
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #f3f4f6;
+  margin-bottom: 20rpx;
+}
+
+.order-no {
   font-size: 26rpx;
-  color: $text-tertiary;
-  padding-top: 100rpx;
+  color: #374151;
+  font-weight: 500;
 }
+
+.order-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14rpx;
+}
+
+.order-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  font-size: 28rpx;
+  color: #9ca3af;
+}
+
+.value {
+  font-size: 28rpx;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.price {
+  color: #2f6bee;
+  font-weight: bold;
+  font-size: 32rpx;
+}
+
+.order-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f3f4f6;
+  margin-top: 20rpx;
+  gap: 6rpx;
+}
+
+.arrow {
+  font-size: 26rpx;
+  color: #9ca3af;
+}
+
+.empty-tip, .loading-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  padding-top: 160rpx;
+  font-size: 28rpx;
+  color: #9ca3af;
+}
+
 .no-more-tip {
   text-align: center;
-  font-size: 24rpx;
-  color: $text-tertiary;
-  padding: 24rpx 0;
+  font-size: 26rpx;
+  color: #9ca3af;
+  padding: 32rpx 0;
 }
 </style>

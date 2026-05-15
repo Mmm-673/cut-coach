@@ -4,18 +4,18 @@
     <view class="stats-header">
       <view class="total-deduct">
         <text class="label">累计扣款</text>
-        <text class="value">-¥{{ (totalDeduction / 100).toFixed(2) }}</text>
+        <text class="value">-¥{{ formatAmount(totalDeduction) }}</text>
       </view>
     </view>
 
     <!-- 标签栏 -->
     <view class="tab-bar">
       <view
-          v-for="tab in tabList"
-          :key="tab.value"
-          class="tab-item"
-          :class="{ active: activeTab === tab.value }"
-          @click="switchTab(tab.value)"
+        v-for="tab in tabList"
+        :key="tab.value"
+        class="tab-item"
+        :class="{ active: activeTab === tab.value }"
+        @click="switchTab(tab.value)"
       >
         {{ tab.label }}
       </view>
@@ -23,32 +23,28 @@
 
     <!-- 扣款明细列表 -->
     <scroll-view
-        scroll-y
-        class="deduct-list"
-        :refresher-enabled="true"
-        :refresher-triggered="refreshing"
-        @refresherrefresh="onRefresh"
-        @scrolltolower="handleLoadMore"
+      scroll-y
+      class="deduct-list"
+      :refresher-enabled="true"
+      :refresher-triggered="refreshing"
+      @refresherrefresh="onRefresh"
+      @scrolltolower="handleLoadMore"
     >
-      <view
-          v-for="item in displayRecords"
-          :key="item.id"
-          class="deduct-item"
-      >
+      <view v-for="item in displayRecords" :key="item.id" class="deduct-item">
         <view class="item-top">
           <view class="status-tag" :class="getStatusClass(item.status)">
             {{ getStatusText(item.status) }}
           </view>
-          <view class="amount red">-¥{{ (item.deductAmount / 100).toFixed(2) }}</view>
+          <view class="amount red">-¥{{ formatAmount(item.deductAmount) }}</view>
         </view>
         <view class="order-no">订单号：{{ item.orderId || '-' }}</view>
         <view class="reason">扣款原因：{{ item.deductReason || '-' }}</view>
         <view class="item-bottom">
           <view class="time">{{ formatTime(item.createTime) }}</view>
           <view
-              class="appeal-btn"
-              :class="{ disabled: item.status !== 0 }"
-              @click="handleAppeal(item)"
+            class="appeal-btn"
+            :class="{ disabled: item.status !== 0 }"
+            @click="handleAppeal(item)"
           >
             {{ item.status === 0 ? '申诉' : '已申诉' }}
           </view>
@@ -66,7 +62,7 @@
 
       <!-- 空状态 -->
       <view v-if="!loading && displayRecords.length === 0" class="empty-state">
-        <uni-icons type="list" size="80" color="#ccc"></uni-icons>
+        <uni-icons type="list" size="64" color="#d1d5db"></uni-icons>
         <text class="empty-text">暂无扣款记录</text>
       </view>
 
@@ -79,11 +75,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { getDeductionPage } from '@/api/billiard/wallet'
 
 // 标签栏数据
 const tabList = [
-  { label: '全部', value: null},
+  { label: '全部', value: null },
   { label: '待申诉', value: 0 },
   { label: '申诉中', value: 1 },
   { label: '维持扣款', value: 2 },
@@ -102,10 +99,21 @@ const loading = ref(false)
 const refreshing = ref(false)
 const hasMore = ref(true)
 
-// 按tab筛选（API已按status筛选，这里直接返回）
+// 按tab筛选
 const displayRecords = computed(() => {
   return recordList.value
 })
+
+const formatAmount = (amount) => {
+  if (!amount && amount !== 0) return '0.00'
+  return (Number(amount) / 100).toFixed(2)
+}
+
+const formatTime = (time) => {
+  if (!time) return '-'
+  const date = new Date(time)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
 
 // 状态映射
 const statusTextMap = {
@@ -128,12 +136,6 @@ const getStatusText = (status) => {
 
 const getStatusClass = (status) => {
   return statusClassMap[status] || ''
-}
-
-const formatTime = (time) => {
-  if (!time) return '-'
-  const date = new Date(time)
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
 }
 
 // 获取扣款记录
@@ -206,6 +208,10 @@ const handleAppeal = (item) => {
   })
 }
 
+onShow(() => {
+  fetchDeductionRecords(true)
+})
+
 onMounted(() => {
   fetchDeductionRecords(true)
 })
@@ -214,53 +220,56 @@ onMounted(() => {
 <style lang="scss" scoped>
 .deduct-page {
   min-height: 100vh;
-  background: $bg-page;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
 }
 
 /* 顶部统计栏 */
 .stats-header {
-  background: $bg-card;
-  padding: 32rpx 30rpx;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  padding: 50rpx 32rpx;
+  box-shadow: 0 4rpx 12rpx rgba(239, 68, 68, 0.2);
 }
 
 .total-deduct {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
+  gap: 12rpx;
 }
 
 .label {
-  font-size: 30rpx;
-  color: $text-secondary;
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .value {
-  font-size: 48rpx;
+  font-size: 56rpx;
   font-weight: bold;
-  color: $danger;
+  color: #fff;
 }
 
 /* 标签栏 */
 .tab-bar {
   display: flex;
-  background: $bg-card;
+  background: #fff;
   padding: 0 16rpx;
-  margin-bottom: 16rpx;
-  box-shadow: $shadow-sm;
+  margin-top: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
 }
 
 .tab-item {
   flex: 1;
   text-align: center;
   font-size: 28rpx;
-  color: $text-tertiary;
-  padding: 24rpx 0;
+  color: #9ca3af;
+  padding: 28rpx 0;
   position: relative;
-  transition: all $duration-base;
+  transition: all 0.2s;
 
   &.active {
-    color: $primary;
-    font-weight: bold;
+    color: #2f6bee;
+    font-weight: 600;
+
     &::after {
       content: '';
       position: absolute;
@@ -269,7 +278,7 @@ onMounted(() => {
       transform: translateX(-50%);
       width: 48rpx;
       height: 6rpx;
-      background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+      background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
       border-radius: 3rpx;
     }
   }
@@ -278,69 +287,76 @@ onMounted(() => {
 /* 扣款列表 */
 .deduct-list {
   height: calc(100vh - 280rpx);
-  padding: 0 32rpx;
+  padding: 24rpx;
 }
 
 .deduct-item {
-  background: $bg-card;
-  border-radius: $radius-xl;
+  background: #fff;
+  border-radius: 24rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .item-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12rpx;
+  margin-bottom: 16rpx;
 }
 
 .status-tag {
   display: inline-block;
-  padding: 6rpx 20rpx;
-  border-radius: $radius-sm;
+  padding: 8rpx 20rpx;
+  border-radius: 16rpx;
   font-size: 24rpx;
   font-weight: 500;
 
   &.pending {
-    background: #FFF7ED;
-    color: $warning;
+    background: #fff7ed;
+    color: #f59e0b;
   }
 
   &.appealing {
-    background: #EFF6FF;
-    color: $primary;
+    background: #eff6ff;
+    color: #2f6bee;
   }
 
   &.kept {
-    background: #FEF2F2;
-    color: $danger;
+    background: #fef2f2;
+    color: #ef4444;
   }
 
   &.refunded {
-    background: #ECFDF5;
-    color: $success;
+    background: #ecfdf5;
+    color: #10b981;
   }
 }
 
 .amount {
   font-size: 36rpx;
   font-weight: bold;
-  color: $text-primary;
+  color: #1f2937;
+
   &.red {
-    color: $danger;
+    color: #ef4444;
   }
 }
 
 .order-no {
   font-size: 26rpx;
-  color: $text-secondary;
+  color: #6b7280;
   margin-bottom: 8rpx;
 }
 
 .reason {
   font-size: 28rpx;
-  color: $text-secondary;
+  color: #374151;
   line-height: 1.5;
   margin-bottom: 16rpx;
 }
@@ -352,64 +368,68 @@ onMounted(() => {
 }
 
 .time {
-  font-size: 26rpx;
-  color: $text-tertiary;
+  font-size: 24rpx;
+  color: #9ca3af;
 }
 
 .appeal-btn {
-  padding: 8rpx 24rpx;
-  border-radius: $radius-sm;
+  padding: 10rpx 28rpx;
+  border-radius: 20rpx;
   font-size: 26rpx;
-  background: #FFF7ED;
-  color: $warning;
-  transition: all $duration-fast;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #fff;
+  font-weight: 500;
+  transition: all 0.2s;
+
   &:active {
     opacity: 0.8;
   }
+
   &.disabled {
-    background: $bg-page;
-    color: $text-tertiary;
+    background: #e5e7eb;
+    color: #9ca3af;
   }
 }
 
 .appeal-info {
-  margin-top: 16rpx;
-  padding-top: 16rpx;
-  border-top: 1rpx solid $border-light;
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f3f4f6;
+
   .appeal-label {
-    font-size: 26rpx;
-    color: $text-tertiary;
+    font-size: 24rpx;
+    color: #9ca3af;
     margin-bottom: 8rpx;
   }
+
   .appeal-content {
-    font-size: 28rpx;
-    color: $text-secondary;
+    font-size: 26rpx;
+    color: #6b7280;
     line-height: 1.5;
   }
 }
 
 /* 空状态 */
 .empty-state {
-  background: $bg-card;
-  border-radius: $radius-xl;
-  padding: 80rpx 30rpx;
-  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
   gap: 20rpx;
 }
 
 .empty-text {
   font-size: 28rpx;
-  color: $text-tertiary;
+  color: #9ca3af;
 }
 
 /* 加载状态 */
-.loading-tip, .no-more-tip {
+.loading-tip,
+.no-more-tip {
   text-align: center;
-  padding: 30rpx 0;
+  padding: 40rpx 0;
   font-size: 26rpx;
-  color: $text-tertiary;
+  color: #9ca3af;
 }
 </style>

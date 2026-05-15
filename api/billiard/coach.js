@@ -50,3 +50,12 @@ export function getWorkStatus() {
     method: 'get'
   })
 }
+
+// 获取评价列表
+export function getReviewPage(params) {
+  return request({
+    url: '/coach-api/billiard/coach/review/page',
+    method: 'get',
+    params: params
+  })
+}

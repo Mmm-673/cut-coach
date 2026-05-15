@@ -91,52 +91,73 @@
       <view class="accepted-order">
         <view class="order-info-header">
           <text class="order-title">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '陪游' }}</text>
-          <uni-tag text="待出发" type="warning" size="small" />
+          <uni-tag :text="pendingOrder.serviceType === 1 ? '待出发' : '待开始'" type="warning" size="small" />
         </view>
 
         <view class="order-detail-row">
           <text class="detail-label">预约时间：</text>
           <text class="detail-value">{{ formatTime(pendingOrder.bookingTime) }}</text>
         </view>
-        <view class="order-detail-row">
+        <view class="order-detail-row" v-if="pendingOrder.serviceType === 1">
           <text class="detail-label">球厅：</text>
           <text class="detail-value">{{ pendingOrder.venueName }}</text>
         </view>
-        <view class="order-detail-row">
+        <view class="order-detail-row" v-if="pendingOrder.serviceType === 1">
           <text class="detail-label">地址：</text>
           <text class="detail-value">{{ pendingOrder.venueAddress }}</text>
         </view>
 
-        <view class="btn-group" v-if="!pendingOrder.departureConfirmTime">
-          <button class="btn btn-confirm-depart" @click="confirmDeparture">确认出发</button>
+        <!-- 陪练完整流程 -->
+        <template v-if="pendingOrder.serviceType === 1">
+          <view class="btn-group" v-if="!pendingOrder.departureConfirmTime">
+            <button class="btn btn-confirm-depart" @click="confirmDeparture">确认出发</button>
+          </view>
+
+          <view class="status-hint" v-if="pendingOrder.departureConfirmTime && !pendingOrder.arriveTime">
+            <uni-icons type="checkmarkempty" size="20" color="#10B981"></uni-icons>
+            <text class="hint-text">已确认出发，请尽快前往教学地点</text>
+          </view>
+
+          <view class="btn-group" v-if="pendingOrder.departureConfirmTime && !pendingOrder.arriveTime">
+            <button class="btn btn-arrive" @click="arrive">到达教学地址</button>
+          </view>
+
+          <view class="status-hint" v-if="pendingOrder.arriveTime">
+            <uni-icons type="checkmarkempty" size="20" color="#10B981"></uni-icons>
+            <text class="hint-text">已到达教学地点，开始教学</text>
+          </view>
+        </template>
+
+        <!-- 陪游简化流程：接单后直接可以开始 -->
+        <template v-else>
+          <view class="status-hint" v-if="!pendingOrder.startTime">
+            <uni-icons type="info" size="20" color="#007AFF"></uni-icons>
+            <text class="hint-text">准备就绪，请开始服务</text>
+          </view>
+        </template>
+
+        <!-- 开始服务按钮 - 陪练需要到达后才显示，陪游接单后就显示 -->
+        <view class="btn-group" v-if="canStartService">
+          <button class="btn btn-exception" v-if="pendingOrder.serviceType === 1" @click="showReportException">报告异常</button>
+          <button class="btn btn-accept" @click="startService">开始服务</button>
         </view>
 
-        <view class="status-hint" v-else>
-          <uni-icons type="checkmarkempty" size="20" color="#10B981"></uni-icons>
-          <text class="hint-text">已确认出发，请尽快前往教学地点</text>
-        </view>
-
-        <view class="btn-group" v-if="pendingOrder.departureConfirmTime && !pendingOrder.arriveTime">
-          <button class="btn btn-arrive" @click="arrive">到达教学地址</button>
-        </view>
-
-        <view class="status-hint" v-if="pendingOrder.arriveTime">
-          <uni-icons type="checkmarkempty" size="20" color="#10B981"></uni-icons>
-          <text class="hint-text">已到达教学地点，开始教学</text>
-        </view>
-
-        <view class="btn-group" v-if="pendingOrder.arriveTime && !pendingOrder.startTime">
-          <button class="btn btn-exception" @click="showReportException">报告异常</button>
-          <button class="btn btn-accept" @click="startService">开始教学</button>
-        </view>
-
-        <view class="nav-row">
+        <!-- 导航和联系客户 - 陪练显示 -->
+        <view class="nav-row" v-if="pendingOrder.serviceType === 1">
           <button class="nav-btn" @click="navigate">
             <uni-icons type="location" size="16" color="#fff"></uni-icons>
             <text>导航</text>
           </button>
           <button class="call-btn" @click="makeCall">
             <uni-icons type="phone" size="16" color="#10B981"></uni-icons>
+            <text>联系客户</text>
+          </button>
+        </view>
+
+        <!-- 仅联系客户 - 陪游显示 -->
+        <view class="nav-row" v-else>
+          <button class="call-btn nav-btn" @click="makeCall">
+            <uni-icons type="phone" size="16" color="#fff"></uni-icons>
             <text>联系客户</text>
           </button>
         </view>
@@ -243,6 +264,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import {
   updateWorkStatus,
   updateLocation,
@@ -313,22 +335,44 @@ const servingLeftTimeText = ref('01:00:00')
 // 历史订单
 const historyOrders = ref([])
 const historyPageNo = ref(1)
-const historyPageSize = ref(5)
+const historyPageSize = ref(2)
 
 const displayHistoryOrders = computed(() => {
-  return historyOrders.value.filter(order => order.status === historyTab.value)
+  return historyOrders.value
+})
+
+// 判断是否可以开始服务
+const canStartService = computed(() => {
+  if (!pendingOrder.value || !pendingOrder.value.serviceType) return false
+  if (pendingOrder.value.startTime) return false // 已经开始了就不显示
+
+  if (pendingOrder.value.serviceType === 1) {
+    // 陪练：必须到达后才能开始
+    return !!pendingOrder.value.arriveTime
+  } else {
+    // 陪游：接单后就可以开始
+    return true
+  }
 })
 
 // 获取历史订单
-const fetchHistoryOrders = async () => {
+const fetchHistoryOrders = async (reset = false) => {
+  if (reset) {
+    historyPageNo.value = 1
+    historyOrders.value = []
+  }
   try {
     const res = await getOrderPage({
       pageNo: historyPageNo.value,
       pageSize: historyPageSize.value,
-      status: 0 // 全部
+      status: historyTab.value // 使用当前选中的tab状态
     })
     if (res.data) {
-      historyOrders.value = res.data.list || []
+      if (reset) {
+        historyOrders.value = res.data.list || []
+      } else {
+        historyOrders.value = [...historyOrders.value, ...(res.data.list || [])]
+      }
     }
   } catch (err) {
     console.error('获取历史订单失败', err)
@@ -1026,6 +1070,7 @@ const historyTabIndex = computed(() => {
 // 历史订单tab切换
 const onHistoryTabClick = (e) => {
   historyTab.value = historyTabs[e.currentIndex].value
+  fetchHistoryOrders(true) // 切换tab时重新获取数据
 }
 
 // 跳转到全部订单
@@ -1042,16 +1087,16 @@ const goToOrderDetail = (order) => {
   })
 }
 
-onMounted(async () => {
+const refreshPageData = async () => {
   // 获取看板数据
   fetchDashboard()
   // 获取历史订单
-  fetchHistoryOrders()
+  fetchHistoryOrders(true)
   // 获取当前工作状态
   await fetchWorkStatus()
 
   // 如果已上线，先查询是否有进行中的订单
-  if (isOnline.value) {
+  if (isOnline.value && orderStatus.value === 'idle') {
     try {
       // 1. 先查询进行中的订单
       const inProgressRes = await getInProgressOrder()
@@ -1080,8 +1125,19 @@ onMounted(async () => {
     }
 
     // 2. 没有进行中的订单，开始轮询查询待接单
-    startPolling()
+    if (!pollTimer) {
+      startPolling()
+    }
   }
+}
+
+onMounted(async () => {
+  await refreshPageData()
+})
+
+// 每次页面显示时刷新数据
+onShow(async () => {
+  await refreshPageData()
 })
 
 onUnmounted(() => {
@@ -1101,17 +1157,18 @@ onUnmounted(() => {
 }
 :deep(.uni-card) {
   margin: 0 !important;
-  border-radius: $radius-xl !important;
-  box-shadow: $shadow-base;
+  border-radius: 24rpx !important;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  border: none !important;
 }
 :deep(.uni-card .uni-card__header) {
   padding: 20rpx 24rpx !important;
-  border-bottom: 1rpx solid $border-light;
-  font-weight: bold;
-  color: $text-primary;
+  border-bottom: 1rpx solid #f3f4f6;
+  font-weight: 600;
+  color: #1f2937;
 }
 :deep(.uni-card .uni-card__content) {
-  padding: 24rpx !important;
+  padding: 28rpx !important;
 }
 :deep(.uni-section .uni-section__header) {
   padding: 0 4rpx 12rpx !important;
@@ -1119,7 +1176,7 @@ onUnmounted(() => {
 
 .workbench-wrapper {
   min-height: 100vh;
-  background: $bg-page;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
   padding: 32rpx;
   display: flex;
   flex-direction: column;
@@ -1130,16 +1187,16 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 0 20rpx 0;
-  border-bottom: 1rpx solid $border-light;
+  padding: 0 0 24rpx 0;
+  border-bottom: 1rpx solid #f3f4f6;
   .status-label {
-    font-size: 28rpx;
-    font-weight: bold;
-    color: $text-primary;
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #1f2937;
   }
 }
 .status-tag {
-  margin-top: 20rpx;
+  margin-top: 24rpx;
 }
 
 .switch-wrapper {
@@ -1148,11 +1205,11 @@ onUnmounted(() => {
   gap: 16rpx;
   .label-off, .label-on {
     font-size: 26rpx;
-    color: $text-tertiary;
+    color: #9ca3af;
   }
   .active {
-    color: $success;
-    font-weight: bold;
+    color: #10b981;
+    font-weight: 600;
   }
 }
 
@@ -1160,9 +1217,9 @@ onUnmounted(() => {
   width: 88rpx;
   height: 48rpx;
   border-radius: 24rpx;
-  background: $border;
+  background: #e5e7eb;
   position: relative;
-  transition: all $duration-base $ease-out;
+  transition: all 0.3s ease-out;
   flex-shrink: 0;
   cursor: pointer;
 
@@ -1174,12 +1231,12 @@ onUnmounted(() => {
     height: 40rpx;
     border-radius: 50%;
     background: #fff;
-    transition: all $duration-base $ease-out;
-    box-shadow: 0 2rpx 4rpx rgba(0,0,0,0.1);
+    transition: all 0.3s ease-out;
+    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
   }
 
   &.is-checked {
-    background: $success;
+    background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
     .switch-knob {
       left: calc(100% - 44rpx);
     }
@@ -1200,7 +1257,7 @@ onUnmounted(() => {
   .empty-text {
     margin-top: 24rpx;
     font-size: 28rpx;
-    color: $text-secondary;
+    color: #6b7280;
   }
 }
 
@@ -1214,8 +1271,8 @@ onUnmounted(() => {
     align-items: center;
     gap: 6rpx;
     .location-text {
-      font-size: 26rpx;
-      color: $text-primary;
+      font-size: 28rpx;
+      color: #1f2937;
     }
   }
   .countdown {
@@ -1224,14 +1281,14 @@ onUnmounted(() => {
     gap: 6rpx;
     .time-text {
       font-size: 26rpx;
-      color: $warning;
-      font-weight: bold;
+      color: #f59e0b;
+      font-weight: 600;
     }
   }
   .order-title {
     font-size: 30rpx;
-    font-weight: bold;
-    color: $text-primary;
+    font-weight: 600;
+    color: #1f2937;
   }
 }
 
@@ -1239,30 +1296,30 @@ onUnmounted(() => {
   margin-bottom: 24rpx;
   .order-name {
     font-size: 30rpx;
-    font-weight: bold;
+    font-weight: 600;
     display: block;
     margin-bottom: 8rpx;
-    color: $text-primary;
+    color: #1f2937;
   }
   .order-price {
     font-size: 36rpx;
-    color: $primary;
+    color: #2f6bee;
     font-weight: bold;
   }
 }
 
 .order-detail-row {
   display: flex;
-  padding: 8rpx 0;
+  padding: 10rpx 0;
   .detail-label {
-    font-size: 24rpx;
-    color: $text-tertiary;
+    font-size: 26rpx;
+    color: #9ca3af;
     width: 160rpx;
     flex-shrink: 0;
   }
   .detail-value {
-    font-size: 24rpx;
-    color: $text-secondary;
+    font-size: 26rpx;
+    color: #6b7280;
     flex: 1;
   }
 }
@@ -1270,34 +1327,38 @@ onUnmounted(() => {
 .btn-group {
   display: flex;
   gap: 16rpx;
-  margin-top: 24rpx;
+  margin-top: 28rpx;
   .btn {
-    height: 72rpx;
-    line-height: 72rpx;
-    font-size: 26rpx;
-    border-radius: $radius-base;
+    height: 88rpx;
+    line-height: 88rpx;
+    font-size: 28rpx;
+    border-radius: 20rpx;
     flex: 1;
     font-weight: 600;
-    transition: transform $duration-fast;
+    transition: transform 0.2s, box-shadow 0.2s;
     &:active {
       transform: scale(0.97);
     }
   }
   .btn-reject {
-    background: $danger;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: #fff;
+    box-shadow: 0 4rpx 12rpx rgba(239, 68, 68, 0.25);
   }
   .btn-accept {
-    background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+    background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
     color: #fff;
+    box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
   }
   .btn-exception {
-    background: $warning;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     color: #fff;
+    box-shadow: 0 4rpx 12rpx rgba(245, 158, 11, 0.25);
   }
   .btn-confirm-depart, .btn-arrive {
-    background: $success;
+    background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
     color: #fff;
+    box-shadow: 0 4rpx 12rpx rgba(16, 185, 129, 0.25);
   }
 }
 
@@ -1306,13 +1367,14 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   gap: 8rpx;
-  padding: 20rpx;
-  background: $success-light;
-  border-radius: $radius-base;
+  padding: 22rpx;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 20rpx;
   margin-top: 24rpx;
   .hint-text {
     font-size: 26rpx;
-    color: $success;
+    color: #10b981;
+    font-weight: 500;
   }
 }
 
@@ -1322,8 +1384,8 @@ onUnmounted(() => {
   margin-top: 24rpx;
   .nav-btn, .call-btn {
     flex: 1;
-    height: 72rpx;
-    border-radius: $radius-base;
+    height: 80rpx;
+    border-radius: 20rpx;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1332,62 +1394,69 @@ onUnmounted(() => {
     padding: 0;
     margin: 0;
     font-weight: 500;
-    transition: transform $duration-fast;
+    transition: transform 0.2s, box-shadow 0.2s;
     &:active {
       transform: scale(0.97);
     }
   }
   .nav-btn {
-    background: linear-gradient(135deg, $primary-dark 0%, darken($primary, 15%) 100%);
+    background: linear-gradient(135deg, #1a50d9 0%, #1a40b8 100%);
     color: #fff;
+    box-shadow: 0 4rpx 12rpx rgba(26, 80, 217, 0.25);
   }
   .call-btn {
-    background: lighten($success, 40%);
-    color: $success;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    &.nav-btn {
+      background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+      color: #fff;
+      box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+    }
   }
 }
 
 .accepted-order {
   .order-info-header {
-    margin-bottom: 16rpx;
+    margin-bottom: 20rpx;
   }
 }
 
 .serve-top {
   .left-time {
     font-size: 26rpx;
-    color: $primary;
-    font-weight: bold;
+    color: #2f6bee;
+    font-weight: 600;
   }
 }
 .timer-box {
   text-align: center;
-  padding: 32rpx 0;
-  background: $bg-page;
-  border-radius: $radius-base;
+  padding: 36rpx 0;
+  background: linear-gradient(135deg, rgba(47, 107, 238, 0.05) 0%, rgba(26, 80, 217, 0.05) 100%);
+  border-radius: 20rpx;
   margin: 24rpx 0;
   .big-time {
-    font-size: 64rpx;
+    font-size: 72rpx;
     font-weight: bold;
-    color: $text-primary;
+    color: #1f2937;
     display: block;
   }
   .time-desc {
     font-size: 24rpx;
-    color: $text-tertiary;
-    margin-top: 8rpx;
+    color: #9ca3af;
+    margin-top: 10rpx;
   }
 }
 .btn-end {
   width: 100%;
-  height: 80rpx;
-  line-height: 80rpx;
-  background: $danger;
+  height: 92rpx;
+  line-height: 92rpx;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: #fff;
-  border-radius: $radius-base;
-  font-size: 28rpx;
+  border-radius: 20rpx;
+  font-size: 30rpx;
   font-weight: 600;
-  transition: transform $duration-fast;
+  box-shadow: 0 4rpx 12rpx rgba(239, 68, 68, 0.25);
+  transition: transform 0.2s, box-shadow 0.2s;
   &:active {
     transform: scale(0.97);
   }
@@ -1396,11 +1465,12 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 20rpx;
-  margin-top: 16rpx;
+  margin-top: 20rpx;
   .shop-img {
     width: 120rpx;
     height: 120rpx;
-    border-radius: $radius-base;
+    border-radius: 20rpx;
+    border: 2rpx solid #f3f4f6;
   }
   .info {
     flex: 1;
@@ -1408,16 +1478,16 @@ onUnmounted(() => {
     flex-direction: column;
     gap: 8rpx;
     .shop-name {
-      font-size: 28rpx;
-      font-weight: bold;
-      color: $text-primary;
+      font-size: 30rpx;
+      font-weight: 600;
+      color: #1f2937;
     }
     .contact-row {
       display: flex;
       align-items: center;
       gap: 8rpx;
       font-size: 24rpx;
-      color: $text-secondary;
+      color: #6b7280;
       .call-btn {
         background: transparent;
         padding: 0;
@@ -1432,11 +1502,11 @@ onUnmounted(() => {
     }
     .service-name {
       font-size: 26rpx;
-      color: $text-secondary;
+      color: #6b7280;
     }
     .service-price {
-      font-size: 28rpx;
-      color: $primary;
+      font-size: 30rpx;
+      color: #2f6bee;
       font-weight: bold;
     }
     .tip-box {
@@ -1444,61 +1514,63 @@ onUnmounted(() => {
       align-items: center;
       gap: 4rpx;
       font-size: 22rpx;
-      color: $warning;
+      color: #f59e0b;
       margin-top: 4rpx;
     }
   }
   .nav-btn {
-    background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+    background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
     color: #fff;
-    border-radius: $radius-sm;
+    border-radius: 16rpx;
     font-size: 24rpx;
-    height: 60rpx;
+    height: 64rpx;
     padding: 0 20rpx;
-    line-height: 60rpx;
+    line-height: 64rpx;
     margin: 0;
+    box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.25);
   }
 }
 
 .data-grid {
   display: flex;
   gap: 16rpx;
-  margin-top: 12rpx;
+  margin-top: 16rpx;
 }
 .data-card {
   flex: 1;
-  background: $bg-card;
-  border-radius: $radius-xl;
-  padding: 24rpx 16rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 28rpx 20rpx;
   text-align: center;
   position: relative;
-  border: 1rpx solid $border-light;
-  transition: transform $duration-base $ease-out, box-shadow $duration-base $ease-out;
+  border: 1rpx solid #f3f4f6;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
 
   &:active {
     transform: translateY(-4rpx);
-    box-shadow: $shadow-lg;
+    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
   }
 
   .data-icon {
-    width: 48rpx;
-    height: 48rpx;
-    border-radius: $radius-base;
-    margin: 0 auto 12rpx;
+    width: 52rpx;
+    height: 52rpx;
+    border-radius: 16rpx;
+    margin: 0 auto 14rpx;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .data-value {
-    font-size: 28rpx;
-    font-weight: bold;
+    font-size: 30rpx;
+    font-weight: 600;
     display: block;
     margin-bottom: 8rpx;
-    color: $text-primary;
+    color: #1f2937;
   }
   .data-label {
     font-size: 24rpx;
-    color: $text-tertiary;
+    color: #9ca3af;
   }
   .real-tag {
     transform: scale(0.75);
@@ -1513,18 +1585,18 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20rpx;
-  padding-bottom: 16rpx;
-  border-bottom: 1rpx solid $border-light;
+  padding-bottom: 18rpx;
+  border-bottom: 1rpx solid #f3f4f6;
 }
 .card-title {
-  font-size: 30rpx;
-  font-weight: bold;
-  color: $text-primary;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1f2937;
 }
 
 .view-all-text {
   font-size: 26rpx;
-  color: $primary;
+  color: #2f6bee;
   padding: 8rpx 0;
   &:active {
     opacity: 0.7;
@@ -1537,25 +1609,29 @@ onUnmounted(() => {
 .history-order-list {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
+  gap: 16rpx;
 }
 .history-order-item {
-  padding: 20rpx;
-  background: $bg-page;
-  border-radius: $radius-base;
+  padding: 22rpx;
+  background: #f8fbff;
+  border-radius: 20rpx;
+  transition: background 0.2s;
+  &:active {
+    background: #f3f4f6;
+  }
   .order-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8rpx;
+    margin-bottom: 10rpx;
     .order-title {
       font-size: 28rpx;
       font-weight: 500;
-      color: $text-primary;
+      color: #1f2937;
     }
     .order-price {
-      font-size: 28rpx;
-      color: $primary;
+      font-size: 30rpx;
+      color: #2f6bee;
       font-weight: bold;
     }
   }
@@ -1565,7 +1641,7 @@ onUnmounted(() => {
     align-items: center;
     .order-time {
       font-size: 24rpx;
-      color: $text-tertiary;
+      color: #9ca3af;
     }
   }
 }

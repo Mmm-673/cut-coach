@@ -66,6 +66,7 @@
 
       <!-- 空状态 -->
       <view v-if="!loading && displayRecords.length === 0" class="empty-tip">
+        <uni-icons type="info" size="48" color="#d1d5db" />
         <text>暂无提现记录</text>
       </view>
 
@@ -78,6 +79,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { getWithdrawalPage } from '@/api/billiard/wallet'
 
 // 标签栏数据
@@ -245,6 +247,10 @@ const handleLoadMore = () => {
   }
 }
 
+onShow(() => {
+  fetchWithdrawalRecords(true)
+})
+
 onMounted(() => {
   fetchWithdrawalRecords(true)
 })
@@ -253,13 +259,13 @@ onMounted(() => {
 <style lang="scss" scoped>
 .withdraw-record-page {
   min-height: 100vh;
-  background: $bg-page;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
 }
 
 /* 顶部统计栏 */
 .stats-header {
-  background: $bg-card;
-  padding: 32rpx 30rpx;
+  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  padding: 40rpx 32rpx;
 }
 
 .stats-row {
@@ -277,43 +283,44 @@ onMounted(() => {
   font-weight: bold;
   line-height: 1.2;
   margin-bottom: 8rpx;
-  &.green { color: $success; }
-  &.orange { color: $warning; }
-  &.blue { color: $primary; }
+  color: #fff;
+  &.green { color: #a7f3d0; }
+  &.orange { color: #fcd34d; }
+  &.blue { color: #bfdbfe; }
 }
 
 .stats-label {
-  font-size: 26rpx;
-  color: $text-tertiary;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .stats-divider {
   width: 2rpx;
   height: 60rpx;
-  background: $border-light;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* 标签栏 */
 .tab-bar {
   display: flex;
-  background: $bg-card;
+  background: #fff;
   padding: 0 16rpx;
   margin-bottom: 16rpx;
-  box-shadow: $shadow-sm;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 
 .tab-item {
   flex: 1;
   text-align: center;
   font-size: 28rpx;
-  color: $text-tertiary;
-  padding: 24rpx 0;
+  color: #9ca3af;
+  padding: 26rpx 0;
   position: relative;
-  transition: all $duration-base;
+  transition: all 0.3s;
 
   &.active {
-    color: $primary;
-    font-weight: bold;
+    color: #2f6bee;
+    font-weight: 600;
     &::after {
       content: '';
       position: absolute;
@@ -322,7 +329,7 @@ onMounted(() => {
       transform: translateX(-50%);
       width: 48rpx;
       height: 6rpx;
-      background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+      background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
       border-radius: 3rpx;
     }
   }
@@ -330,18 +337,23 @@ onMounted(() => {
 
 /* 记录列表 */
 .record-list {
-  height: calc(100vh - 300rpx);
-  padding: 0 32rpx;
+  height: calc(100vh - 320rpx);
+  padding: 0 24rpx;
 }
 
 .record-item {
-  background: $bg-card;
-  border-radius: $radius-xl;
-  padding: 28rpx;
-  margin-bottom: 20rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin-bottom: 16rpx;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s;
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .item-left {
@@ -350,49 +362,49 @@ onMounted(() => {
 
 .status-tag {
   display: inline-block;
-  padding: 6rpx 20rpx;
-  border-radius: $radius-sm;
+  padding: 8rpx 22rpx;
+  border-radius: 16rpx;
   font-size: 24rpx;
   font-weight: 500;
-  margin-bottom: 12rpx;
+  margin-bottom: 14rpx;
 
   &.pending {
     background: #FFF7ED;
-    color: $warning;
+    color: #f59e0b;
   }
 
   &.processing {
     background: #EFF6FF;
-    color: $primary;
+    color: #2f6bee;
   }
 
   &.success {
     background: #ECFDF5;
-    color: $success;
+    color: #10b981;
   }
 
   &.rejected {
     background: #FEF2F2;
-    color: $danger;
+    color: #ef4444;
   }
 }
 
 .item-title {
   font-size: 30rpx;
-  font-weight: 500;
-  color: $text-primary;
+  font-weight: 600;
+  color: #1f2937;
   margin-bottom: 8rpx;
 }
 
 .bank-info {
   font-size: 26rpx;
-  color: $text-secondary;
+  color: #6b7280;
   margin-bottom: 8rpx;
 }
 
 .create-time {
   font-size: 24rpx;
-  color: $text-tertiary;
+  color: #9ca3af;
 }
 
 .item-right {
@@ -404,40 +416,44 @@ onMounted(() => {
 .amount {
   font-size: 40rpx;
   font-weight: bold;
-  color: $text-primary;
-  margin-bottom: 4rpx;
+  color: #1f2937;
+  margin-bottom: 6rpx;
 }
 
 .fee-info {
   font-size: 22rpx;
-  color: $text-tertiary;
+  color: #9ca3af;
   margin-bottom: 8rpx;
 }
 
 .arrive-time {
   font-size: 24rpx;
-  color: $text-tertiary;
+  color: #9ca3af;
   &.success {
-    color: $success;
+    color: #10b981;
   }
   &.rejected {
-    color: $danger;
+    color: #ef4444;
   }
 }
 
 /* 空状态 */
 .empty-tip {
-  text-align: center;
-  padding: 100rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+  gap: 16rpx;
   font-size: 28rpx;
-  color: $text-tertiary;
+  color: #9ca3af;
 }
 
 /* 加载状态 */
 .loading-tip, .no-more-tip {
   text-align: center;
-  padding: 30rpx 0;
+  padding: 40rpx 0;
   font-size: 26rpx;
-  color: $text-tertiary;
+  color: #9ca3af;
 }
 </style>
