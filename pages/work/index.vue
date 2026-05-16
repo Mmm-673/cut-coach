@@ -293,7 +293,7 @@ import {
   openMapNavigation,
   makePhoneCall as makePhoneCallUtil,
   showLocationPermissionGuide,
-  getPlatform
+  calculateDistance
 } from '@/utils/platform'
 
 const { proxy } = getCurrentInstance()
@@ -354,6 +354,7 @@ const canStartService = computed(() => {
     return true
   }
 })
+
 
 // 获取历史订单
 const fetchHistoryOrders = async (reset = false) => {
@@ -479,21 +480,8 @@ const formatTime = (timeStr) => {
 const getPlatformLocation = () => {
   return getLocation({
     type: 'gcj02',
-    highAccuracy: true,
-    timeout: 10000
+    altitude: true
   })
-}
-
-// 计算两点之间的距离（米），使用 Haversine 公式
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371000 // 地球半径（米）
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
 }
 
 // 校验是否在允许范围内（默认200米）
@@ -587,19 +575,7 @@ const onSwitchChange = async (targetStatus) => {
       } catch (err) {
         // 获取位置失败，检查是否是权限问题
         if (err.message?.includes('权限') || err.message?.includes('auth deny')) {
-          const modalRes = await new Promise((resolve) => {
-            uni.showModal({
-              title: '需要位置权限',
-              content: '上线需要获取位置信息，请授权位置权限',
-              confirmText: '去设置',
-              cancelText: '取消',
-              success: resolve
-            })
-          })
-
-          if (modalRes.confirm) {
-            showLocationPermissionGuide()
-          }
+          showLocationPermissionGuide()
         } else {
           proxy.$modal.msgError('获取位置失败')
         }
@@ -848,10 +824,19 @@ const confirmDeparture = async () => {
 // 到达教学地址
 const arrive = async () => {
   // 校验当前位置是否在球厅范围内（200米内）
-  uni.showLoading({ title: '校验位置...' })
-  uni.hideLoading()
+  uni.showLoading({ title: '校验位置中...' })
 
   try {
+    // 先校验位置
+    const targetLat = pendingOrder.value.venueLatitude
+    const targetLon = pendingOrder.value.venueLongitude
+
+    if (targetLat && targetLon) {
+      await checkLocationInRange(targetLat, targetLon, 200)
+    }
+
+    uni.hideLoading()
+
     await arriveApi({
       orderId: pendingOrder.value.orderId
     })
@@ -862,8 +847,14 @@ const arrive = async () => {
     }
     uni.showToast({ title: '已到达', icon: 'success' })
   } catch (err) {
+    uni.hideLoading()
     console.error('确认到达失败', err)
-    proxy.$modal.msgError(err?.msg || '操作失败')
+    // 如果是位置校验失败，显示具体错误
+    if (err.message && err.message.includes('距离')) {
+      proxy.$modal.msgError(err.message)
+    } else {
+      proxy.$modal.msgError(err?.msg || '操作失败')
+    }
   }
 }
 
@@ -1138,6 +1129,7 @@ onMounted(async () => {
 // 每次页面显示时刷新数据
 onShow(async () => {
   await refreshPageData()
+
 })
 
 onUnmounted(() => {

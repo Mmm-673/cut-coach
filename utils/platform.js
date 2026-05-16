@@ -66,358 +66,238 @@ export function isH5() {
 }
 
 /**
- * 获取位置（多端兼容）
- * @param {Object} options 配置项
- * @param {string} options.type 坐标类型 'wgs84' | 'gcj02'，默认 'gcj02'
- * @param {boolean} options.altitude 是否需要高度信息，默认 false
- * @param {boolean} options.highAccuracy 是否高精度定位，默认 true
- * @param {number} options.timeout 超时时间(ms)，默认 10000
- * @returns {Promise<Object>} 位置信息
+ * 打开应用设置页面
  */
-export function getLocation(options = {}) {
-  const {
-    type = 'gcj02',
-    altitude = false,
-    highAccuracy = true,
-    timeout = 15000
-  } = options
+export function openPermissionSettings() {
+  // #ifdef MP-WEIXIN
+  uni.openSetting({
+    success: (res) => {
+      console.log('打开设置成功:', res)
+    },
+    fail: () => {
+      uni.showToast({ title: '打开设置失败', icon: 'none' })
+    }
+  })
+  // #endif
 
-  return new Promise((resolve, reject) => {
-    // 先使用 uni.authorize 请求权限（兼容各平台）
-    console.log('开始请求位置权限...')
-
-    uni.authorize({
-      scope: 'scope.userLocation',
-      success: () => {
-        console.log('uni.authorize 授权成功')
-        doGetLocation()
-      },
-      fail: (err) => {
-        console.log('uni.authorize 失败，尝试平台特定方式', err)
-        // 如果 uni.authorize 失败，使用平台特定方式
-        // #ifdef APP-PLUS
-        requestLocationPermission().then(() => {
-          doGetLocation()
-        }).catch((err) => {
-          reject(err)
-        })
-        // #endif
-
-        // #ifndef APP-PLUS
-        // 非 APP 端，直接尝试获取位置
-        doGetLocation()
-        // #endif
+  // #ifdef APP-PLUS
+  if (isIOS()) {
+    plus.runtime.openURL('app-settings:')
+  } else if (isAndroid()) {
+    try {
+      const Intent = plus.android.importClass('android.content.Intent')
+      const Settings = plus.android.importClass('android.provider.Settings')
+      const Uri = plus.android.importClass('android.net.Uri')
+      const main = plus.android.runtimeMainActivity()
+      const intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+      const uri = Uri.fromParts('package', main.getPackageName(), null)
+      intent.setData(uri)
+      main.startActivity(intent)
+    } catch (e) {
+      try {
+        const Intent = plus.android.importClass('android.content.Intent')
+        const Settings = plus.android.importClass('android.provider.Settings')
+        const main = plus.android.runtimeMainActivity()
+        const intent = new Intent(Settings.ACTION_SETTINGS)
+        main.startActivity(intent)
+      } catch (e2) {
+        uni.showToast({ title: '打开设置失败', icon: 'none' })
       }
-    })
+    }
+  }
+  // #endif
 
-    function doGetLocation() {
-      console.log('开始获取位置...')
-      uni.getLocation({
-        type,
-        altitude,
-        isHighAccuracy: highAccuracy,
-        highAccuracyExpireTime: timeout,
-        success: (res) => {
-          console.log('获取位置成功', res)
-          resolve({
-            longitude: res.longitude,
-            latitude: res.latitude,
-            altitude: res.altitude,
-            accuracy: res.accuracy,
-            speed: res.speed,
-            verticalAccuracy: res.verticalAccuracy,
-            horizontalAccuracy: res.horizontalAccuracy,
-            type
-          })
-        },
-        fail: (err) => {
-          console.error('获取位置失败', err)
-          // 构建友好的错误信息
-          let errorMsg = '获取位置失败'
-          if (err.errMsg) {
-            if (err.errMsg.includes('auth deny') || err.errMsg.includes('auth denied') || err.errMsg.includes('权限')) {
-              // #ifdef H5
-              errorMsg = '定位权限未开启，请在浏览器地址栏左侧点击锁形图标，允许本网站访问您的位置'
-              // #endif
-              // #ifndef H5
-              errorMsg = '位置权限被拒绝，请在设置中开启位置权限'
-              // #endif
-            } else if (err.errMsg.includes('timeout')) {
-              errorMsg = '获取位置超时，请检查网络和GPS设置'
-            } else {
-              errorMsg = err.errMsg
-            }
-          }
-          reject({
-            ...err,
-            message: errorMsg
-          })
-        }
-      })
+  // #ifdef H5
+  uni.showModal({
+    title: '定位权限未开启',
+    content: '请在浏览器地址栏左侧点击锁形图标，允许本网站访问您的位置',
+    showCancel: false
+  })
+  // #endif
+}
+
+/**
+ * 显示权限引导弹窗
+ */
+export function showLocationPermissionGuide() {
+  uni.showModal({
+    title: '定位权限未开启',
+    content: '您未开启定位权限，将无法使用相关功能。是否前往开启？',
+    confirmText: '去开启',
+    success: (res) => {
+      if (res.confirm) {
+        openPermissionSettings()
+      }
     }
   })
 }
 
 /**
- * 检查Android权限是否已授予
+ * 获取位置（多端兼容）
+ * @param {Object} options 配置项
+ * @returns {Promise<Object>} 位置信息
  */
-function checkAndroidPermission() {
-  // #ifdef APP-PLUS
-  try {
-    const main = plus.android.runtimeMainActivity()
-    const Context = plus.android.importClass('android.content.Context')
-    const ActivityCompat = plus.android.importClass('androidx.core.app.ActivityCompat')
-    const PackageManager = plus.android.importClass('android.content.pm.PackageManager')
+export const getLocation = (options = {}) => {
+  const { type = 'gcj02', altitude = true } = options
 
-    const fineLocationPermission = 'android.permission.ACCESS_FINE_LOCATION'
-    const coarseLocationPermission = 'android.permission.ACCESS_COARSE_LOCATION'
-
-    const fineResult = ActivityCompat.checkSelfPermission(main, fineLocationPermission)
-    const coarseResult = ActivityCompat.checkSelfPermission(main, coarseLocationPermission)
-
-    const granted = fineResult === PackageManager.PERMISSION_GRANTED || coarseResult === PackageManager.PERMISSION_GRANTED
-    console.log('Android权限检查结果:', granted)
-    return granted
-  } catch (e) {
-    console.error('检查Android权限失败', e)
-    return false
-  }
-  // #endif
-  return false
-}
-
-/**
- * 请求位置权限（仅APP端）
- * @returns {Promise<boolean>}
- */
-export function requestLocationPermission() {
   return new Promise((resolve, reject) => {
+    console.log('开始获取位置...')
+
     // #ifdef APP-PLUS
-    const platform = getPlatform()
-    console.log('当前平台:', platform)
-
-    if (platform === 'android') {
-      // Android：先检查是否已有权限
-      if (checkAndroidPermission()) {
-        console.log('已有位置权限')
-        resolve(true)
-        return
-      }
-
-      // 没有权限，请求权限
-      console.log('请求位置权限...')
-      plus.android.requestPermissions(
-        ['android.permission.ACCESS_FINE_LOCATION', 'android.permission.ACCESS_COARSE_LOCATION'],
-        (e) => {
-          console.log('权限请求回调:', e)
-          if (e.code === 0) {
-            // 检查是否用户授予了权限
-            setTimeout(() => {
-              if (checkAndroidPermission()) {
-                resolve(true)
-              } else {
-                reject({ message: '位置权限被拒绝，请在设置中开启位置权限' })
+    // App 端：使用原生高德定位，权限请求更可靠
+    plus.geolocation.getCurrentPosition(
+        (res) => {
+          console.log('✅ 定位成功:', res)
+          resolve({
+            longitude: res.coords.longitude,
+            latitude: res.coords.latitude,
+            altitude: res.coords.altitude,
+            accuracy: res.coords.accuracy,
+            speed: res.coords.speed,
+            type
+          })
+        },
+        (err) => {
+          console.error('❌ 定位失败:', err)
+          // 如果是权限问题，引导用户去设置
+          if (err.code === 2 || err.code === 3) {
+            uni.showModal({
+              title: '定位权限被拒绝',
+              content: '需要您的位置信息才能接单，是否去设置？',
+              confirmText: '去设置',
+              success: (modalRes) => {
+                if (modalRes.confirm) {
+                  openPermissionSettings()
+                }
               }
-            }, 300)
+            })
+            reject({ ...err, message: '位置权限被拒绝' })
           } else {
-            reject({ message: '位置权限请求失败' })
+            reject({ ...err, message: err.message || '获取位置失败' })
           }
         },
-        (e) => {
-          console.error('权限请求错误:', e)
-          reject({ message: '位置权限请求被拒绝，请在设置中开启位置权限' })
-        }
-      )
-    } else if (platform === 'ios') {
-      // iOS 直接获取，系统会自动弹权限框
-      console.log('iOS平台，直接解析')
-      resolve(true)
-    } else if (platform === 'harmony') {
-      // 鸿蒙权限请求
-      try {
-        const context = plus.android.importClass('ohos.app.ability.Ability')
-        const permission = plus.android.importClass('ohos.security.permission.Permission')
-        // 鸿蒙权限处理简化版，具体根据鸿蒙API调整
-        resolve(true)
-      } catch (e) {
-        resolve(true)
-      }
-    } else {
-      resolve(true)
-    }
+        { provider: 'amap', geocode: false }
+    )
     // #endif
 
     // #ifndef APP-PLUS
-    resolve(true)
+    // 小程序/H5 端：用 uni.getLocation
+    uni.getLocation({
+      type,
+      altitude,
+      success: (res) => {
+        console.log('✅ 定位成功:', res)
+        resolve({
+          longitude: res.longitude,
+          latitude: res.latitude,
+          altitude: res.altitude,
+          accuracy: res.accuracy,
+          speed: res.speed,
+          type
+        })
+      },
+      fail: (err) => {
+        console.error('❌ 定位失败:', err)
+        let errorMsg = '获取位置失败'
+        if (err.errMsg) {
+          if (err.errMsg.includes('auth deny') || err.errMsg.includes('auth denied') || err.errMsg.includes('权限')) {
+            errorMsg = '位置权限被拒绝'
+          } else if (err.errMsg.includes('timeout')) {
+            errorMsg = '获取位置超时，请检查网络和GPS设置'
+          } else {
+            errorMsg = err.errMsg
+          }
+        }
+        reject({ ...err, message: errorMsg })
+      }
+    })
     // #endif
   })
 }
 
 /**
  * 打开地图导航（多端兼容）
- * @param {Object} options 导航参数
- * @param {number} options.latitude 纬度
- * @param {number} options.longitude 经度
- * @param {string} options.name 目的地名称
- * @param {string} options.address 目的地地址
- * @param {string} options.mode 导航方式 'driving' | 'walking' | 'transit'，默认 'driving'
- * @param {boolean} options.isNewPage 小程序端是否新开全屏页面，默认 true（不覆盖原页面）
  */
 export function openMapNavigation(options) {
-  const {
-    latitude, longitude, name, address,
-    mode = 'driving',
-    isNewPage = true // 新增：默认开启小程序新开页面
-  } = options
+  const { latitude, longitude, name = '目的地', address = '', mode = 'driving' } = options
 
   if (!latitude || !longitude) {
-    uni.showToast({
-      title: '地址信息有误',
-      icon: 'none'
-    })
+    uni.showToast({ title: '地址信息有误', icon: 'none' })
     return
   }
 
-  // 微信小程序：新开自定义全屏地图页，不覆盖原页面
-  // #ifdef MP-WEIXIN
-  // if (isNewPage) {
-  //   // 跳转到自定义地图导航页，传参数
-  //   // 注意：uni.navigateTo 会自动处理URL编码，不需要手动 encodeURIComponent
-  //   uni.navigateTo({
-  //     url: `/pages/map/navigation?latitude=${latitude}&longitude=${longitude}&name=${name || '目的地'}&address=${address || ''}`
-  //   })
-  //   return
-  // }
-  // // 不开启新页面就走原来的半屏逻辑
-  // else {
-    uni.openLocation({
-      latitude: parseFloat(latitude),
-      longitude: parseFloat(longitude),
-      name: name || '目的地',
-      address: address || '',
-      scale: 18,
-      success: () => console.log('打开地图成功'),
-      fail: (err) => {
-        uni.showToast({
-          title: '打开地图失败：' + (err.errMsg || ''),
-          icon: 'none'
-        })
-      }
-    })
-    return
-  // }
-  // #endif
-
-  // H5 打开高德地图网页版
-  // #ifdef H5
-  const modeMap = { driving: 'car', walking: 'foot', transit: 'bus' }
-  const url = `https://uri.amap.com/navigation?to=${longitude},${latitude},${encodeURIComponent(name || '目的地')}&mode=${modeMap[mode] || 'car'}`
-  window.open(url, '_blank')
-  return
-  // #endif
-
-  // APP端检测已安装的地图应用
   // #ifdef APP-PLUS
-  uni.showLoading({ title: '检测地图应用中...' })
+  // App 端尝试调用系统地图应用
+  const lat = parseFloat(latitude)
+  const lon = parseFloat(longitude)
 
-  const mapApps = []
+  if (isIOS()) {
+    // iOS 先尝试高德地图，再尝试百度地图，最后用系统地图
+    const aMapUrl = `iosamap://path?sourceApplication=${encodeURIComponent('球了么裁教')}&daddr=${lat},${lon}&dname=${encodeURIComponent(name)}&dev=0&t=${mode === 'driving' ? '0' : '2'}`
+    const baiduUrl = `baidumap://map/direction?destination=name:${encodeURIComponent(name)}|latlng:${lat},${lon}&mode=${mode === 'driving' ? 'driving' : 'walking'}&coord_type=gcj02`
 
-  // 检测高德地图
-  const hasAmap = isIOS()
-      ? plus.runtime.isApplicationExist({ action: 'iosamap://' })
-      : plus.runtime.isApplicationExist({ pname: 'com.autonavi.minimap' })
-
-  // 检测百度地图
-  const hasBaidumap = isIOS()
-      ? plus.runtime.isApplicationExist({ action: 'baidumap://' })
-      : plus.runtime.isApplicationExist({ pname: 'com.baidu.BaiduMap' })
-
-  // 检测腾讯地图
-  const hasTencentmap = isIOS()
-      ? plus.runtime.isApplicationExist({ action: 'qqmap://' })
-      : plus.runtime.isApplicationExist({ pname: 'com.tencent.map' })
-
-  uni.hideLoading()
-
-  if (hasAmap) mapApps.push({ name: '高德地图', value: 'amap' })
-  if (hasBaidumap) mapApps.push({ name: '百度地图', value: 'baidumap' })
-  if (hasTencentmap) mapApps.push({ name: '腾讯地图', value: 'tencentmap' })
-
-  // 如果没有安装地图应用，提示用户
-  if (mapApps.length === 0) {
-    uni.showModal({
-      title: '提示',
-      content: '您未安装地图应用，请先安装高德、百度或腾讯地图',
-      showCancel: false
+    plus.runtime.openURL(aMapUrl, (err) => {
+      // 高德地图打不开，试百度
+      plus.runtime.openURL(baiduUrl, (err2) => {
+        // 都打不开，用系统地图
+        uni.openLocation({
+          latitude: lat,
+          longitude: lon,
+          name: name,
+          address: address,
+          scale: 18
+        })
+      })
     })
-    return
-  }
+  } else if (isAndroid()) {
+    // Android 同样尝试多个地图应用
+    const aMapUrl = `amapuri://route/plan/?daddr=${lat},${lon}&dname=${encodeURIComponent(name)}&dev=0&t=${mode === 'driving' ? '0' : '2'}`
+    const baiduUrl = `baidumap://map/direction?destination=name:${encodeURIComponent(name)}|latlng:${lat},${lon}&mode=${mode === 'driving' ? 'driving' : 'walking'}&coord_type=gcj02`
 
-  // 如果只有一个地图应用，直接打开
-  if (mapApps.length === 1) {
-    launchMapApp(mapApps[0].value, { latitude, longitude, name, address, mode })
-    return
+    plus.runtime.openURL(aMapUrl, (err) => {
+      plus.runtime.openURL(baiduUrl, (err2) => {
+        uni.openLocation({
+          latitude: lat,
+          longitude: lon,
+          name: name,
+          address: address,
+          scale: 18
+        })
+      })
+    })
+  } else {
+    // 其他系统用通用方案
+    uni.openLocation({
+      latitude: lat,
+      longitude: lon,
+      name: name,
+      address: address,
+      scale: 18
+    })
   }
+  // #endif
 
-  // 多个地图应用，让用户选择
-  uni.showActionSheet({
-    itemList: mapApps.map(item => item.name),
-    success: (res) => {
-      launchMapApp(mapApps[res.tapIndex].value, { latitude, longitude, name, address, mode })
-    }
+  // #ifndef APP-PLUS
+  // 小程序和 H5 直接用 uni.openLocation
+  uni.openLocation({
+    latitude: parseFloat(latitude),
+    longitude: parseFloat(longitude),
+    name: name,
+    address: address,
+    scale: 18
   })
   // #endif
 }
 
 /**
- * 启动指定地图应用
+ * 拨打电话（多端兼容）
  */
-function launchMapApp(appType, options) {
-  const { latitude, longitude, name, address, mode } = options
-  const destName = encodeURIComponent(name || '目的地')
-  const destAddress = encodeURIComponent(address || '')
-
-  // #ifdef APP-PLUS
-  let url = ''
-
-  if (appType === 'amap') {
-    // 高德地图
-    if (isIOS()) {
-      const modeMap = { driving: 0, walking: 2, transit: 1 }
-      url = `iosamap://path?sourceApplication=${encodeURIComponent('cut-coach')}&daddr=${latitude},${longitude}&dev=0&t=${modeMap[mode] || 0}`
-    } else {
-      const modeMap = { driving: 0, walking: 2, transit: 1 }
-      url = `amapuri://route/plan/?dlat=${latitude}&dlon=${longitude}&dname=${destName}&dev=0&t=${modeMap[mode] || 0}`
-    }
-  } else if (appType === 'baidumap') {
-    // 百度地图 - 坐标需要转换
-    const [bdLat, bdLon] = gcj02ToBd09(parseFloat(latitude), parseFloat(longitude))
-    const modeMap = { driving: 'driving', walking: 'walking', transit: 'transit' }
-    if (isIOS()) {
-      url = `baidumap://map/direction?origin=我的位置&destination=latlng:${bdLat},${bdLon}|name:${destName}&mode=${modeMap[mode] || 'driving'}&src=cut-coach`
-    } else {
-      url = `baidumap://map/direction?origin=我的位置&destination=latlng:${bdLat},${bdLon}|name:${destName}&mode=${modeMap[mode] || 'driving'}&src=cut-coach`
-    }
-  } else if (appType === 'tencentmap') {
-    // 腾讯地图
-    const [qqLat, qqLon] = gcj02ToQq09(parseFloat(latitude), parseFloat(longitude))
-    const modeMap = { driving: 'drive', walking: 'walk', transit: 'bus' }
-    if (isIOS()) {
-      url = `qqmap://map/routeplan?type=${modeMap[mode] || 'drive'}&to=${destName}&tocoord=${qqLat},${qqLon}&referer=cut-coach`
-    } else {
-      url = `qqmap://map/routeplan?type=${modeMap[mode] || 'drive'}&to=${destName}&tocoord=${qqLat},${qqLon}&referer=cut-coach`
-    }
+export function makePhoneCall(phoneNumber) {
+  if (!phoneNumber) {
+    uni.showToast({ title: '电话号码为空', icon: 'none' })
+    return
   }
-
-  if (url) {
-    plus.runtime.openURL(url, (err) => {
-      uni.showToast({
-        title: '打开地图失败',
-        icon: 'none'
-      })
-    })
-  }
-  // #endif
+  uni.makePhoneCall({ phoneNumber })
 }
 
 /**
@@ -433,162 +313,21 @@ export function gcj02ToBd09(ggLat, ggLon) {
 }
 
 /**
- * 坐标转换：GCJ02 转 QQ09(腾讯)
+ * 计算两点之间的距离（米）
  */
-export function gcj02ToQq09(lat, lon) {
-  // 腾讯地图使用 GCJ02，不需要转换
-  return [lat, lon]
-}
-
-/**
- * 拨打电话（多端兼容）
- * @param {string} phoneNumber 电话号码
- */
-export function makePhoneCall(phoneNumber) {
-  if (!phoneNumber) {
-    uni.showToast({
-      title: '电话号码为空',
-      icon: 'none'
-    })
-    return
-  }
-
-  // #ifdef APP-PLUS
-  if (isHarmony()) {
-    // 鸿蒙系统特殊处理
-    try {
-      plus.runtime.openURL(`tel:${phoneNumber}`)
-    } catch (e) {
-      uni.showToast({
-        title: '拨号失败',
-        icon: 'none'
-      })
-    }
-    return
-  }
-  // #endif
-
-  // 通用方式
-  uni.makePhoneCall({
-    phoneNumber: phoneNumber,
-    fail: () => {
-      uni.showToast({
-        title: '拨号失败',
-        icon: 'none'
-      })
-    }
-  })
-}
-
-/**
- * 显示位置权限设置引导
- */
-export function showLocationPermissionGuide() {
-  uni.showModal({
-    title: '需要位置权限',
-    content: '请在设置中开启位置权限，以便正常使用该功能',
-    confirmText: '去设置',
-    success: (res) => {
-      if (res.confirm) {
-        openPermissionSettings()
-      }
-    }
-  })
-}
-
-/**
- * 打开应用权限设置页面
- */
-export function openPermissionSettings() {
-  // #ifdef MP-WEIXIN
-  // 微信小程序：打开小程序设置页面
-  uni.openSetting({
-    success: (res) => {
-      console.log('打开设置成功', res)
-    },
-    fail: (err) => {
-      console.error('打开设置失败', err)
-      uni.showToast({
-        title: '请在小程序设置中开启权限',
-        icon: 'none'
-      })
-    }
-  })
-  // #endif
-
-  // #ifdef APP-PLUS
-  if (isIOS()) {
-    // iOS 打开应用设置
-    plus.runtime.openURL('app-settings://')
-  } else if (isAndroid()) {
-    // Android 打开应用详情设置
-    try {
-      const Intent = plus.android.importClass('android.content.Intent')
-      const Settings = plus.android.importClass('android.provider.Settings')
-      const Uri = plus.android.importClass('android.net.Uri')
-      const main = plus.android.runtimeMainActivity()
-      const intent = new Intent()
-      intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-      const uri = Uri.fromParts('package', main.getPackageName(), null)
-      intent.setData(uri)
-      main.startActivity(intent)
-    } catch (e) {
-      uni.showToast({
-        title: '请手动打开设置',
-        icon: 'none'
-      })
-    }
-  } else if (isHarmony()) {
-    // 鸿蒙打开设置
-    try {
-      // 鸿蒙设置页面跳转
-      uni.showToast({
-        title: '请在设置中开启权限',
-        icon: 'none'
-      })
-    } catch (e) {
-      uni.showToast({
-        title: '请手动打开设置',
-        icon: 'none'
-      })
-    }
-  }
-  // #endif
-
-  // #ifdef H5
-  // H5 端：显示详细的操作指引弹窗
-  uni.showModal({
-    title: '定位权限未开启',
-    content: '请在浏览器地址栏左侧点击锁形图标，允许本网站访问您的位置',
-    showCancel: false,
-    confirmText: '我知道了'
-  })
-  // #endif
-}
-
-/**
- * 获取定位错误的引导信息（用于 H5 端权限拒绝时显示详细操作指引）
- * @param {Object} err 错误对象
- * @param {string} platform 当前平台
- * @returns {Object|null} { title, content } 或 null
- */
-export function getLocationErrorGuide(err, platform) {
-  if (platform === 'h5') {
-    if (err && (err.code === 1 || (err.errMsg && err.errMsg.includes('auth deny')))) {
-      return {
-        title: '定位权限未开启',
-        content: '请在浏览器地址栏左侧点击锁形图标，允许本网站访问您的位置'
-      }
-    }
-  }
-  return null
+export function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
 }
 
 /**
  * 判断场馆数据是否为 Mock 测试数据
- * @param {string} venueName 场馆名称
- * @param {string} venueAddress 场馆地址
- * @returns {boolean}
  */
 export function isMockVenue(venueName, venueAddress) {
   if (!venueName || venueName === '-') return true
@@ -605,13 +344,10 @@ export default {
   isMpWeixin,
   isH5,
   getLocation,
-  requestLocationPermission,
   openMapNavigation,
-  gcj02ToBd09,
-  gcj02ToQq09,
   makePhoneCall,
   showLocationPermissionGuide,
   openPermissionSettings,
-  isMockVenue,
-  getLocationErrorGuide
+  gcj02ToBd09,
+  isMockVenue
 }
