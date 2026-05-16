@@ -290,11 +290,9 @@ import {
 } from '@/api/billiard/order'
 import {
   getLocation,
-  openMapNavigation,
-  makePhoneCall as makePhoneCallUtil,
-  showLocationPermissionGuide,
-  calculateDistance
-} from '@/utils/platform'
+  showPermissionModal
+} from '@/utils/location'
+import { openMapNavigation, makePhoneCall as makePhoneCallUtil, calculateDistance } from '@/utils/platform'
 
 const { proxy } = getCurrentInstance()
 
@@ -476,19 +474,46 @@ const formatTime = (timeStr) => {
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
 }
 
-// 获取位置（使用多端兼容工具）
-const getPlatformLocation = () => {
-  return getLocation({
-    type: 'gcj02',
-    altitude: true
-  })
+// 定位相关
+const locating = ref(false)
+const currentLocation = ref({
+  longitude: null,
+  latitude: null
+})
+
+// 获取当前位置（使用统一封装）
+const getCurrentLocation = async () => {
+  if (locating.value) return
+  locating.value = true
+
+  try {
+    const { longitude, latitude } = await getLocation({ needRegeocode: false })
+    currentLocation.value = { longitude, latitude }
+    return { longitude, latitude }
+  } catch (err) {
+    if (err.message === 'permission_denied') {
+      showPermissionModal({
+        content: '您未开启定位权限，将无法接单和打卡。是否前往开启？',
+        onSuccess: getCurrentLocation
+      })
+    } else {
+      uni.showToast({ title: '定位失败', icon: 'none' })
+    }
+    throw err
+  } finally {
+    locating.value = false
+  }
 }
 
 // 校验是否在允许范围内（默认200米）
 const checkLocationInRange = (targetLat, targetLon, maxDistance = 200) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const location = await getPlatformLocation()
+      // 如果已有位置信息直接使用，否则重新获取
+      let location = currentLocation.value
+      if (!location.longitude || !location.latitude) {
+        location = await getCurrentLocation()
+      }
       const distance = calculateDistance(
         location.latitude,
         location.longitude,
@@ -571,14 +596,9 @@ const onSwitchChange = async (targetStatus) => {
       // 上线前必须先获取位置
       let loc
       try {
-        loc = await getPlatformLocation()
+        loc = await getCurrentLocation()
       } catch (err) {
-        // 获取位置失败，检查是否是权限问题
-        if (err.message?.includes('权限') || err.message?.includes('auth deny')) {
-          showLocationPermissionGuide()
-        } else {
-          proxy.$modal.msgError('获取位置失败')
-        }
+        // 获取位置失败，getCurrentLocation 内部已处理了权限提示
         switchLoading.value = false
         return
       }
@@ -623,7 +643,6 @@ const doOnlineWithLocation = async (loc) => {
     longitude: loc.longitude,
     latitude: loc.latitude
   })
-  console.log('位置上报成功')
 
   // 上线后开始轮询
   startPolling()
@@ -1127,9 +1146,14 @@ onMounted(async () => {
 })
 
 // 每次页面显示时刷新数据
+let lastRefreshTime = 0
 onShow(async () => {
-  await refreshPageData()
+  const now = Date.now()
+  // 避免频繁刷新（5秒内只刷新一次）
+  if (now - lastRefreshTime < 5000) return
+  lastRefreshTime = now
 
+  await refreshPageData()
 })
 
 onUnmounted(() => {

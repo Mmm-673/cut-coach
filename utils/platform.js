@@ -1,6 +1,7 @@
 /**
  * 多端兼容工具函数
  * 支持 iOS、Android、鸿蒙、微信小程序、H5
+ * 注意：定位功能已迁移至 @/utils/location.js
  */
 
 /**
@@ -63,156 +64,6 @@ export function isMpWeixin() {
  */
 export function isH5() {
   return getPlatform() === 'h5'
-}
-
-/**
- * 打开应用设置页面
- */
-export function openPermissionSettings() {
-  // #ifdef MP-WEIXIN
-  uni.openSetting({
-    success: (res) => {
-      console.log('打开设置成功:', res)
-    },
-    fail: () => {
-      uni.showToast({ title: '打开设置失败', icon: 'none' })
-    }
-  })
-  // #endif
-
-  // #ifdef APP-PLUS
-  if (isIOS()) {
-    plus.runtime.openURL('app-settings:')
-  } else if (isAndroid()) {
-    try {
-      const Intent = plus.android.importClass('android.content.Intent')
-      const Settings = plus.android.importClass('android.provider.Settings')
-      const Uri = plus.android.importClass('android.net.Uri')
-      const main = plus.android.runtimeMainActivity()
-      const intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-      const uri = Uri.fromParts('package', main.getPackageName(), null)
-      intent.setData(uri)
-      main.startActivity(intent)
-    } catch (e) {
-      try {
-        const Intent = plus.android.importClass('android.content.Intent')
-        const Settings = plus.android.importClass('android.provider.Settings')
-        const main = plus.android.runtimeMainActivity()
-        const intent = new Intent(Settings.ACTION_SETTINGS)
-        main.startActivity(intent)
-      } catch (e2) {
-        uni.showToast({ title: '打开设置失败', icon: 'none' })
-      }
-    }
-  }
-  // #endif
-
-  // #ifdef H5
-  uni.showModal({
-    title: '定位权限未开启',
-    content: '请在浏览器地址栏左侧点击锁形图标，允许本网站访问您的位置',
-    showCancel: false
-  })
-  // #endif
-}
-
-/**
- * 显示权限引导弹窗
- */
-export function showLocationPermissionGuide() {
-  uni.showModal({
-    title: '定位权限未开启',
-    content: '您未开启定位权限，将无法使用相关功能。是否前往开启？',
-    confirmText: '去开启',
-    success: (res) => {
-      if (res.confirm) {
-        openPermissionSettings()
-      }
-    }
-  })
-}
-
-/**
- * 获取位置（多端兼容）
- * @param {Object} options 配置项
- * @returns {Promise<Object>} 位置信息
- */
-export const getLocation = (options = {}) => {
-  const { type = 'gcj02', altitude = true } = options
-
-  return new Promise((resolve, reject) => {
-    console.log('开始获取位置...')
-
-    // #ifdef APP-PLUS
-    // App 端：使用原生高德定位，权限请求更可靠
-    plus.geolocation.getCurrentPosition(
-        (res) => {
-          console.log('✅ 定位成功:', res)
-          resolve({
-            longitude: res.coords.longitude,
-            latitude: res.coords.latitude,
-            altitude: res.coords.altitude,
-            accuracy: res.coords.accuracy,
-            speed: res.coords.speed,
-            type
-          })
-        },
-        (err) => {
-          console.error('❌ 定位失败:', err)
-          // 如果是权限问题，引导用户去设置
-          if (err.code === 2 || err.code === 3) {
-            uni.showModal({
-              title: '定位权限被拒绝',
-              content: '需要您的位置信息才能接单，是否去设置？',
-              confirmText: '去设置',
-              success: (modalRes) => {
-                if (modalRes.confirm) {
-                  openPermissionSettings()
-                }
-              }
-            })
-            reject({ ...err, message: '位置权限被拒绝' })
-          } else {
-            reject({ ...err, message: err.message || '获取位置失败' })
-          }
-        },
-        { provider: 'amap', geocode: false }
-    )
-    // #endif
-
-    // #ifndef APP-PLUS
-    // 小程序/H5 端：用 uni.getLocation
-    uni.getLocation({
-      type,
-      altitude,
-      success: (res) => {
-        console.log('✅ 定位成功:', res)
-        resolve({
-          longitude: res.longitude,
-          latitude: res.latitude,
-          altitude: res.altitude,
-          accuracy: res.accuracy,
-          speed: res.speed,
-          type
-        })
-      },
-      fail: (err) => {
-        console.error('❌ 定位失败:', err)
-        let errorMsg = '获取位置失败'
-        if (err.errMsg) {
-          if (err.errMsg.includes('auth deny') || err.errMsg.includes('auth denied') || err.errMsg.includes('权限')) {
-            errorMsg = '位置权限被拒绝'
-          } else if (err.errMsg.includes('timeout')) {
-            errorMsg = '获取位置超时，请检查网络和GPS设置'
-          } else {
-            errorMsg = err.errMsg
-          }
-        }
-        reject({ ...err, message: errorMsg })
-      }
-    })
-    // #endif
-  })
 }
 
 /**
@@ -336,6 +187,71 @@ export function isMockVenue(venueName, venueAddress) {
   return false
 }
 
+// 兼容旧代码 - 登录页面还在用这些函数
+export const openPermissionSettings = () => {
+  // #ifdef APP-PLUS
+  const systemInfo = uni.getSystemInfoSync()
+  const platform = systemInfo.platform
+
+  if (platform === 'ios') {
+    plus.runtime.openURL('app-settings:')
+  } else if (platform === 'android') {
+    const main = plus.android.runtimeMainActivity()
+    const Intent = plus.android.importClass('android.content.Intent')
+    const Settings = plus.android.importClass('android.provider.Settings')
+    const Uri = plus.android.importClass('android.net.Uri')
+    const packageName = main.getPackageName()
+
+    try {
+      const intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+      const uri = Uri.fromParts('package', packageName, null)
+      intent.setData(uri)
+      main.startActivity(intent)
+    } catch (e) {
+      try {
+        const intent = new Intent(Settings.ACTION_SETTINGS)
+        main.startActivity(intent)
+      } catch (e2) {
+        uni.showToast({ title: '打开设置失败', icon: 'none' })
+      }
+    }
+  }
+  // #endif
+}
+
+export const showLocationPermissionGuide = () => {
+  uni.showModal({
+    title: '定位权限未开启',
+    content: '您未开启定位权限，将无法使用相关功能。是否前往开启？',
+    confirmText: '去开启',
+    success: (res) => {
+      if (res.confirm) {
+        openPermissionSettings()
+      }
+    }
+  })
+}
+
+export const getLocation = (options = {}) => {
+  const { type = 'gcj02', altitude = true } = options
+
+  return new Promise((resolve, reject) => {
+    uni.getLocation({
+      type,
+      altitude,
+      success: (res) => {
+        resolve({
+          longitude: res.longitude,
+          latitude: res.latitude
+        })
+      },
+      fail: (err) => {
+        reject(err)
+      }
+    })
+  })
+}
+
 export default {
   getPlatform,
   isIOS,
@@ -343,11 +259,12 @@ export default {
   isHarmony,
   isMpWeixin,
   isH5,
-  getLocation,
   openMapNavigation,
   makePhoneCall,
-  showLocationPermissionGuide,
-  openPermissionSettings,
   gcj02ToBd09,
-  isMockVenue
+  calculateDistance,
+  isMockVenue,
+  openPermissionSettings,
+  showLocationPermissionGuide,
+  getLocation
 }
