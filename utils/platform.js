@@ -136,7 +136,12 @@ export function getLocation(options = {}) {
           let errorMsg = '获取位置失败'
           if (err.errMsg) {
             if (err.errMsg.includes('auth deny') || err.errMsg.includes('auth denied') || err.errMsg.includes('权限')) {
+              // #ifdef H5
+              errorMsg = '定位权限未开启，请在浏览器地址栏左侧点击锁形图标，允许本网站访问您的位置'
+              // #endif
+              // #ifndef H5
               errorMsg = '位置权限被拒绝，请在设置中开启位置权限'
+              // #endif
             } else if (err.errMsg.includes('timeout')) {
               errorMsg = '获取位置超时，请检查网络和GPS设置'
             } else {
@@ -551,13 +556,45 @@ export function openPermissionSettings() {
   // #endif
 
   // #ifdef H5
-  // H5 端：提示用户在浏览器设置中开启权限
-  uni.showToast({
-    title: '请在浏览器设置中开启位置权限',
-    icon: 'none',
-    duration: 2000
+  // H5 端：显示详细的操作指引弹窗
+  uni.showModal({
+    title: '定位权限未开启',
+    content: '请在浏览器地址栏左侧点击锁形图标，允许本网站访问您的位置',
+    showCancel: false,
+    confirmText: '我知道了'
   })
   // #endif
+}
+
+/**
+ * 获取定位错误的引导信息（用于 H5 端权限拒绝时显示详细操作指引）
+ * @param {Object} err 错误对象
+ * @param {string} platform 当前平台
+ * @returns {Object|null} { title, content } 或 null
+ */
+export function getLocationErrorGuide(err, platform) {
+  if (platform === 'h5') {
+    if (err && (err.code === 1 || (err.errMsg && err.errMsg.includes('auth deny')))) {
+      return {
+        title: '定位权限未开启',
+        content: '请在浏览器地址栏左侧点击锁形图标，允许本网站访问您的位置'
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * 判断场馆数据是否为 Mock 测试数据
+ * @param {string} venueName 场馆名称
+ * @param {string} venueAddress 场馆地址
+ * @returns {boolean}
+ */
+export function isMockVenue(venueName, venueAddress) {
+  if (!venueName || venueName === '-') return true
+  if (/mock/i.test(venueName)) return true
+  if (/mock/i.test(venueAddress || '')) return true
+  return false
 }
 
 export default {
@@ -574,5 +611,7 @@ export default {
   gcj02ToQq09,
   makePhoneCall,
   showLocationPermissionGuide,
-  openPermissionSettings
+  openPermissionSettings,
+  isMockVenue,
+  getLocationErrorGuide
 }

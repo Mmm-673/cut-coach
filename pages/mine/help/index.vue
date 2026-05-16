@@ -1,6 +1,6 @@
 <template>
   <view class="help-page">
-    <view v-for="(item in list" :key="item.title" class="section-card">
+    <view v-for="item in list" :key="item.title" class="section-card">
       <view class="section-header">
         <view class="icon-wrapper" :class="item.iconClass">
           <uni-icons :type="item.iconType" :size="20" :color="item.iconColor"></uni-icons>
@@ -42,7 +42,7 @@ const list = ref([
   {
     iconType: 'help',
     iconColor: '#fff',
-    iconClass: 'ruoyi-icon',
+    iconClass: 'faq-icon',
     title: '常见问题',
     childList: [
       {
@@ -139,7 +139,7 @@ function handleContact() {
   align-items: center;
   justify-content: center;
 
-  &.ruoyi-icon {
+  &.faq-icon {
     background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
   }
 
