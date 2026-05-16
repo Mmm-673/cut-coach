@@ -154,8 +154,8 @@ const fetchWalletBalance = async () => {
     const res = await getWalletBalance()
     if (res) {
       walletInfo.value = {
-        balance: Number(res.balance) || 0,
-        freezePrice: Number(res.freezePrice) || 0
+        balance: Number(res.data.balance) || 0,
+        freezePrice: Number(res.data.freezePrice) || 0
       }
     }
   } catch (err) {
