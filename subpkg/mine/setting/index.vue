@@ -58,7 +58,7 @@ import { getCurrentInstance } from "vue"
 const { proxy } = getCurrentInstance()
 
 function handleToPwd() {
-  proxy.$tab.navigateTo('/pages/mine/pwd/index')
+  proxy.$tab.navigateTo('/subpkg/mine/pwd/index')
 }
 
 function handleToUpgrade() {

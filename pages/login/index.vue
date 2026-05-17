@@ -390,15 +390,15 @@
 	}
 
 	function handleContactService() {
-		uni.navigateTo({ url: '/pages/mine/service/index' })
+		uni.navigateTo({ url: '/subpkg/mine/service/index' })
 	}
 
 	function handlePrivacy() {
-		proxy.$tab.navigateTo('/pages/common/webview/index?url=' + encodeURIComponent('https://example.com/privacy'))
+		proxy.$tab.navigateTo('/subpkg/common/webview/index?url=' + encodeURIComponent('https://example.com/privacy'))
 	}
 
 	function handleUserAgrement() {
-		proxy.$tab.navigateTo('/pages/common/webview/index?url=' + encodeURIComponent('https://example.com/terms'))
+		proxy.$tab.navigateTo('/subpkg/common/webview/index?url=' + encodeURIComponent('https://example.com/terms'))
 	}
 
 	function onKeyboardHeightChange(e) {

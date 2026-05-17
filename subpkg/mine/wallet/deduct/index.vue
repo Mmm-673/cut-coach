@@ -204,7 +204,7 @@ const handleAppeal = (item) => {
     return
   }
   uni.navigateTo({
-    url: `/subpkg-mine/wallet/appeal/index?recordId=${item.id}&orderId=${item.orderId || ''}&reason=${encodeURIComponent(item.deductReason || '')}&amount=${item.deductAmount}`
+    url: `/subpkg/mine/wallet/appeal/index?recordId=${item.id}&orderId=${item.orderId || ''}&reason=${encodeURIComponent(item.deductReason || '')}&amount=${item.deductAmount}`
   })
 }
 

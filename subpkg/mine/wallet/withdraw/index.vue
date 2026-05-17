@@ -299,7 +299,7 @@ const handleConfirm = async () => {
   }
 }
 
-const viewAllRecord = () => uni.navigateTo({ url: '/subpkg-mine/wallet/withdraw-record/index' })
+const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-record/index' })
 </script>
 
 <style scoped lang="scss">

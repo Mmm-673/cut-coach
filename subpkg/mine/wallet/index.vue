@@ -139,15 +139,15 @@ const fetchWalletData = async () => {
 }
 
 const goWithdraw = () => {
-  uni.navigateTo({ url: '/pages/mine/wallet/withdraw/index' })
+  uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw/index' })
 }
 
 const goWithdrawRecord = () => {
-  uni.navigateTo({ url: '/pages/mine/wallet/withdraw-record/index' })
+  uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-record/index' })
 }
 
 const goDeduction = () => {
-  uni.navigateTo({ url: '/pages/mine/wallet/deduct/index' })
+  uni.navigateTo({ url: '/subpkg/mine/wallet/deduct/index' })
 }
 
 onShow(() => {

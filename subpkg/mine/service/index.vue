@@ -116,7 +116,7 @@ const onQrError = () => {
 }
 
 const goFaq = () => {
-  uni.navigateTo({ url: '/pages/mine/help/index' })
+  uni.navigateTo({ url: '/subpkg/mine/help/index' })
 }
 </script>
 

@@ -177,7 +177,7 @@ const handleTabClick = (value) => {
 // 跳转到订单详情
 const goToDetail = (order) => {
   uni.navigateTo({
-    url: `/pages/order/detail?orderId=${order.orderId}&status=${order.status}`
+    url: `/subpkg/order/detail?orderId=${order.orderId}&status=${order.status}`
   })
 }
 

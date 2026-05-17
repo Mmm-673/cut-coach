@@ -643,7 +643,7 @@ const contactService = () => {
 }
 
 const goEvaluate = () => {
-  uni.navigateTo({ url: '/pages/mine/evaluate/index' })
+  uni.navigateTo({ url: '/subpkg/mine/evaluate/index' })
 }
 
 const acceptOrder = async () => {

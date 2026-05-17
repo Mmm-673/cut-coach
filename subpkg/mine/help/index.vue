@@ -91,7 +91,7 @@ const list = ref([
 
 function handleText(item) {
   uni.navigateTo({
-    url: `/pages/common/textview/index?title=${encodeURIComponent(item.title)}&content=${encodeURIComponent(item.content)}`
+    url: `/subpkg/common/textview/index?title=${encodeURIComponent(item.title)}&content=${encodeURIComponent(item.content)}`
   })
 }
 

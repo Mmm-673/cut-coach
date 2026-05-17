@@ -76,12 +76,12 @@ const fetchCoachInfo = async () => {
 
 // 跳转到编辑头像
 const goEditAvatar = () => {
-  uni.navigateTo({ url: '/subpkg-mine/avatar/index' })
+  uni.navigateTo({ url: '/subpkg/mine/avatar/index' })
 }
 
 // 跳转到编辑资料
 const goEdit = () => {
-  uni.navigateTo({ url: '/subpkg-mine/info/edit' })
+  uni.navigateTo({ url: '/subpkg/mine/info/edit' })
 }
 
 onShow(() => {
