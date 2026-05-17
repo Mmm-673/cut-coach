@@ -15,7 +15,6 @@
             "delay" : 0
         },
         "modules" : {
-            "Location" : {},
             "Camera" : {},
             "Geolocation" : {}
         },
@@ -23,7 +22,6 @@
             "android" : {
                 "package" : "com.aksjzt.qiuleme.coach",
                 "abiFilters" : [ "armeabi-v7a", "arm64-v8a", "x86" ],
-                "android:usesCleartextTraffic": "true",
                 "permissions" : [
                     "<uses-permission android:name=\"android.permission.CHANGE_NETWORK_STATE\"/>",
                     "<uses-permission android:name=\"android.permission.MOUNT_UNMOUNT_FILESYSTEMS\"/>",
@@ -72,6 +70,12 @@
                 },
                 "maps" : {},
                 "geolocation" : {
+                    "amap" : {
+                        "name" : "amapfhUygwdG",
+                        "__platform__" : [ "android" ],
+                        "appkey_ios" : "",
+                        "appkey_android" : "e5bc05029f822fcaf4b4e2c50283c049"
+                    },
                     "system" : {
                         "__platform__" : [ "android" ]
                     }

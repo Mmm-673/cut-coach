@@ -54,7 +54,7 @@
     </view>
 
     <!-- 教学地点卡片 -->
-    <view class="card" v-if="orderInfo.venueName && orderInfo.venueName !== '-'">
+    <view class="card" v-if="!isMockVenue(orderInfo.venueName, orderInfo.venueAddress)">
       <view class="card-title">教学地点</view>
       <image class="shop-img" :src="orderInfo.venuePhotoUrl || orderInfo.venueImg || '/static/images/banner/billiards_2.jpg'" mode="aspectFill"></image>
       <view class="shop-info">
@@ -148,7 +148,7 @@
       <!-- 待评价状态显示去评价按钮 -->
       <template v-else-if="orderStatus === ORDER_STATUS.PENDING_REVIEW">
         <view class="btn-single">
-          <button class="btn-primary" @click="goEvaluate">查看评价</button>
+          <button class="btn-primary" @click="goEvaluate">去评价</button>
         </view>
       </template>
       <!-- 其他状态显示联系客服 -->
@@ -164,7 +164,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad, onUnload, onShow } from '@dcloudio/uni-app'
-import { openMapNavigation } from '@/utils/platform'
+import { openMapNavigation, isMockVenue } from '@/utils/platform'
 import { getOrderDetail, finishService, acceptOrder as acceptOrderApi, rejectOrder as rejectOrderApi, confirmDeparture as confirmDepartureApi, arrive as arriveApi, startService as startServiceApi, reportException as reportExceptionApi, startTimer as startTimerApi, endTimer as endTimerApi, getInProgressOrder } from '@/api/billiard/order'
 import { getLocation, showLocationPermissionGuide } from '@/utils/platform'
 

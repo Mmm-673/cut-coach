@@ -3,10 +3,7 @@
     <!-- 顶部用户信息栏 -->
     <view class="user-header">
       <view class="user-info">
-        <view class="avatar avatar-placeholder" v-if="!coachProfile.avatar">
-          <uni-icons type="person" size="60" color="#fff"></uni-icons>
-        </view>
-        <image v-else class="avatar" :src="coachProfile.avatar" mode="aspectFill"></image>
+        <image class="avatar" :src="coachProfile.avatar || '/static/images/default-avatar.png'" mode="aspectFill"></image>
         <view class="user-detail">
           <view class="user-name">
             <text class="name">{{ coachProfile.stageName || '助教' }}</text>
@@ -240,12 +237,6 @@ page {
   margin-right: 28rpx;
   border: 4rpx solid rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.2);
-}
-
-.avatar-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .user-detail {
