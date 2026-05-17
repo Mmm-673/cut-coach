@@ -670,8 +670,9 @@ const stopPolling = () => {
 const fetchOrders = async () => {
   try {
     // 如果当前有订单ID，查该订单详情
-    if (pendingOrder.value.orderId) {
-      const orderRes = await getOrderDetail(pendingOrder.value.orderId)
+    const currentOrderId = getOrderId(pendingOrder.value)
+    if (currentOrderId) {
+      const orderRes = await getOrderDetail(currentOrderId)
       if (orderRes.data) {
         const order = orderRes.data
         pendingOrder.value = order
@@ -780,7 +781,7 @@ const rejectOrder = () => {
       if (res.confirm) {
         try {
           await rejectOrderApi({
-            orderId: pendingOrder.value.orderId,
+            orderId: getOrderId(pendingOrder.value),
             rejectReason: res.content || ''
           })
           clearInterval(pendingTimer)
@@ -798,10 +799,16 @@ const rejectOrder = () => {
   })
 }
 
+// 获取订单ID的兼容方法
+const getOrderId = (order) => {
+  return order?.id || order?.orderId
+}
+
 // 接单
 const acceptOrder = async () => {
   uni.showLoading({ title:'接单中...' })
-  const currentOrderId = pendingOrder.value.orderId
+  const currentOrderId = getOrderId(pendingOrder.value)
+  console.log('接单 - 当前订单ID:', currentOrderId)
   try {
     await acceptOrderApi({
       orderId: currentOrderId
@@ -810,8 +817,11 @@ const acceptOrder = async () => {
     clearInterval(pendingTimer)
     // 接单成功后查询该订单详情
     const orderRes = await getOrderDetail(currentOrderId)
+    console.log('接单 - 订单详情返回:', orderRes)
     if (orderRes.data) {
       pendingOrder.value = orderRes.data
+      console.log('接单 - 更新后的pendingOrder:', pendingOrder.value)
+      console.log('接单 - 更新后的orderId:', getOrderId(pendingOrder.value))
       orderStatus.value = 'accepted'
     }
     uni.showToast({ title: '接单成功', icon: 'success' })
@@ -824,14 +834,26 @@ const acceptOrder = async () => {
 
 // 确认出发
 const confirmDeparture = async () => {
+  const currentOrderId = getOrderId(pendingOrder.value)
+  console.log('确认出发 - 当前订单ID:', currentOrderId)
+  console.log('确认出发 - 完整pendingOrder:', pendingOrder.value)
+
+  if (!currentOrderId) {
+    console.error('确认出发失败 - orderId为空')
+    proxy.$modal.msgError('订单信息异常，请刷新页面重试')
+    return
+  }
+
   try {
     await confirmDepartureApi({
-      orderId: pendingOrder.value.orderId
+      orderId: currentOrderId
     })
     // 确认出发后查询订单详情更新
-    const orderRes = await getOrderDetail(pendingOrder.value.orderId)
+    const orderRes = await getOrderDetail(currentOrderId)
+    console.log('确认出发 - 订单详情返回:', orderRes)
     if (orderRes.data) {
       pendingOrder.value = orderRes.data
+      console.log('确认出发 - 更新后的pendingOrder:', pendingOrder.value)
     }
     uni.showToast({ title: '已确认出发', icon: 'success' })
   } catch (err) {
@@ -857,10 +879,10 @@ const arrive = async () => {
     uni.hideLoading()
 
     await arriveApi({
-      orderId: pendingOrder.value.orderId
+      orderId: getOrderId(pendingOrder.value)
     })
     // 确认到达后查询订单详情更新
-    const orderRes = await getOrderDetail(pendingOrder.value.orderId)
+    const orderRes = await getOrderDetail(getOrderId(pendingOrder.value))
     if (orderRes.data) {
       pendingOrder.value = orderRes.data
     }
@@ -870,7 +892,7 @@ const arrive = async () => {
     console.error('确认到达失败', err)
     // 如果是位置校验失败，显示具体错误
     if (err.message && err.message.includes('距离')) {
-      proxy.$modal.msgError(err.message)
+      uni.showToast({ title: err.message, icon: 'none', duration: 3000 })
     } else {
       proxy.$modal.msgError(err?.msg || '操作失败')
     }
@@ -882,12 +904,12 @@ const startService = async () => {
   try {
     // 1. 调用订单开始教学API
     await startServiceApi({
-      orderId: pendingOrder.value.orderId
+      orderId: getOrderId(pendingOrder.value)
     })
 
     // 2. 调用计时器开始API，获取教学端时间
     const timerResp = await startTimerApi({
-      orderId: pendingOrder.value.orderId
+      orderId: getOrderId(pendingOrder.value)
     })
     console.log('计时器已启动:', timerResp)
 
@@ -923,9 +945,10 @@ const stopTimerPolling = () => {
 }
 
 const fetchTimerStatus = async () => {
-  if (!pendingOrder.value.orderId || orderStatus.value !== 'serving') return
+  const currentOrderId = getOrderId(pendingOrder.value)
+  if (!currentOrderId || orderStatus.value !== 'serving') return
   try {
-    const resp = await getTimerStatusApi(pendingOrder.value.orderId)
+    const resp = await getTimerStatusApi(currentOrderId)
     if (resp) {
       console.log('计时器状态:', resp)
       // 更新已教学时长和剩余时长
@@ -966,7 +989,7 @@ const startServeTimer = () => {
 // 跳转到订单详情页
 const goToDetail = () => {
   uni.navigateTo({
-    url: `/pages/order/detail?orderId=${pendingOrder.value.orderId}&status=40`
+    url: `/pages/order/detail?orderId=${getOrderId(pendingOrder.value)}&status=40`
   })
 }
 
@@ -980,13 +1003,13 @@ const endService = () => {
         try {
           // 1. 调用计时器结束API，获取实际教学时长
           const timerResp = await endTimerApi({
-            orderId: pendingOrder.value.orderId
+            orderId: getOrderId(pendingOrder.value)
           })
           console.log('计时器已结束:', timerResp)
 
           // 2. 调用订单结束教学API
           await finishServiceApi({
-            orderId: pendingOrder.value.orderId
+            orderId: getOrderId(pendingOrder.value)
           })
 
           // 3. 停止计时器
@@ -1056,7 +1079,7 @@ const showReportException = () => {
           if (modalRes.confirm && modalRes.content) {
             try {
               await reportExceptionApi({
-                orderId: pendingOrder.value.orderId,
+                orderId: getOrderId(pendingOrder.value),
                 exceptionType: type,
                 reason: modalRes.content
               })

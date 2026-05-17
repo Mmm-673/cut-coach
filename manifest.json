@@ -15,8 +15,10 @@
             "delay" : 0
         },
         "modules" : {
+            "Location" : {},
             "Camera" : {},
-            "Geolocation" : {}
+            "Geolocation" : {},
+            "Maps" : {}
         },
         "distribute" : {
             "android" : {
@@ -39,7 +41,7 @@
                     "<uses-feature android:name=\"android.hardware.camera\"/>",
                     "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>",
                     "<uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\"/>",
-                    "<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOC\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\"/>",
                     "<uses-permission android:name=\"android.permission.ACCESS_LOCATION_EXTRA_COMMANDS\"/>"
                 ]
             },
@@ -68,7 +70,13 @@
                         "UniversalLinks" : ""
                     }
                 },
-                "maps" : {},
+                "maps" : {
+                    "amap" : {
+                        "__platform__" : [ "android" ],
+                        "appkey_ios" : "",
+                        "appkey_android" : "e5bc05029f822fcaf4b4e2c50283c049"
+                    }
+                },
                 "geolocation" : {
                     "amap" : {
                         "name" : "amapfhUygwdG",
