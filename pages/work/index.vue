@@ -456,16 +456,28 @@ const fetchWorkStatus = async () => {
 }
 
 // 时间格式化
-const fmtMMSS = (s) => {
+const fmtMM = (s) => {
   const m = Math.floor(s / 60)
-  const sec = s % 60
-  return `${String(m).padStart(2,0)}:${String(sec).padStart(2,0)}`
+  if (m >= 60) {
+    const h = Math.floor(m / 60)
+    const min = m % 60
+    if (min > 0) {
+      return `${String(h)}小时${String(min)}分钟`
+    } else {
+      return `${String(h)}小时`
+    }
+  } else {
+    return `${String(m)}分钟`
+  }
 }
-const fmtHHMMSS = (s) => {
+const fmtHHMM = (s) => {
   const h = Math.floor(s/3600)
   const m = Math.floor((s%3600)/60)
-  const sec = s%60
-  return `${String(h).padStart(2,0)}:${String(m).padStart(2,0)}:${String(sec).padStart(2,0)}`
+  if (h > 0) {
+    return `${String(h)}小时${String(m)}分钟`
+  } else {
+    return `${String(m)}分钟`
+  }
 }
 
 const formatTime = (timeStr) => {
@@ -509,18 +521,35 @@ const getCurrentLocation = async () => {
 const checkLocationInRange = (targetLat, targetLon, maxDistance = 200) => {
   return new Promise(async (resolve, reject) => {
     try {
-      // 如果已有位置信息直接使用，否则重新获取
-      let location = currentLocation.value
-      if (!location.longitude || !location.latitude) {
-        location = await getCurrentLocation()
+      // 校验目标坐标是否有效
+      if (!targetLat || !targetLon) {
+        reject(new Error('场馆坐标信息缺失'))
+        return
       }
+
+      // 每次都重新获取当前位置，确保位置新鲜准确
+      const location = await getCurrentLocation()
+
+      // 校验获取到的位置是否有效
+      if (!location || !location.latitude || !location.longitude) {
+        reject(new Error('获取位置信息失败'))
+        return
+      }
+
       const distance = calculateDistance(
-        location.latitude,
-        location.longitude,
-        targetLat,
-        targetLon
+        parseFloat(location.latitude),
+        parseFloat(location.longitude),
+        parseFloat(targetLat),
+        parseFloat(targetLon)
       )
-      console.log(`当前位置与球厅距离: ${Math.round(distance)}米`)
+
+      console.log('========== 位置校验 ==========')
+      console.log('当前位置:', location.latitude, location.longitude)
+      console.log('目标位置:', targetLat, targetLon)
+      console.log('计算距离:', Math.round(distance), '米')
+      console.log('允许范围:', maxDistance, '米')
+      console.log('============================')
+
       if (distance <= maxDistance) {
         resolve(distance)
       } else {
@@ -666,9 +695,44 @@ const stopPolling = () => {
   }
 }
 
-// 查询订单（有订单时查详情，无订单时查待接单）
+// 查询订单（优先查进行中接口保证状态同步）
 const fetchOrders = async () => {
   try {
+    // 如果已上线，优先查询进行中的订单
+    if (isOnline.value) {
+      try {
+        const inProgressRes = await getInProgressOrder()
+        if (inProgressRes.data) {
+          // 有进行中的订单
+          const order = inProgressRes.data
+          pendingOrder.value = order
+
+          // 根据订单状态更新页面状态
+          if (order.status === 40) {
+            // 进行中
+            orderStatus.value = 'serving'
+            if (!timerPollTimer) {
+              startServeTimer()
+              startTimerPolling()
+            }
+          } else if (order.status === 30) {
+            // 已接单
+            orderStatus.value = 'accepted'
+          } else if (order.status === 20) {
+            // 待接单
+            orderStatus.value = 'pending'
+            updatePendingCountdown(order)
+          } else {
+            // 其他状态（已完成/已取消），清空并回到idle
+            resetOrderState()
+          }
+          return
+        }
+      } catch (err) {
+        console.log('无进行中的订单', err)
+      }
+    }
+
     // 如果当前有订单ID，查该订单详情
     const currentOrderId = getOrderId(pendingOrder.value)
     if (currentOrderId) {
@@ -691,20 +755,10 @@ const fetchOrders = async () => {
         } else if (order.status === 20) {
           // 待接单
           orderStatus.value = 'pending'
-          if (order.expireAt) {
-            const now = Date.now()
-            const expire = new Date(order.expireAt).getTime()
-            pendingCountdown.value = Math.max(0, Math.floor((expire - now) / 1000))
-            startPendingCountdown()
-          }
+          updatePendingCountdown(order)
         } else {
           // 其他状态（已完成/已取消），清空并回到idle
-          pendingOrder.value = {}
-          orderStatus.value = 'idle'
-          stopTimerPolling()
-          clearInterval(pendingTimer)
-          clearInterval(usedTimer)
-          clearInterval(leftTimer)
+          resetOrderState()
         }
         return
       }
@@ -717,19 +771,45 @@ const fetchOrders = async () => {
       stopPolling()
       pendingOrder.value = pendingRes.data.list[0]
       orderStatus.value = 'pending'
-      if (pendingOrder.value.expireAt) {
-        const now = Date.now()
-        const expire = new Date(pendingOrder.value.expireAt).getTime()
-        pendingCountdown.value = Math.max(0, Math.floor((expire - now) / 1000))
-        startPendingCountdown()
-      }
+      updatePendingCountdown(pendingOrder.value)
     } else {
-      // 没有待接单，保持 idle
-      orderStatus.value = 'idle'
+        // 没有待接单，保持 idle
+        orderStatus.value = 'idle'
     }
   } catch (err) {
     console.error('查询订单失败', err)
   }
+}
+
+// 更新待接单倒计时
+const updatePendingCountdown = (order) => {
+  if (order && order.expireAt) {
+    const now = Date.now()
+    let expireTime
+    // 兼容 expireAt 可能是秒或毫秒时间戳
+    const expireAtVal = order.expireAt
+    if (typeof expireAtVal === 'string' || typeof expireAtVal === 'number') {
+      expireTime = new Date(expireAtVal).getTime()
+      // 如果是秒级时间戳，转换为毫秒
+      if (expireTime < 10000000000) {
+        expireTime = expireTime * 1000
+      }
+    } else {
+      expireTime = new Date(order.expireAt).getTime()
+    }
+    pendingCountdown.value = Math.max(0, Math.floor((expireTime - now) / 1000))
+    startPendingCountdown()
+  }
+}
+
+// 重置订单状态
+const resetOrderState = () => {
+  pendingOrder.value = {}
+  orderStatus.value = 'idle'
+  stopTimerPolling()
+  clearInterval(pendingTimer)
+  clearInterval(usedTimer)
+  clearInterval(leftTimer)
 }
 
 // 查询待接单列表（保留用于兼容）
@@ -764,9 +844,10 @@ const startPendingCountdown = () => {
       uni.showToast({ title: '订单已超时', icon: 'none' })
       return
     }
+    // 显示分钟和秒，补零
     const m = Math.floor(pendingCountdown.value / 60)
     const s = pendingCountdown.value % 60
-    pendingCountdownText.value = `${m}分${s}秒`
+    pendingCountdownText.value = `${m}分${s.toString().padStart(2, '0')}秒`
   }, 1000)
 }
 
@@ -930,11 +1011,11 @@ let timerPollTimer = null
 const startTimerPolling = () => {
   // 先立即查询一次
   fetchTimerStatus()
-  // 每30秒轮询一次
+  // 每5秒轮询一次，与订单详情页面保持一致
   if (timerPollTimer) clearInterval(timerPollTimer)
   timerPollTimer = setInterval(() => {
     fetchTimerStatus()
-  }, 30000)
+  }, 5000)
 }
 
 const stopTimerPolling = () => {
@@ -948,14 +1029,25 @@ const fetchTimerStatus = async () => {
   const currentOrderId = getOrderId(pendingOrder.value)
   if (!currentOrderId || orderStatus.value !== 'serving') return
   try {
-    const resp = await getTimerStatusApi(currentOrderId)
-    if (resp) {
-      console.log('计时器状态:', resp)
-      // 更新已教学时长和剩余时长
-      usedSec.value = resp.elapsedSeconds || 0
-      servingUsedTimeText.value = fmtMMSS(usedSec.value)
-      const remaining = resp.remainingSeconds || 0
-      servingLeftTimeText.value = fmtHHMMSS(Math.max(0, remaining))
+    // 使用 getInProgressOrder 来更新计时器信息，与订单详情页面保持一致
+    const resp = await getInProgressOrder()
+    if (resp && resp.data) {
+      const data = resp.data
+      // 更新订单信息
+      pendingOrder.value = {
+        ...pendingOrder.value,
+        ...data
+      }
+      // 更新剩余时长
+      if (data.remainingMinutes !== undefined && data.remainingMinutes !== null) {
+        leftSec.value = data.remainingMinutes * 60
+        servingLeftTimeText.value = fmtHHMM(leftSec.value)
+      }
+      // 更新已用时长 - 完全以服务器 startTime 为准，消除本地计时器的误差
+      if (data.startTime) {
+        usedSec.value = Math.floor((Date.now() - new Date(data.startTime).getTime()) / 1000)
+        servingUsedTimeText.value = fmtMM(usedSec.value)
+      }
     }
   } catch (err) {
     console.error('查询计时器状态失败', err)
@@ -966,23 +1058,27 @@ const fetchTimerStatus = async () => {
 const startServeTimer = () => {
   clearInterval(usedTimer)
   clearInterval(leftTimer)
-  usedSec.value = 0
-  leftSec.value = pendingOrder.value.serviceDuration || 3600
 
-  usedTimer = setInterval(()=>{
+  // 根据订单信息初始化计时
+  if (pendingOrder.value.startTime) {
+    usedSec.value = Math.floor((Date.now() - new Date(pendingOrder.value.startTime).getTime()) / 1000)
+  } else {
+    usedSec.value = 0
+  }
+
+  if (pendingOrder.value.remainingMinutes !== undefined && pendingOrder.value.remainingMinutes !== null) {
+    leftSec.value = pendingOrder.value.remainingMinutes * 60
+  } else {
+    leftSec.value = (pendingOrder.value.serviceDuration || 3600) - usedSec.value
+  }
+
+  servingUsedTimeText.value = fmtMM(usedSec.value)
+  servingLeftTimeText.value = fmtHHMM(Math.max(0, leftSec.value))
+
+  // 只启动已用时长的本地计时器，剩余时长依赖服务器轮询更新
+  usedTimer = setInterval(() => {
     usedSec.value++
-    servingUsedTimeText.value = fmtMMSS(usedSec.value)
-  }, 1000)
-
-  leftTimer = setInterval(()=>{
-    if(leftSec.value <=0){
-      clearInterval(leftTimer)
-      clearInterval(usedTimer)
-      uni.showToast({ title: '教学时长已到', icon: 'none' })
-      return
-    }
-    leftSec.value--
-    servingLeftTimeText.value = fmtHHMMSS(leftSec.value)
+    servingUsedTimeText.value = fmtMM(usedSec.value)
   }, 1000)
 }
 
@@ -1128,40 +1224,128 @@ const refreshPageData = async () => {
   // 获取当前工作状态
   await fetchWorkStatus()
 
-  // 如果已上线，先查询是否有进行中的订单
-  if (isOnline.value && orderStatus.value === 'idle') {
+  // 如果已上线，恢复订单状态
+  if (isOnline.value) {
+    // 1. 优先检查当前是否有订单ID，有的话先查这个订单详情
+    const currentOrderId = getOrderId(pendingOrder.value)
+    if (currentOrderId) {
+      if (await tryRestoreOrder(currentOrderId)) {
+        return
+      }
+    }
+
+    // 2. 查询进行中的订单
     try {
-      // 1. 先查询进行中的订单
       const inProgressRes = await getInProgressOrder()
       if (inProgressRes.data) {
-        // 有进行中的订单，直接显示，不走轮询
-        pendingOrder.value = inProgressRes.data
-        if (inProgressRes.data.status === 40) {
-          orderStatus.value = 'serving'
-          startServeTimer()
-          startTimerPolling()
-        } else if (inProgressRes.data.status === 30) {
-          orderStatus.value = 'accepted'
-        } else if (inProgressRes.data.status === 20) {
-          orderStatus.value = 'pending'
-          if (inProgressRes.data.expireAt) {
-            const now = Date.now()
-            const expire = new Date(inProgressRes.data.expireAt).getTime()
-            pendingCountdown.value = Math.max(0, Math.floor((expire - now) / 1000))
-            startPendingCountdown()
-          }
+        const order = inProgressRes.data
+        if (await checkAndSetOrder(order)) {
+          return
         }
-        return
       }
     } catch (err) {
       console.log('无进行中的订单', err)
     }
 
-    // 2. 没有进行中的订单，开始轮询查询待接单
+    // 3. 查询待接单列表
+    try {
+      const pendingRes = await getPendingOrders()
+      if (pendingRes.data && pendingRes.data.list && pendingRes.data.list.length > 0) {
+        const order = pendingRes.data.list[0]
+        if (await checkAndSetOrder(order)) {
+          return
+        }
+      }
+    } catch (err) {
+      console.log('无待接单', err)
+    }
+
+    // 4. 查询最近订单列表，查找活跃订单
+    try {
+      const pageRes = await getOrderPage({ pageNo: 1, pageSize: 10 })
+      if (pageRes.data && pageRes.data.list && pageRes.data.list.length > 0) {
+        // 找到第一个非结束状态的订单
+        for (const order of pageRes.data.list) {
+          if (await checkAndSetOrder(order)) {
+            return
+          }
+        }
+      }
+    } catch (err) {
+      console.log('查询订单列表失败', err)
+    }
+
+    // 5. 都没有找到活跃订单，重置状态开始轮询
+    resetOrderState()
     if (!pollTimer) {
       startPolling()
     }
   }
+}
+
+// 检查订单并设置状态，返回是否成功设置
+const checkAndSetOrder = async (order) => {
+  // 只有这些状态才不展示：50待评价、60已完成、70已取消
+  if (order.status === 50 || order.status === 60 || order.status === 70) {
+    return false
+  }
+
+  // 获取完整的订单详情
+  const orderId = getOrderId(order)
+  let fullOrder = order
+  if (orderId) {
+    try {
+      const orderRes = await getOrderDetail(orderId)
+      if (orderRes.data) {
+        fullOrder = orderRes.data
+      }
+    } catch (err) {
+      console.log('获取订单详情失败', err)
+    }
+  }
+
+  // 设置订单
+  pendingOrder.value = fullOrder
+  if (fullOrder.status === 40) {
+    orderStatus.value = 'serving'
+    startServeTimer()
+    startTimerPolling()
+  } else if (fullOrder.status === 30) {
+    orderStatus.value = 'accepted'
+  } else if (fullOrder.status === 20) {
+    orderStatus.value = 'pending'
+    updatePendingCountdown(fullOrder)
+  }
+  return true
+}
+
+// 尝试用订单ID恢复订单
+const tryRestoreOrder = async (orderId) => {
+  try {
+    const orderRes = await getOrderDetail(orderId)
+    if (orderRes.data) {
+      const order = orderRes.data
+      // 只有这些状态才不展示：50待评价、60已完成、70已取消
+      if (order.status === 50 || order.status === 60 || order.status === 70) {
+        return false
+      }
+      pendingOrder.value = order
+      if (order.status === 40) {
+        orderStatus.value = 'serving'
+        startServeTimer()
+        startTimerPolling()
+      } else if (order.status === 30) {
+        orderStatus.value = 'accepted'
+      } else if (order.status === 20) {
+        orderStatus.value = 'pending'
+        updatePendingCountdown(order)
+      }
+      return true
+    }
+  } catch (err) {
+    console.log('恢复订单失败', err)
+  }
+  return false
 }
 
 onMounted(async () => {
@@ -1474,10 +1658,11 @@ onUnmounted(() => {
   border-radius: 20rpx;
   margin: 24rpx 0;
   .big-time {
-    font-size: 72rpx;
+    font-size: 60rpx;
     font-weight: bold;
     color: #1f2937;
     display: block;
+    line-height: 100%;
   }
   .time-desc {
     font-size: 24rpx;

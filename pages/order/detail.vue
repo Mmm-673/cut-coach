@@ -164,9 +164,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad, onUnload, onShow } from '@dcloudio/uni-app'
-import { openMapNavigation, isMockVenue } from '@/utils/platform'
+import { openMapNavigation, isMockVenue, calculateDistance } from '@/utils/platform'
 import { getOrderDetail, finishService, acceptOrder as acceptOrderApi, rejectOrder as rejectOrderApi, confirmDeparture as confirmDepartureApi, arrive as arriveApi, startService as startServiceApi, reportException as reportExceptionApi, startTimer as startTimerApi, endTimer as endTimerApi, getInProgressOrder } from '@/api/billiard/order'
-import { getLocation, showLocationPermissionGuide } from '@/utils/platform'
+import { getLocation, showLocationPermissionGuide } from '@/utils/location'
 
 // 订单状态枚举
 const ORDER_STATUS = {
@@ -286,16 +286,18 @@ const getStatusSubText = (status) => {
 }
 
 // 时间格式化函数
-const fmtMMSS = (s) => {
+const fmtMM = (s) => {
   const m = Math.floor(s / 60)
-  const sec = s % 60
-  return `${String(m).padStart(2,0)}:${String(sec).padStart(2,0)}`
+  return `${String(m)}`
 }
-const fmtHHMMSS = (s) => {
+const fmtHHMM = (s) => {
   const h = Math.floor(s/3600)
   const m = Math.floor((s%3600)/60)
-  const sec = s%60
-  return `${String(h).padStart(2,0)}:${String(m).padStart(2,0)}:${String(sec).padStart(2,0)}`
+  if (h > 0) {
+    return `${String(h)}小时${String(m)}分钟`
+  } else {
+    return `${String(m)}分钟`
+  }
 }
 
 const formatTime = (timestamp) => {
@@ -361,16 +363,16 @@ const fetchOrderDetail = async () => {
 
 const startLocalTimer = () => {
   stopLocalTimer()
-  usedText.value = fmtMMSS(usedSec.value)
-  leftText.value = fmtHHMMSS(leftSec.value)
+  usedText.value = fmtMM(usedSec.value)
+  leftText.value = fmtHHMM(leftSec.value)
 
   localTimer = setInterval(() => {
     usedSec.value++
-    usedText.value = fmtMMSS(usedSec.value)
+    usedText.value = fmtMM(usedSec.value)
 
     if (leftSec.value > 0) {
       leftSec.value--
-      leftText.value = fmtHHMMSS(leftSec.value)
+      leftText.value = fmtHHMM(leftSec.value)
     }
   }, 1000)
 }
@@ -411,11 +413,11 @@ const fetchInProgressOrder = async () => {
       }
       if (data.remainingMinutes !== undefined && data.remainingMinutes !== null) {
         leftSec.value = data.remainingMinutes * 60
-        leftText.value = fmtHHMMSS(leftSec.value)
+        leftText.value = fmtHHMM(leftSec.value)
       }
       if (data.startTime) {
         usedSec.value = Math.floor((Date.now() - new Date(data.startTime).getTime()) / 1000)
-        usedText.value = fmtMMSS(usedSec.value)
+        usedText.value = fmtMM(usedSec.value)
       }
     }
   } catch (err) {
@@ -437,20 +439,95 @@ const confirmDeparture = async () => {
   }
 }
 
-const arrive = async () => {
-  uni.showLoading({ title: '校验位置...' })
-  uni.hideLoading()
+// 校验是否在允许范围内
+const checkLocationInRange = (targetLat, targetLon, maxDistance = 200) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // 校验目标坐标是否有效
+      if (!targetLat || !targetLon) {
+        reject(new Error('场馆坐标信息缺失'))
+        return
+      }
 
-  try {
-    await arriveApi({
-      orderId: orderId.value
-    })
-    arriveTime.value = new Date().toISOString()
-    uni.showToast({ title: '已到达', icon: 'success' })
-    await fetchOrderDetail()
-  } catch (err) {
-    console.error('确认到达失败', err)
-    uni.showToast({ title: err?.msg || '操作失败', icon: 'none' })
+      // 每次都重新获取当前位置，确保位置新鲜准确
+      const location = await getLocation()
+
+      // 校验获取到的位置是否有效
+      if (!location || !location.latitude || !location.longitude) {
+        reject(new Error('获取位置信息失败'))
+        return
+      }
+
+      const distance = calculateDistance(
+        parseFloat(location.latitude),
+        parseFloat(location.longitude),
+        parseFloat(targetLat),
+        parseFloat(targetLon)
+      )
+
+      console.log('========== 位置校验 ==========')
+      console.log('当前位置:', location.latitude, location.longitude)
+      console.log('目标位置:', targetLat, targetLon)
+      console.log('计算距离:', Math.round(distance), '米')
+      console.log('允许范围:', maxDistance, '米')
+      console.log('============================')
+
+      if (distance <= maxDistance) {
+        resolve(distance)
+      } else {
+        reject(new Error(`距离球厅${Math.round(distance)}米，超出打卡范围${maxDistance}米`))
+      }
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
+
+const arrive = async () => {
+  // 陪练需要位置校验，陪游不需要
+  if (orderInfo.value.serviceType === 1) {
+    uni.showLoading({ title: '校验位置...' })
+
+    try {
+      // 先校验位置
+      const targetLat = orderInfo.value.venueLatitude
+      const targetLon = orderInfo.value.venueLongitude
+
+      if (targetLat && targetLon) {
+        await checkLocationInRange(targetLat, targetLon, 200)
+      }
+
+      uni.hideLoading()
+
+      await arriveApi({
+        orderId: orderId.value
+      })
+      arriveTime.value = new Date().toISOString()
+      uni.showToast({ title: '已到达', icon: 'success' })
+      await fetchOrderDetail()
+    } catch (err) {
+      uni.hideLoading()
+      console.error('确认到达失败', err)
+      // 如果是位置校验失败，显示具体错误
+      if (err.message && err.message.includes('距离')) {
+        uni.showToast({ title: err.message, icon: 'none', duration: 3000 })
+      } else {
+        uni.showToast({ title: err?.msg || '操作失败', icon: 'none' })
+      }
+    }
+  } else {
+    // 陪游直接到达
+    try {
+      await arriveApi({
+        orderId: orderId.value
+      })
+      arriveTime.value = new Date().toISOString()
+      uni.showToast({ title: '已到达', icon: 'success' })
+      await fetchOrderDetail()
+    } catch (err) {
+      console.error('确认到达失败', err)
+      uni.showToast({ title: err?.msg || '操作失败', icon: 'none' })
+    }
   }
 }
 

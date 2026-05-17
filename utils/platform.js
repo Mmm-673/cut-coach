@@ -10,14 +10,38 @@
  */
 export function getPlatform() {
   // #ifdef APP-PLUS
-  const ua = navigator.userAgent.toLowerCase()
-  if (ua.indexOf('harmony') !== -1 || ua.indexOf('openharmony') !== -1) {
-    return 'harmony'
+  try {
+    // 使用 uni.getSystemInfoSync 获取平台信息，兼容性更好
+    const systemInfo = uni.getSystemInfoSync()
+    const platform = systemInfo.platform || ''
+
+    // 检查是否是鸿蒙系统
+    if (systemInfo.system && systemInfo.system.toLowerCase().indexOf('harmony') !== -1) {
+      return 'harmony'
+    }
+
+    if (platform === 'ios') {
+      return 'ios'
+    }
+    return 'android'
+  } catch (e) {
+    // 如果获取失败，降级尝试 navigator（H5 环境）
+    try {
+      if (typeof navigator !== 'undefined' && navigator.userAgent) {
+        const ua = navigator.userAgent.toLowerCase()
+        if (ua.indexOf('harmony') !== -1 || ua.indexOf('openharmony') !== -1) {
+          return 'harmony'
+        }
+        if (ua.indexOf('iphone') !== -1 || ua.indexOf('ipad') !== -1) {
+          return 'ios'
+        }
+      }
+    } catch (e2) {
+      // 静默失败
+    }
+    // 默认返回 android
+    return 'android'
   }
-  if (ua.indexOf('iphone') !== -1 || ua.indexOf('ipad') !== -1) {
-    return 'ios'
-  }
-  return 'android'
   // #endif
 
   // #ifdef MP-WEIXIN
