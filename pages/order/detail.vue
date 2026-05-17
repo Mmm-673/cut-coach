@@ -166,7 +166,7 @@ import { ref, computed } from 'vue'
 import { onLoad, onUnload, onShow } from '@dcloudio/uni-app'
 import { openMapNavigation, isMockVenue, calculateDistance } from '@/utils/platform'
 import { getOrderDetail, finishService, acceptOrder as acceptOrderApi, rejectOrder as rejectOrderApi, confirmDeparture as confirmDepartureApi, arrive as arriveApi, startService as startServiceApi, reportException as reportExceptionApi, startTimer as startTimerApi, endTimer as endTimerApi, getInProgressOrder } from '@/api/billiard/order'
-import { getLocation, showLocationPermissionGuide } from '@/utils/location'
+import { getLocation } from '@/utils/location'
 
 // 订单状态枚举
 const ORDER_STATUS = {
