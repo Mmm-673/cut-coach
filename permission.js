@@ -5,7 +5,8 @@ const loginPage = "/pages/login/index"
   
 // 页面白名单（开发调试用，上线前请移除 index、work、mine 相关页面）
 const whiteList = [
-  '/pages/login/index', '/pages/register', '/subpkg/common/webview/index',
+  '/pages/login/index', '/subpkg/common/webview/index',
+  '/subpkg/common/agreement/index', '/subpkg/common/privacy/index',
 ]
 
 // 检查地址白名单

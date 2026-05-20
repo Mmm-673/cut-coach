@@ -568,12 +568,19 @@ const showReportException = () => {
         editable: true,
         placeholderText: '请输入异常描述（500字以内）',
         success: async (modalRes) => {
-          if (modalRes.confirm && modalRes.content) {
+          if (modalRes.confirm) {
+            const content = modalRes.content?.trim()
+            if (!content) {
+              return uni.showToast({ title: '请输入异常描述', icon: 'none' })
+            }
+            if (content.length > 500) {
+              return uni.showToast({ title: '描述不能超过500字', icon: 'none' })
+            }
             try {
               await reportExceptionApi({
                 orderId: orderId.value,
                 exceptionType: type,
-                reason: modalRes.content
+                reason: content
               })
               uni.showToast({ title: '已提交异常', icon: 'success' })
             } catch (err) {

@@ -22,7 +22,7 @@
         <view class="balance">¥{{ (walletInfo.balance / 100).toFixed(2) || '0.00' }}</view>
       </view>
       <view class="pending-audit" v-if="walletInfo.freezePrice > 0">
-        <uni-icons type="wallet" size="16" color="#F59E0B"></uni-icons>
+        <uni-icons type="wallet" size="16" color="#F59E0b"></uni-icons>
         <text>冻结金额：¥{{ (walletInfo.freezePrice / 100).toFixed(2) }}</text>
       </view>
       <button class="withdraw-btn" @click="handleWithdraw">去提现</button>
@@ -53,6 +53,18 @@
 
       <view class="divider"></view>
 
+      <view class="menu-item" @click="navToInfo">
+        <view class="menu-item-left">
+          <view class="icon-box icon-orange">
+            <uni-icons type="person" size="22" color="#fff"></uni-icons>
+          </view>
+          <view class="menu-text">个人信息</view>
+        </view>
+        <uni-icons type="right" size="18" color="#999"></uni-icons>
+      </view>
+
+      <view class="divider"></view>
+
       <view class="menu-item" @click="navToEvaluate">
         <view class="menu-item-left">
           <view class="icon-box icon-green">
@@ -65,9 +77,33 @@
 
       <view class="divider"></view>
 
-      <view class="menu-item" @click="navToService">
+      <view class="menu-item" @click="navToHelp">
         <view class="menu-item-left">
           <view class="icon-box icon-purple">
+            <uni-icons type="help" size="22" color="#fff"></uni-icons>
+          </view>
+          <view class="menu-text">常见问题</view>
+        </view>
+        <uni-icons type="right" size="18" color="#999"></uni-icons>
+      </view>
+
+      <view class="divider"></view>
+
+      <view class="menu-item" @click="navToAbout">
+        <view class="menu-item-left">
+          <view class="icon-box icon-cyan">
+            <uni-icons type="info" size="22" color="#fff"></uni-icons>
+          </view>
+          <view class="menu-text">关于我们</view>
+        </view>
+        <uni-icons type="right" size="18" color="#999"></uni-icons>
+      </view>
+
+      <view class="divider"></view>
+
+      <view class="menu-item" @click="navToService">
+        <view class="menu-item-left">
+          <view class="icon-box icon-pink">
             <uni-icons type="headphones" size="22" color="#fff"></uni-icons>
           </view>
           <view class="menu-text">客服中心</view>
@@ -173,33 +209,45 @@ const handleWithdraw = () => {
     title: '提现',
     content: `当前可提现余额：¥${(walletInfo.value.balance / 100).toFixed(2)}`,
     success: (res) => {
-      uni.navigateTo({ url: '/pages/mine/wallet/withdraw/index' })
+      uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw/index' })
     }
   })
 }
 
 const navToDeduct = () => {
-  uni.navigateTo({ url: '/pages/mine/wallet/deduct/index' })
+  uni.navigateTo({ url: '/subpkg/mine/wallet/deduct/index' })
 }
 
 const navToWithdrawRecord = () => {
-  uni.navigateTo({ url: '/pages/mine/wallet/withdraw-record/index' })
+  uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-record/index' })
 }
 
 const navToOrder = () => {
   uni.switchTab({ url: '/pages/order/index' })
 }
 
+const navToInfo = () => {
+  uni.navigateTo({ url: '/subpkg/mine/info/index' })
+}
+
 const navToEvaluate = () => {
-  uni.navigateTo({ url: '/pages/mine/evaluate/index' })
+  uni.navigateTo({ url: '/subpkg/mine/evaluate/index' })
+}
+
+const navToHelp = () => {
+  uni.navigateTo({ url: '/subpkg/mine/help/index' })
+}
+
+const navToAbout = () => {
+  uni.navigateTo({ url: '/subpkg/mine/about/index' })
 }
 
 const navToService = () => {
-  uni.navigateTo({ url: '/pages/mine/service/index' })
+  uni.navigateTo({ url: '/subpkg/mine/service/index' })
 }
 
 const navToSetting = () => {
-  uni.navigateTo({ url: '/pages/mine/setting/index' })
+  uni.navigateTo({ url: '/subpkg/mine/setting/index' })
 }
 
 onShow(() => {
@@ -387,12 +435,24 @@ page {
   background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
 }
 
+.icon-orange {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
 .icon-green {
   background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
 }
 
 .icon-purple {
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.icon-cyan {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+
+.icon-pink {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
 }
 
 .icon-gray {

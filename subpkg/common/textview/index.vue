@@ -15,10 +15,10 @@
       }
     },
     onLoad(options) {
-      this.title = options.title
-      this.content = options.content
+      this.title = decodeURIComponent(options.title || '')
+      this.content = decodeURIComponent(options.content || '')
       uni.setNavigationBarTitle({
-        title: options.title
+        title: this.title
       })
     }
   }

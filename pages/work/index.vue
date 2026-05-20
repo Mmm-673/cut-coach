@@ -950,14 +950,14 @@ const arrive = async () => {
 
   try {
     // 先校验位置
-    const targetLat = pendingOrder.value.venueLatitude
-    const targetLon = pendingOrder.value.venueLongitude
-
-    if (targetLat && targetLon) {
-      await checkLocationInRange(targetLat, targetLon, 200)
-    }
-
-    uni.hideLoading()
+    // const targetLat = pendingOrder.value.venueLatitude
+    // const targetLon = pendingOrder.value.venueLongitude
+    //
+    // if (targetLat && targetLon) {
+    //   await checkLocationInRange(targetLat, targetLon, 200)
+    // }
+    //
+    // uni.hideLoading()
 
     await arriveApi({
       orderId: getOrderId(pendingOrder.value)
@@ -1152,8 +1152,14 @@ const navigate = () => {
 
 // 打电话（多端兼容）
 const makeCall = () => {
-  const phoneNumber = pendingOrder.value.userPhone || '13800008888'
-  makePhoneCallUtil(phoneNumber)
+  if (!pendingOrder.value.userPhone) {
+    uni.showToast({
+      title: '暂无联系电话',
+      icon: 'none'
+    })
+    return
+  }
+  makePhoneCallUtil(pendingOrder.value.userPhone)
 }
 
 // 报告异常弹窗
@@ -1172,12 +1178,19 @@ const showReportException = () => {
         editable: true,
         placeholderText: '请输入异常描述（500字以内）',
         success: async (modalRes) => {
-          if (modalRes.confirm && modalRes.content) {
+          if (modalRes.confirm) {
+            const content = modalRes.content?.trim()
+            if (!content) {
+              return uni.showToast({ title: '请输入异常描述', icon: 'none' })
+            }
+            if (content.length > 500) {
+              return uni.showToast({ title: '描述不能超过500字', icon: 'none' })
+            }
             try {
               await reportExceptionApi({
                 orderId: getOrderId(pendingOrder.value),
                 exceptionType: type,
-                reason: modalRes.content
+                reason: content
               })
               uni.showToast({ title: '已提交异常', icon: 'success' })
             } catch (err) {

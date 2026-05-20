@@ -165,14 +165,45 @@ export function openMapNavigation(options) {
 }
 
 /**
- * 拨打电话（多端兼容）
+ * 拨打电话（多端兼容健壮版）
  */
 export function makePhoneCall(phoneNumber) {
+  // 1. 判空处理
   if (!phoneNumber) {
     uni.showToast({ title: '电话号码为空', icon: 'none' })
     return
   }
-  uni.makePhoneCall({ phoneNumber })
+
+  // 2. 强制转为字符串，并清除所有空格、换行符及回车
+  const cleanPhone = String(phoneNumber).replace(/\s+/g, '')
+
+  if (!cleanPhone) {
+    uni.showToast({ title: '无效的电话号码', icon: 'none' })
+    return
+  }
+
+  // 3. 调用多端拨打 API
+  uni.makePhoneCall({
+    phoneNumber: cleanPhone,
+    success: () => {
+      console.log('成功唤起拨号盘')
+    },
+    fail: (err) => {
+      console.error('拨打电话失败，具体原因：', err)
+
+      // 如果用户自己点了取消，不需要弹失败提示
+      if (err.errMsg && err.errMsg.includes('cancel')) {
+        return
+      }
+
+      // 弹出具体错误，方便真机调试
+      uni.showToast({
+        title: `无法拨打: ${err.errMsg || '未知错误'}`,
+        icon: 'none',
+        duration: 3000
+      })
+    }
+  })
 }
 
 /**

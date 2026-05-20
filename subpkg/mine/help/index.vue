@@ -37,6 +37,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import config from '@/config'
 
 const list = ref([
   {
@@ -98,7 +99,7 @@ function handleText(item) {
 function handleContact() {
   uni.showModal({
     title: '联系客服',
-    content: '客服电话：400-123-4567\n工作时间：9:00-21:00',
+    content: `客服电话：${config.appInfo.customerServicePhone}\n工作时间：${config.appInfo.customerServiceHours}`,
     showCancel: false
   })
 }

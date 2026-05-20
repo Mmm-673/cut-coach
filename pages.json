@@ -217,7 +217,23 @@
         {
           "path": "textview/index",
           "style": {
-            "navigationBarTitleText": "浏览文本"
+            "navigationBarTitleText": ""
+          }
+        },
+        {
+          "path": "agreement/index",
+          "style": {
+            "navigationBarTitleText": "用户协议",
+            "navigationBarBackgroundColor": "#ffffff",
+            "navigationBarTextStyle": "black"
+          }
+        },
+        {
+          "path": "privacy/index",
+          "style": {
+            "navigationBarTitleText": "隐私政策",
+            "navigationBarBackgroundColor": "#ffffff",
+            "navigationBarTextStyle": "black"
           }
         }
       ]

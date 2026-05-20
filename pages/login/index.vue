@@ -35,15 +35,6 @@
 						</view>
 					</view>
 
-					<view class="input-item flex align-center" v-if="captchaEnabled">
-						<view class="iconfont icon-code icon"></view>
-						<input v-model="pwdForm.code" type="number" class="input" placeholder="验证码" :maxlength="4"
-							:focus="focusIndex === 2" @focus="onInputFocus(2)" @blur="onInputBlur" confirm-type="done"
-							@confirm="handlePwdLogin" />
-						<view class="login-code-wrapper">
-							<image :src="codeUrl" @click="getCode" class="login-code-img" mode="aspectFill"></image>
-						</view>
-					</view>
 				</template>
 
 				<!-- 短信登录表单 -->
@@ -127,8 +118,6 @@
 	const globalConfig = useConfigStore().config
 	const userStore = useUserStore()
 
-	const codeUrl = ref("")
-	const captchaEnabled = ref(false)
 	const isAgreed = ref(true)
 	const countdown = ref(0)
 	const showPassword = ref(false)
@@ -138,10 +127,8 @@
 	const activeTab = ref('pwd')
 
 	const pwdForm = ref({
-		username: "coachA001",
-		password: "123456",
-		code: "",
-		uuid: ""
+		username: "",
+		password: ""
 	})
 
 	const smsForm = ref({
@@ -155,18 +142,6 @@
 	function switchTab(tab) {
 		activeTab.value = tab
 		focusIndex.value = -1
-	}
-
-	function getCode() {
-		getCodeImg().then(res => {
-			captchaEnabled.value = res.captchaEnabled ?? false
-			if (captchaEnabled.value && res.img) {
-				codeUrl.value = 'data:image/gif;base64,' + res.img
-				pwdForm.value.uuid = res.uuid
-			}
-		}).catch(() => {
-			captchaEnabled.value = false
-		})
 	}
 
 	async function handleGetSmsCode() {
@@ -238,16 +213,13 @@
 			return proxy.$modal.msgError("请先同意用户协议")
 		}
 
-		const { username, password, code, uuid } = pwdForm.value
+		const { username, password } = pwdForm.value
 
 		if (!username) {
 			return proxy.$modal.msgError("请输入账号")
 		}
 		if (!password) {
 			return proxy.$modal.msgError("请输入密码")
-		}
-		if (captchaEnabled.value && !code) {
-			return proxy.$modal.msgError("请输入图形验证码")
 		}
 
 		isLoggingIn.value = true
@@ -257,9 +229,7 @@
 			await userStore.login({
 				loginType: 'pwd',
 				username,
-				password,
-				code,
-				uuid
+				password
 			})
 
 			proxy.$modal.closeLoading()
@@ -267,7 +237,6 @@
 		} catch (err) {
 			proxy.$modal.closeLoading()
 			proxy.$modal.msgError(err?.msg || err || '登录失败，请重试')
-			if (captchaEnabled.value) getCode()
 		} finally {
 			isLoggingIn.value = false
 		}
@@ -394,11 +363,11 @@
 	}
 
 	function handlePrivacy() {
-		proxy.$tab.navigateTo('/subpkg/common/webview/index?url=' + encodeURIComponent('https://example.com/privacy'))
+		uni.navigateTo({ url: '/subpkg/common/privacy/index' })
 	}
 
 	function handleUserAgrement() {
-		proxy.$tab.navigateTo('/subpkg/common/webview/index?url=' + encodeURIComponent('https://example.com/terms'))
+		uni.navigateTo({ url: '/subpkg/common/agreement/index' })
 	}
 
 	function onKeyboardHeightChange(e) {
@@ -406,7 +375,6 @@
 	}
 
 	onMounted(() => {
-		getCode()
 		keyboardHeightListener = uni.onKeyboardHeightChange(onKeyboardHeightChange)
 	})
 

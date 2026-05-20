@@ -98,10 +98,7 @@ const pageSize = ref(20)
 const hasMore = ref(true)
 
 const displayOrders = computed(() => {
-  if (currentTab.value === 0) {
-    return orderList.value
-  }
-  return orderList.value.filter(order => order.status === currentTab.value)
+  return orderList.value
 })
 
 // 获取订单列表
