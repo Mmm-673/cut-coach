@@ -950,14 +950,14 @@ const arrive = async () => {
 
   try {
     // 先校验位置
-    // const targetLat = pendingOrder.value.venueLatitude
-    // const targetLon = pendingOrder.value.venueLongitude
-    //
-    // if (targetLat && targetLon) {
-    //   await checkLocationInRange(targetLat, targetLon, 200)
-    // }
-    //
-    // uni.hideLoading()
+    const targetLat = pendingOrder.value.venueLatitude
+    const targetLon = pendingOrder.value.venueLongitude
+
+    if (targetLat && targetLon) {
+      await checkLocationInRange(targetLat, targetLon, 200)
+    }
+
+    uni.hideLoading()
 
     await arriveApi({
       orderId: getOrderId(pendingOrder.value)
