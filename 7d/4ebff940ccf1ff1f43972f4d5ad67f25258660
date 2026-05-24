@@ -1,0 +1,23 @@
+App.vue
+  b90405560fe2fa2d 3,22,36-38,40,42-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "7d4ebff940ccf1ff1f43972f4d5ad67f25258660",
+  "prompts": {
+    "b90405560fe2fa2d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "81acb924-f3c6-4b60-ad7f-311396dc2b3f",
+        "model": "doubao-seed-2-0-code"
+      },
+      "human_author": "Ma",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 3,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
