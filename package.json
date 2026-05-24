@@ -27,5 +27,11 @@
     "@vue/test-utils": "^2.4.10",
     "jsdom": "^29.1.1",
     "vitest": "^4.1.6"
+  },
+  "dcloud_plugin": {
+    "jg-jpush-u": {
+      "JPUSH_APPKEY": "4c7cd968b0564bbd9c06ae7c",
+      "JPUSH_CHANNEL": "developer-default"
+    }
   }
 }
