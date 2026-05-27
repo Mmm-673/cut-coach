@@ -6,6 +6,7 @@ import constant from '@/utils/constant'
 import { isHttp, isEmpty } from "@/utils/validate"
 import { getInfo, login, smsLogin, logout } from '@/api/login'
 import { getAccessToken, setAuthInfo, removeAuthInfo, getUserId } from '@/utils/auth'
+import { clearPushAlias } from '@/utils/jpush'
 import defAva from '@/static/images/profile.jpg'
 
 const baseUrl = config.baseUrl
@@ -112,6 +113,7 @@ export const useUserStore = defineStore('user', () => {
   // 退出系统
   const logOutAction = () => {
     return new Promise((resolve, reject) => {
+      // clearPushAlias()
       logout().then(() => {
         SET_TOKEN('')
         SET_ROLES([])

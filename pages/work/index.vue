@@ -537,10 +537,10 @@ const checkLocationInRange = (targetLat, targetLon, maxDistance = 200) => {
       }
 
       const distance = calculateDistance(
-        parseFloat(location.latitude),
-        parseFloat(location.longitude),
-        parseFloat(targetLat),
-        parseFloat(targetLon)
+          parseFloat(location.latitude),
+          parseFloat(location.longitude),
+          parseFloat(targetLat),
+          parseFloat(targetLon)
       )
 
       console.log('========== 位置校验 ==========')
@@ -773,8 +773,8 @@ const fetchOrders = async () => {
       orderStatus.value = 'pending'
       updatePendingCountdown(pendingOrder.value)
     } else {
-        // 没有待接单，保持 idle
-        orderStatus.value = 'idle'
+      // 没有待接单，保持 idle
+      orderStatus.value = 'idle'
     }
   } catch (err) {
     console.error('查询订单失败', err)
@@ -1361,7 +1361,19 @@ const tryRestoreOrder = async (orderId) => {
   return false
 }
 
+// #ifdef APP-PLUS
+const onJpushNewOrder = (extras) => {
+  if (extras?.type !== 'new_order') return
+  if (!isOnline.value || orderStatus.value !== 'idle') return
+  fetchOrders()
+  uni.vibrateShort({ type: 'medium' })
+}
+// #endif
+
 onMounted(async () => {
+  // #ifdef APP-PLUS
+  uni.$on('jpush:notificationArrived', onJpushNewOrder)
+  // #endif
   await refreshPageData()
 })
 
@@ -1377,6 +1389,9 @@ onShow(async () => {
 })
 
 onUnmounted(() => {
+  // #ifdef APP-PLUS
+  uni.$off('jpush:notificationArrived', onJpushNewOrder)
+  // #endif
   stopPolling()
   stopTimerPolling()
   clearInterval(pendingTimer)

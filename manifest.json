@@ -18,7 +18,8 @@
             "Location" : {},
             "Camera" : {},
             "Geolocation" : {},
-            "Maps" : {}
+            "Maps" : {},
+            "Push" : {}
         },
         "distribute" : {
             "android" : {
@@ -86,7 +87,8 @@
                     "system" : {
                         "__platform__" : [ "android" ]
                     }
-                }
+                },
+                "push" : {}
             },
             "icons" : {
                 "android" : {
@@ -249,6 +251,45 @@
                             "des" : "厂商XIAOMI-appKey,示例：MI-12345678",
                             "key" : "XIAOMI_APPKEY",
                             "value" : ""
+                        }
+                    }
+                }
+            },
+            "JG-JCore" : {
+                "JPUSH_APPKEY_ANDROID" : "4c7cd968b0564bbd9c06ae7c",
+                "JPUSH_APPKEY_IOS" : "4c7cd968b0564bbd9c06ae7c",
+                "JPUSH_CHANNEL_ANDROID" : "developer-default",
+                "JPUSH_CHANNEL_IOS" : "developer-default",
+                "__plugin_info__" : {
+                    "name" : "极光推送 JCore 官方 SDK",
+                    "description" : "极光推送 JCore 官方 SDK HBuilder 插件版本",
+                    "platforms" : "Android,iOS",
+                    "url" : "https://ext.dcloud.net.cn/plugin?id=4028",
+                    "android_package_name" : "com.aksjzt.qiuleme.coach",
+                    "ios_bundle_id" : "com.aksjzt.qiuleme.coach",
+                    "isCloud" : true,
+                    "bought" : 1,
+                    "pid" : "4028",
+                    "parameters" : {
+                        "JPUSH_APPKEY_ANDROID" : {
+                            "des" : "[Android]极光portal配置应用信息时分配的AppKey",
+                            "key" : "JPUSH_APPKEY",
+                            "value" : "4c7cd968b0564bbd9c06ae7c"
+                        },
+                        "JPUSH_APPKEY_IOS" : {
+                            "des" : "[iOS]极光portal配置应用信息时分配的AppKey",
+                            "key" : "JCore:APP_KEY",
+                            "value" : "4c7cd968b0564bbd9c06ae7c"
+                        },
+                        "JPUSH_CHANNEL_ANDROID" : {
+                            "des" : "[Android]用于统计分发渠道，不需要可填默认值developer-default",
+                            "key" : "JPUSH_CHANNEL",
+                            "value" : "developer-default"
+                        },
+                        "JPUSH_CHANNEL_IOS" : {
+                            "des" : "[iOS]用于统计分发渠道，不需要可填默认值developer-default",
+                            "key" : "JCore:CHANNEL",
+                            "value" : "developer-default"
                         }
                     }
                 }

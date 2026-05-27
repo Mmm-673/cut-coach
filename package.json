@@ -29,6 +29,10 @@
     "vitest": "^4.1.6"
   },
   "dcloud_plugin": {
+    "JG-JCore": {
+      "APPKEY": "4c7cd968b0564bbd9c06ae7c",
+      "CHANNEL": "developer-default"
+    },
     "JG-JPush": {
       "JPUSH_APPKEY": "4c7cd968b0564bbd9c06ae7c",
       "JPUSH_CHANNEL": "developer-default"
