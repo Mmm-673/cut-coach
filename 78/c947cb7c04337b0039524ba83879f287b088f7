@@ -1,0 +1,31 @@
+pages/work/index.vue
+  b16bb872bd48c92d 51,65,69-94,728,730-742,751-761,772,775,778,786,788,803-807,809,817,1610-1615,1617-1621,1623-1628,1630-1635,1637-1642,1644-1648,1650-1653,1655-1659,1661-1669
+pages.json
+  b16bb872bd48c92d 83-91
+subpkg/order/review.vue
+  b16bb872bd48c92d 1-358
+subpkg/order/detail.vue
+  b16bb872bd48c92d 653
+api/billiard/coach.js
+  b16bb872bd48c92d 62-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "78c947cb7c04337b0039524ba83879f287b088f7",
+  "prompts": {
+    "b16bb872bd48c92d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f4ac6e91-b045-46ed-8a29-654dd8901428",
+        "model": "doubao-seed-2-0-code"
+      },
+      "human_author": "Ma",
+      "messages": [],
+      "total_additions": 630,
+      "total_deletions": 139,
+      "accepted_lines": 3609,
+      "overriden_lines": 168
+    }
+  }
+}
