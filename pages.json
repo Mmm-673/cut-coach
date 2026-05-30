@@ -80,6 +80,15 @@
             "navigationBarTextStyle": "black",
             "backgroundColor": "#F8F9FB"
           }
+        },
+        {
+          "path": "review",
+          "style": {
+            "navigationBarTitleText": "评价用户",
+            "navigationBarBackgroundColor": "#fff",
+            "navigationBarTextStyle": "black",
+            "backgroundColor": "#F8F9FB"
+          }
         }
       ]
     },

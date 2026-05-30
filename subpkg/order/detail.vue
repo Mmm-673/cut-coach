@@ -650,7 +650,7 @@ const contactService = () => {
 }
 
 const goEvaluate = () => {
-  uni.navigateTo({ url: '/subpkg/mine/evaluate/index' })
+  uni.navigateTo({ url: `/subpkg/order/review?orderId=${orderId.value}` })
 }
 
 const acceptOrder = async () => {

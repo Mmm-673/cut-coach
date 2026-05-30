@@ -48,7 +48,7 @@
     </uni-card>
 
     <!-- 待接单状态 -->
-    <uni-card v-else-if="orderStatus === 'pending'" :is-shadow="true" :border="false">
+    <uni-card v-if="orderStatus === 'pending'" :is-shadow="true" :border="false">
       <view class="pending-order">
         <view class="pending-header">
           <view class="location">
@@ -62,8 +62,35 @@
         </view>
 
         <view class="order-info">
-          <text class="order-name">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '陪游' }} {{ Math.round(pendingOrder.serviceDuration / 60) }}分钟</text>
+          <text class="order-name">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '陪游' }} {{ Math.round(pendingOrder.serviceDuration }}分钟</text>
           <text class="order-price">¥{{ (pendingOrder.totalAmount / 100).toFixed(2) }}</text>
+        </view>
+
+        <!-- 用户历史评价信息 -->
+        <view class="user-review-section" v-if="pendingOrder.userAverageScore || pendingOrder.latestUserReviewContent">
+          <view class="review-header">
+            <uni-icons type="star-filled" size="16" color="#ff9500"></uni-icons>
+            <text class="review-title">用户评价</text>
+          </view>
+          <view class="review-content">
+            <view class="avg-score" v-if="pendingOrder.userAverageScore">
+              <uni-icons
+                v-for="n in 5"
+                :key="n"
+                :type="n <= Math.round(pendingOrder.userAverageScore) ? 'star-filled' : 'star'"
+                size="14"
+                :color="n <= Math.round(pendingOrder.userAverageScore) ? '#ff9500' : '#d1d5db'"
+              ></uni-icons>
+              <text class="score-text">{{ pendingOrder.userAverageScore.toFixed(1) }}分</text>
+              <text class="review-count" v-if="pendingOrder.userReviewCount">
+                ({{ pendingOrder.userReviewCount }}次评价)
+              </text>
+            </view>
+            <view class="latest-review" v-if="pendingOrder.latestUserReviewContent">
+              <text class="review-label">最新评价：</text>
+              <text class="review-text">{{ pendingOrder.latestUserReviewContent }}</text>
+            </view>
+          </view>
         </view>
 
         <view class="order-detail-row">
@@ -165,7 +192,7 @@
     </uni-card>
 
     <!-- 教学中状态 -->
-    <uni-card v-else-if="orderStatus === 'serving'" title="进行中教学" :is-shadow="true" :border="false">
+    <uni-card v-else-if="orderStatus === 'serving'" title="进行中教学" :is-shadow="true" :border="false">，
       <view class="serving-order">
         <view class="serve-top">
           <text class="left-time">剩余时长 {{ servingLeftTimeText }}</text>
@@ -698,82 +725,103 @@ const stopPolling = () => {
 // 查询订单（优先查进行中接口保证状态同步）
 const fetchOrders = async () => {
   try {
+    console.log('fetchOrders 被调用，当前状态：', orderStatus.value)
+
+    // 如果已经是待接单状态，**只**查待接单列表获取用户评价信息，不要查其他接口
+    if (orderStatus.value === 'pending') {
+      console.log('当前是待接单状态，只查待接单列表')
+      const pendingRes = await getPendingOrders()
+      if (pendingRes.data && pendingRes.data?.list?.length > 0) {
+        // 找到待接单，更新数据（包含用户评价信息）
+        const orderFromPending = pendingRes.data.list[0]
+        console.log('从待接单列表获取的数据：', orderFromPending)
+        pendingOrder.value = orderFromPending
+        updatePendingCountdown(pendingOrder.value)
+      }
+      return
+    }
+
     // 如果已上线，优先查询进行中的订单
     if (isOnline.value) {
       try {
         const inProgressRes = await getInProgressOrder()
         if (inProgressRes.data) {
-          // 有进行中的订单
           const order = inProgressRes.data
+
+          // 如果订单状态是待接单，**只**查待接单列表，不要用 inProgress 的数据
+          if (order.status === 20) {
+            console.log('inProgress 返回待接单状态，查待接单列表')
+            const pendingRes = await getPendingOrders()
+            if (pendingRes.data && pendingRes.data?.list?.length > 0) {
+              pendingOrder.value = pendingRes.data.list[0]
+              orderStatus.value = 'pending'
+              updatePendingCountdown(pendingOrder.value)
+            }
+            return
+          }
+
+          // 其他状态正常处理
           pendingOrder.value = order
 
-          // 根据订单状态更新页面状态
           if (order.status === 40) {
-            // 进行中
             orderStatus.value = 'serving'
             if (!timerPollTimer) {
               startServeTimer()
               startTimerPolling()
             }
+            return
           } else if (order.status === 30) {
-            // 已接单
             orderStatus.value = 'accepted'
-          } else if (order.status === 20) {
-            // 待接单
-            orderStatus.value = 'pending'
-            updatePendingCountdown(order)
+            return
           } else {
-            // 其他状态（已完成/已取消），清空并回到idle
             resetOrderState()
+            return
           }
-          return
         }
       } catch (err) {
         console.log('无进行中的订单', err)
       }
     }
 
-    // 如果当前有订单ID，查该订单详情
+    // 如果当前有订单ID，且不是待接单状态，才查订单详情
     const currentOrderId = getOrderId(pendingOrder.value)
-    if (currentOrderId) {
+    if (currentOrderId && pendingOrder.value.status !== 20) {
       const orderRes = await getOrderDetail(currentOrderId)
       if (orderRes.data) {
         const order = orderRes.data
         pendingOrder.value = order
 
-        // 根据订单状态更新页面状态
         if (order.status === 40) {
-          // 进行中
           orderStatus.value = 'serving'
           if (!timerPollTimer) {
             startServeTimer()
             startTimerPolling()
           }
         } else if (order.status === 30) {
-          // 已接单
           orderStatus.value = 'accepted'
         } else if (order.status === 20) {
-          // 待接单
+          // 待接单状态，**额外**查待接单列表获取用户评价信息
+          const pendingRes = await getPendingOrders()
+          if (pendingRes.data && pendingRes.data?.list?.length > 0) {
+            pendingOrder.value = pendingRes.data.list[0]
+          }
           orderStatus.value = 'pending'
-          updatePendingCountdown(order)
+          updatePendingCountdown(pendingOrder.value)
         } else {
-          // 其他状态（已完成/已取消），清空并回到idle
           resetOrderState()
         }
         return
       }
     }
 
-    // 没有订单ID，说明是 idle 状态，只查待接单列表
+    // idle 状态，查待接单列表
     const pendingRes = await getPendingOrders()
     if (pendingRes.data && pendingRes.data?.list?.length > 0) {
-      // 查询到待接单，停止轮询
       stopPolling()
       pendingOrder.value = pendingRes.data.list[0]
       orderStatus.value = 'pending'
       updatePendingCountdown(pendingOrder.value)
     } else {
-      // 没有待接单，保持 idle
       orderStatus.value = 'idle'
     }
   } catch (err) {
@@ -1556,6 +1604,67 @@ onUnmounted(() => {
     font-size: 36rpx;
     color: #2f6bee;
     font-weight: bold;
+  }
+}
+
+.user-review-section {
+  background: linear-gradient(135deg, rgba(255, 149, 0, 0.05) 0%, rgba(255, 170, 0, 0.03) 100%);
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin: 24rpx 0;
+  border: 1rpx solid rgba(255, 149, 0, 0.1);
+
+  .review-header {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    margin-bottom: 16rpx;
+
+    .review-title {
+      font-size: 28rpx;
+      font-weight: 600;
+      color: #1f2937;
+    }
+  }
+
+  .review-content {
+    .avg-score {
+      display: flex;
+      align-items: center;
+      gap: 8rpx;
+      margin-bottom: 12rpx;
+
+      .score-text {
+        font-size: 26rpx;
+        font-weight: 600;
+        color: #ff9500;
+        margin-left: 4rpx;
+      }
+
+      .review-count {
+        font-size: 24rpx;
+        color: #9ca3af;
+      }
+    }
+
+    .latest-review {
+      display: flex;
+      align-items: flex-start;
+      gap: 8rpx;
+
+      .review-label {
+        font-size: 26rpx;
+        color: #6b7280;
+        flex-shrink: 0;
+      }
+
+      .review-text {
+        font-size: 26rpx;
+        color: #4b5563;
+        flex: 1;
+        line-height: 1.6;
+      }
+    }
   }
 }
 

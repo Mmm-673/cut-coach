@@ -59,3 +59,12 @@ export function getReviewPage(params) {
     params: params
   })
 }
+
+// 助教评价用户
+export function createUserReview(data) {
+  return request({
+    url: '/coach-api/billiard/coach/review/create-user-review',
+    method: 'post',
+    data: data
+  })
+}
