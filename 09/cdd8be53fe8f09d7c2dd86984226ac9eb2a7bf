@@ -1,0 +1,29 @@
+subpkg/order/detail.vue
+  c81891f047cc07f0 77-83,85-107,221-224,318-323,354-373,375-379,381-387,389-403,405-408,417,420,423-425,438,441-450,453-454,463,485-487,489-499,725-733
+subpkg/order/user-review-history.vue
+  c81891f047cc07f0 1-2,11-80,83-193,196-373
+pages/work/index.vue
+  c81891f047cc07f0 923-950
+api/billiard/coach.js
+  c81891f047cc07f0 71-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "09cdd8be53fe8f09d7c2dd86984226ac9eb2a7bf",
+  "prompts": {
+    "c81891f047cc07f0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "269dceb4-5b1d-4e3f-b60a-9623ced4c190",
+        "model": "doubao-seed-2.0-code"
+      },
+      "human_author": "Ma",
+      "messages": [],
+      "total_additions": 531,
+      "total_deletions": 81,
+      "accepted_lines": 536,
+      "overriden_lines": 20
+    }
+  }
+}
