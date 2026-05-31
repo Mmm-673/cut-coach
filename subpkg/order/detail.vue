@@ -74,15 +74,38 @@
     <!-- 客户信息卡片 -->
     <view class="card" v-if="orderInfo.userPhone && orderInfo.userPhone !== '-'">
       <view class="card-title">客户信息</view>
-      <view class="customer-info">
-        <image class="avatar" :src="orderInfo.userAvatar" mode="aspectFill"></image>
+      <view class="customer-info" @click="goToUserReviewHistory">
+        <image
+            class="avatar"
+            :src="orderInfo.userAvatar"
+            mode="aspectFill"
+        ></image>
+
         <view class="customer-left">
-          <text class="customer-name">{{ orderInfo.userPhone }}</text>
-          <text class="customer-phone">{{ orderInfo.userNickname }}</text>
+          <text class="customer-name">{{ orderInfo.userNickname}}</text>
+          <text class="customer-phone">{{ orderInfo.userPhone }}</text>
         </view>
-        <button class="call-btn" @click="makeCall">
-          <uni-icons type="phone" size="20" color="#10B981" />
-        </button>
+
+        <view class="customer-actions">
+          <view
+              class="call-btn-mini"
+              @click.stop="makeCall"
+          >
+            <uni-icons
+                type="phone"
+                size="18"
+                color="#10B981"
+            />
+          </view>
+
+          <view class="right-arrow">
+            <uni-icons
+                type="right"
+                size="16"
+                color="#9ca3af"
+            />
+          </view>
+        </view>
       </view>
     </view>
 
@@ -195,6 +218,10 @@ const startTime = ref(null)
 let timerPollTimer = null
 // 本地秒级递减计时器
 let localTimer = null
+// 总教学时长（秒）
+let totalDurationSec = 0
+// 标记本地计时器是否已经启动
+let localTimerStarted = false
 
 // 计时显示文本
 const usedText = ref('00:00')
@@ -288,7 +315,12 @@ const getStatusSubText = (status) => {
 // 时间格式化函数
 const fmtMM = (s) => {
   const m = Math.floor(s / 60)
-  return `${String(m)}`
+  if (m >= 60) {
+    const h = Math.floor(m / 60)
+    const min = m % 60
+    return min > 0 ? `${h}小时${min}分钟` : `${h}小时`
+  }
+  return `${m}分钟`
 }
 const fmtHHMM = (s) => {
   const h = Math.floor(s/3600)
@@ -319,6 +351,61 @@ const formatTime = (timestamp) => {
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
 }
 
+const syncOrderInfo = (data) => {
+  orderInfo.value = {
+    ...orderInfo.value,
+    ...data,
+    bookingTimeText: formatTime(data.bookingTime),
+    createTimeText: formatTime(data.createTime)
+  }
+  if (data.status) {
+    orderStatus.value = data.status
+  }
+  departureConfirmTime.value = data.departureConfirmTime
+  arriveTime.value = data.arriveTime
+  startTime.value = data.startTime
+}
+
+const syncProcessingTimer = (data, isInitial = false) => {
+  // 保存总教学时长
+  if (data.serviceDuration) {
+    totalDurationSec = data.serviceDuration * 60
+  }
+
+  // 只有在初始化时才从服务端同步时间
+  if (isInitial || !localTimerStarted) {
+    if (data.startTime) {
+      usedSec.value = Math.floor((Date.now() - new Date(data.startTime).getTime()) / 1000)
+    }
+
+    // 优先用服务端剩余时间，但如果有总时长，后续用本地计算保持一致性
+    if (data.remainingMinutes !== undefined && data.remainingMinutes !== null) {
+      leftSec.value = data.remainingMinutes * 60
+    } else if (data.serviceDuration && data.startTime) {
+      const elapsed = Math.floor((Date.now() - new Date(data.startTime).getTime()) / 1000)
+      leftSec.value = Math.max(0, totalDurationSec - elapsed)
+    }
+
+    // 校验：如果有总时长，确保已用+剩余=总时长
+    if (totalDurationSec > 0) {
+      const diff = totalDurationSec - usedSec.value - leftSec.value
+      if (Math.abs(diff) <= 60 && diff !== 0) {
+        // 相差在1分钟内，调整剩余时间使等式成立
+        leftSec.value = Math.max(0, totalDurationSec - usedSec.value)
+      }
+    }
+  } else {
+    // 后续轮询只更新已用时间（用于展示），不更新剩余时间（避免跳动）
+    // 剩余时间完全由本地计时器维护，确保已用+剩余=总时长
+    if (data.startTime) {
+      usedSec.value = Math.floor((Date.now() - new Date(data.startTime).getTime()) / 1000)
+    }
+  }
+
+  usedText.value = fmtMM(usedSec.value)
+  leftText.value = fmtHHMM(leftSec.value)
+}
+
 // 获取订单详情
 const fetchOrderDetail = async () => {
   if (!orderId.value) return
@@ -327,32 +414,15 @@ const fetchOrderDetail = async () => {
     const res = await getOrderDetail(orderId.value)
     if (res.data) {
       console.log('订单详情数据:', res.data)
+      syncOrderInfo(res.data)
 
-      orderInfo.value = {
-        ...res.data,
-        bookingTimeText: formatTime(res.data.bookingTime),
-        createTimeText: formatTime(res.data.createTime)
-      }
-
-      // 更新进度状态
-      departureConfirmTime.value = res.data.departureConfirmTime
-      arriveTime.value = res.data.arriveTime
-      startTime.value = res.data.startTime
-
-      // 如果是进行中订单，启动计时
       if (orderStatus.value === ORDER_STATUS.PROCESSING) {
-        if (res.data.startTime) {
-          usedSec.value = Math.floor((Date.now() - new Date(res.data.startTime).getTime()) / 1000)
-        }
-        if (res.data.remainingMinutes) {
-          leftSec.value = res.data.remainingMinutes * 60
-        } else if (res.data.serviceDuration && res.data.startTime) {
-          const elapsed = Math.floor((Date.now() - new Date(res.data.startTime).getTime()) / 1000)
-          const total = res.data.serviceDuration * 60
-          leftSec.value = Math.max(0, total - elapsed)
-        }
+        syncProcessingTimer(res.data, true)
         startLocalTimer()
         startInProgressPolling()
+      } else {
+        stopLocalTimer()
+        stopInProgressPolling()
       }
     }
   } catch (err) {
@@ -365,15 +435,23 @@ const startLocalTimer = () => {
   stopLocalTimer()
   usedText.value = fmtMM(usedSec.value)
   leftText.value = fmtHHMM(leftSec.value)
+  localTimerStarted = true
 
   localTimer = setInterval(() => {
-    usedSec.value++
-    usedText.value = fmtMM(usedSec.value)
-
-    if (leftSec.value > 0) {
-      leftSec.value--
-      leftText.value = fmtHHMM(leftSec.value)
+    // 如果有总时长，用总时长来计算，确保已用+剩余=总时长
+    if (totalDurationSec > 0) {
+      usedSec.value++
+      leftSec.value = Math.max(0, totalDurationSec - usedSec.value)
+    } else {
+      // 没有总时长时，按原方式分别计算
+      usedSec.value++
+      if (leftSec.value > 0) {
+        leftSec.value--
+      }
     }
+
+    usedText.value = fmtMM(usedSec.value)
+    leftText.value = fmtHHMM(leftSec.value)
   }, 1000)
 }
 
@@ -382,6 +460,7 @@ const stopLocalTimer = () => {
     clearInterval(localTimer)
     localTimer = null
   }
+  localTimerStarted = false
 }
 
 const startInProgressPolling = () => {
@@ -403,23 +482,21 @@ const fetchInProgressOrder = async () => {
   if (orderStatus.value !== ORDER_STATUS.PROCESSING) return
   try {
     const resp = await getInProgressOrder()
-    if (resp && resp.data) {
-      const data = resp.data
-      orderInfo.value = {
-        ...orderInfo.value,
-        ...data,
-        bookingTimeText: formatTime(data.bookingTime),
-        createTimeText: formatTime(data.createTime)
-      }
-      if (data.remainingMinutes !== undefined && data.remainingMinutes !== null) {
-        leftSec.value = data.remainingMinutes * 60
-        leftText.value = fmtHHMM(leftSec.value)
-      }
-      if (data.startTime) {
-        usedSec.value = Math.floor((Date.now() - new Date(data.startTime).getTime()) / 1000)
-        usedText.value = fmtMM(usedSec.value)
-      }
+    if (!resp?.data) {
+      await fetchOrderDetail()
+      return
     }
+
+    const data = resp.data
+    syncOrderInfo(data)
+
+    if (orderStatus.value !== ORDER_STATUS.PROCESSING) {
+      stopLocalTimer()
+      stopInProgressPolling()
+      return
+    }
+
+    syncProcessingTimer(data)
   } catch (err) {
     console.error('查询进行中订单失败', err)
   }
@@ -645,6 +722,16 @@ const makeCall = () => {
   })
 }
 
+const goToUserReviewHistory = () => {
+  if (!orderInfo.value.userId) {
+    uni.showToast({ title: '用户信息不完整', icon: 'none' })
+    return
+  }
+  uni.navigateTo({
+    url: `/subpkg/order/user-review-history?userId=${orderInfo.value.userId}&userName=${encodeURIComponent(orderInfo.value.userNickname || orderInfo.value.userPhone || '')}&userAvatar=${encodeURIComponent(orderInfo.value.userAvatar || '')}`
+  })
+}
+
 const contactService = () => {
   uni.showToast({ title: '正在联系客服', icon: 'none' })
 }
@@ -709,7 +796,7 @@ const endService = () => {
           })
           stopLocalTimer()
           stopInProgressPolling()
-          orderStatus.value = ORDER_STATUS.FINISHED
+          await fetchOrderDetail()
           uni.$emit('serviceEnded', {
             orderId: orderId.value,
             usedTime: usedText.value
@@ -748,7 +835,7 @@ onUnload(() => {
 }
 
 .order-detail-finished {
-  padding-bottom: calc(100rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
 
 .timer-section {
@@ -949,6 +1036,22 @@ onUnload(() => {
       color: #6b7280;
     }
   }
+  .customer-actions {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+  }
+
+  .call-btn-mini {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: 32rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0fdf4;
+    margin-right: 12rpx;
+  }
 
   .call-btn {
     width: 80rpx;
@@ -967,6 +1070,7 @@ onUnload(() => {
     }
   }
 }
+
 
 .footer {
   position: fixed;

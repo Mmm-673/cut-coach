@@ -68,3 +68,12 @@ export function createUserReview(data) {
     data: data
   })
 }
+
+// 查询用户历史被评价
+export function getUserReviewHistoryPage(params) {
+  return request({
+    url: '/coach-api/billiard/coach/review/user-history-page',
+    method: 'get',
+    params: params
+  })
+}

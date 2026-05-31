@@ -89,6 +89,15 @@
             "navigationBarTextStyle": "black",
             "backgroundColor": "#F8F9FB"
           }
+        },
+        {
+          "path": "user-review-history",
+          "style": {
+            "navigationBarTitleText": "用户历史评价",
+            "navigationBarBackgroundColor": "#fff",
+            "navigationBarTextStyle": "black",
+            "backgroundColor": "#F8F9FB"
+          }
         }
       ]
     },
