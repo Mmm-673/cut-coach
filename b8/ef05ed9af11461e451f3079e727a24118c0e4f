@@ -1,0 +1,25 @@
+pages/work/index.vue
+  3a0c89fb71820fb4 288,298,1067-1069,1102-1104,1131-1133,1140-1141,1181,1225-1226
+api/billiard/order.js
+  3a0c89fb71820fb4 74,82-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "b8ef05ed9af11461e451f3079e727a24118c0e4f",
+  "prompts": {
+    "3a0c89fb71820fb4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8fba67fc-2318-411c-856b-e21acf2a4d2c",
+        "model": "doubao-seed-2.0-code"
+      },
+      "human_author": "Ma",
+      "messages": [],
+      "total_additions": 51,
+      "total_deletions": 115,
+      "accepted_lines": 1976,
+      "overriden_lines": 237
+    }
+  }
+}
