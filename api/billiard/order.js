@@ -71,10 +71,18 @@ export function getOrderPage(params) {
   })
 }
 
-// 获取进行中订单详情
+// 获取进行中订单详情（即将废弃）
 export function getInProgressOrder() {
   return request({
     url: '/coach-api/billiard/order/in-progress',
+    method: 'get'
+  })
+}
+
+// 获取当前未完成订单详情（新接口）
+export function getCurrentUnfinishedOrder() {
+  return request({
+    url: '/coach-api/billiard/order/current-unfinished',
     method: 'get'
   })
 }

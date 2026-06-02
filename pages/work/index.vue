@@ -285,8 +285,7 @@
 	} from '@/api/billiard/coach'
 	import {
 		getPendingOrders,
-		getOrderDetail,
-		getInProgressOrder,
+		getCurrentUnfinishedOrder,
 		acceptOrder as acceptOrderApi,
 		confirmDeparture as confirmDepartureApi,
 		arrive as arriveApi,
@@ -296,8 +295,7 @@
 		getOrderPage,
 		reportException as reportExceptionApi,
 		startTimer as startTimerApi,
-		endTimer as endTimerApi,
-		getTimerStatus as getTimerStatusApi
+		endTimer as endTimerApi
 	} from '@/api/billiard/order'
 	import {
 		getLocation,
@@ -344,6 +342,7 @@
 	let usedTimer = null
 	let leftTimer = null
 	let fetchingOrders = false
+	let hasCurrentUnfinishedOrder = false
 
 	// 待接单数据
 	const pendingOrder = ref({})
@@ -900,19 +899,6 @@
 		clearPendingReviewFields()
 	}
 
-	const applyActiveOrder = (order) => {
-		if (order.status === 40) {
-			applyServingOrder(order)
-			return true
-		}
-
-		if (order.status === 30) {
-			applyAcceptedOrder(order)
-			return true
-		}
-
-		return false
-	}
 
 	const resolveWorkbenchOrderState = async () => {
 		if (!isOnline.value) {
@@ -922,11 +908,11 @@
 
 		clearPendingReviewFields()
 
-		// 【简化逻辑】只用 getInProgressOrder 一个接口，根据 status 判断
+		// 【新逻辑】优先查询 current-unfinished 接口
 		try {
-			const inProgressRes = await getInProgressOrder()
-			if (inProgressRes.data) {
-				const order = inProgressRes.data
+			const currentUnfinishedRes = await getCurrentUnfinishedOrder()
+			if (currentUnfinishedRes.data && currentUnfinishedRes.data.status !== 20 ) {
+				const order = currentUnfinishedRes.data
 
 				// 根据返回的 status 字段直接处理
 				if (order.status === 20) {
@@ -944,10 +930,10 @@
 				}
 			}
 		} catch (err) {
-			console.log("无进行中的订单", err)
+			console.log("查询当前未完成订单失败", err)
 		}
 
-		// 如果 getInProgressOrder 没返回有效订单，再查待接单列表兜底
+		// current-unfinished 没有数据，再查待接单列表
 		let pendingList = []
 		try {
 			pendingList = await getPendingList()
@@ -958,13 +944,6 @@
 		if (pendingList.length > 0) {
 			applyPendingOrder(pendingList[0])
 			return
-		}
-
-		const currentOrderId = getOrderId(pendingOrder.value)
-		if (currentOrderId) {
-			if (await tryRestoreOrder(currentOrderId)) {
-				return
-			}
 		}
 
 		applyIdleState()
@@ -1005,24 +984,6 @@
 		}
 	}
 
-	// 重置订单状态
-	const resetOrderState = () => {
-		applyIdleState()
-	}
-
-	// 查询待接单列表（保留用于兼容）
-	const fetchPendingOrders = async () => {
-		try {
-			const orderList = await getPendingList()
-			if (orderList.length > 0) {
-				applyPendingOrder(orderList[0])
-			} else {
-				applyIdleState()
-			}
-		} catch (err) {
-			console.error('查询待接单失败', err)
-		}
-	}
 
 	const updatePendingCountdownText = () => {
 		const m = Math.floor(pendingCountdown.value / 60)
@@ -1103,9 +1064,9 @@
 			})
 			uni.hideLoading()
 			stopPendingCountdown()
-			// 接单成功后查询该订单详情
-			const orderRes = await getOrderDetail(currentOrderId)
-			console.log('接单 - 订单详情返回:', orderRes)
+			// 接单成功后查询当前未完成订单获取最新状态
+			const orderRes = await getCurrentUnfinishedOrder()
+			console.log('接单 - 当前未完成订单返回:', orderRes)
 			if (orderRes.data) {
 				applyAcceptedOrder(orderRes.data)
 				console.log('接单 - 更新后的pendingOrder:', pendingOrder.value)
@@ -1138,9 +1099,9 @@
 			await confirmDepartureApi({
 				orderId: currentOrderId
 			})
-			// 确认出发后查询订单详情更新
-			const orderRes = await getOrderDetail(currentOrderId)
-			console.log('确认出发 - 订单详情返回:', orderRes)
+			// 确认出发后查询当前未完成订单获取最新状态
+			const orderRes = await getCurrentUnfinishedOrder()
+			console.log('确认出发 - 当前未完成订单返回:', orderRes)
 			if (orderRes.data) {
 				applyAcceptedOrder(orderRes.data)
 				console.log('确认出发 - 更新后的pendingOrder:', pendingOrder.value)
@@ -1167,17 +1128,17 @@
 			const targetLat = pendingOrder.value.venueLatitude
 			const targetLon = pendingOrder.value.venueLongitude
 
-			if (targetLat && targetLon) {
-				await checkLocationInRange(targetLat, targetLon, 200)
-			}
+			// if (targetLat && targetLon) {
+			// 	await checkLocationInRange(targetLat, targetLon, 200)
+			// }
 
 			uni.hideLoading()
 
 			await arriveApi({
 				orderId: getOrderId(pendingOrder.value)
 			})
-			// 确认到达后查询订单详情更新
-			const orderRes = await getOrderDetail(getOrderId(pendingOrder.value))
+			// 确认到达后查询当前未完成订单获取最新状态
+			const orderRes = await getCurrentUnfinishedOrder()
 			if (orderRes.data) {
 				applyAcceptedOrder(orderRes.data)
 			}
@@ -1217,7 +1178,7 @@
 
 			// 3. 启动服务中状态，优先使用服务端最新进行中数据校准时间
 			try {
-				const inProgressRes = await getInProgressOrder()
+				const inProgressRes = await getCurrentUnfinishedOrder()
 				if (inProgressRes.data) {
 					applyServingOrder(inProgressRes.data)
 				} else {
@@ -1261,8 +1222,8 @@
 		const currentOrderId = getOrderId(pendingOrder.value)
 		if (!currentOrderId || orderStatus.value !== 'serving') return
 		try {
-			// 使用 getInProgressOrder 来更新计时器信息，与订单详情页面保持一致
-			const resp = await getInProgressOrder()
+			// 使用 getCurrentUnfinishedOrder 来更新计时器信息
+			const resp = await getCurrentUnfinishedOrder()
 			if (resp && resp.data) {
 				const data = resp.data
 				if (data.status && data.status !== 40) {
@@ -1511,71 +1472,7 @@
 		startDiscoveryPollingIfNeeded()
 	}
 
-	// 检查订单并设置状态，返回是否成功设置
-	const checkAndSetOrder = async (order) => {
-		// 只有这些状态才不展示：50待评价、60已完成、70已取消
-		if (order.status === 50 || order.status === 60 || order.status === 70) {
-			return false
-		}
 
-		if (order.status === 20) {
-			applyPendingOrder(order)
-			return true
-		}
-
-		// 获取完整的订单详情
-		const orderId = getOrderId(order)
-		let fullOrder = order
-		if (orderId) {
-			try {
-				const orderRes = await getOrderDetail(orderId)
-				if (orderRes.data) {
-					fullOrder = orderRes.data
-				}
-			} catch (err) {
-				console.log('获取订单详情失败', err)
-			}
-		}
-
-		if (fullOrder.status === 40) {
-			applyServingOrder(fullOrder)
-			return true
-		}
-
-		if (fullOrder.status === 30) {
-			applyAcceptedOrder(fullOrder)
-			return true
-		}
-
-		return false
-	}
-
-	// 尝试用订单ID恢复订单
-	const tryRestoreOrder = async (orderId) => {
-		try {
-			const orderRes = await getOrderDetail(orderId)
-			if (orderRes.data) {
-				const order = orderRes.data
-				// 只有这些状态才不展示：50待评价、60已完成、70已取消
-				if (order.status === 50 || order.status === 60 || order.status === 70) {
-					return false
-				}
-
-				if (order.status === 40) {
-					applyServingOrder(order)
-					return true
-				}
-
-				if (order.status === 30) {
-					applyAcceptedOrder(order)
-					return true
-				}
-			}
-		} catch (err) {
-			console.log('恢复订单失败', err)
-		}
-		return false
-	}
 
 	// #ifdef APP-PLUS
 	const onJpushNewOrder = (extras) => {
