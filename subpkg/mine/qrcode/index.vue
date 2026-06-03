@@ -7,7 +7,7 @@
       </view>
       <view class="user-info">
         <view class="user-name">{{ coachProfile.stageName || '助教' }}</view>
-        <view class="user-id">ID: {{ coachProfile.id || '-' }}</view>
+        <view class="user-id">ID: {{ coachProfile.coachId || '-' }}</view>
       </view>
     </view>
 
@@ -60,7 +60,7 @@ const isLoaded = ref(false) // 👈 新增：标记数据是否加载完毕
 
 // 教练档案
 const coachProfile = ref({
-  id: '',
+  coachId: '',
   stageName: '',
   level: 0,
   mobile: '',
@@ -70,11 +70,11 @@ const coachProfile = ref({
 // 二维码内容
 const qrcodeValue = computed(() => {
   // 如果连 ID 都没有，直接返回空，配合 v-if 阻断渲染
-  if (!coachProfile.value.id) return ''
+  if (!coachProfile.value.coachId) return ''
 
   return JSON.stringify({
     type: 'coach',
-    id: coachProfile.value.id,
+    coachId: coachProfile.value.coachId,
     name: coachProfile.value.stageName
   })
 })
