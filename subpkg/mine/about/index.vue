@@ -3,7 +3,7 @@
     <!-- Logo区域 -->
     <view class="logo-section">
       <image class="logo" src="/static/logo.png" mode="aspectFit"></image>
-      <view class="app-name">球了么裁教端</view>
+      <view class="app-name">初球裁教端</view>
       <view class="version">v{{ version }}</view>
     </view>
 
@@ -18,7 +18,7 @@
             <text class="item-label">应用名称</text>
           </view>
           <view class="item-right">
-            <text class="item-value">球了么裁教端</text>
+            <text class="item-value">初球裁教端</text>
             <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
           </view>
         </view>
@@ -69,7 +69,7 @@
           <text class="intro-title">关于我们</text>
         </view>
         <view class="intro-content">
-          <text>球了么裁教端是面向台球专业教练、裁教从业者打造的服务平台。</text>
+          <text>初球裁教端是面向台球专业教练、裁教从业者打造的服务平台。</text>
           <text>教练可以在线接收用户陪练预约订单，自主接单，管理服务日程，查看收益明细。</text>
           <text>平台提供统一合规的结算、订单管理与客服协作，助力台球从业者线上接单，</text>
           <text>灵活增收，高效开展台球教学陪练服务。</text>

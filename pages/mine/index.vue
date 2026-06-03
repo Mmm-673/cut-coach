@@ -89,6 +89,18 @@
 
       <view class="divider"></view>
 
+      <view class="menu-item" @click="navToQrcode">
+        <view class="menu-item-left">
+          <view class="icon-box icon-orange">
+            <uni-icons type="scan" size="22" color="#fff"></uni-icons>
+          </view>
+          <view class="menu-text">我的二维码</view>
+        </view>
+        <uni-icons type="right" size="18" color="#999"></uni-icons>
+      </view>
+
+      <view class="divider"></view>
+
       <view class="menu-item" @click="navToAbout">
         <view class="menu-item-left">
           <view class="icon-box icon-cyan">
@@ -127,7 +139,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getCoachProfile } from '@/api/billiard/coach'
 import { getWalletBalance } from '@/api/billiard/wallet'
@@ -236,6 +248,10 @@ const navToEvaluate = () => {
 
 const navToHelp = () => {
   uni.navigateTo({ url: '/subpkg/mine/help/index' })
+}
+
+const navToQrcode = () => {
+  uni.navigateTo({ url: '/subpkg/mine/qrcode/index' })
 }
 
 const navToAbout = () => {

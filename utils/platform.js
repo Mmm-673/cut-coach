@@ -124,8 +124,8 @@ export function openMapNavigation(options) {
         })
       })
     })
-  } else if (isAndroid()) {
-    // Android 同样尝试多个地图应用
+  } else if (isAndroid() || isHarmony()) {
+    // Android 和鸿蒙使用相同的地图应用方案
     const aMapUrl = `amapuri://route/plan/?daddr=${lat},${lon}&dname=${encodeURIComponent(name)}&dev=0&t=${mode === 'driving' ? '0' : '2'}`
     const baiduUrl = `baidumap://map/direction?destination=name:${encodeURIComponent(name)}|latlng:${lat},${lon}&mode=${mode === 'driving' ? 'driving' : 'walking'}&coord_type=gcj02`
 
@@ -246,11 +246,12 @@ export function isMockVenue(venueName, venueAddress) {
 export const openPermissionSettings = () => {
   // #ifdef APP-PLUS
   const systemInfo = uni.getSystemInfoSync()
-  const platform = systemInfo.platform
 
-  if (platform === 'ios') {
+  // 使用已有的平台检测函数
+  if (isIOS()) {
     plus.runtime.openURL('app-settings:')
-  } else if (platform === 'android') {
+  } else if (isAndroid() || isHarmony()) {
+    // Android 和鸿蒙使用相同的处理方式
     const main = plus.android.runtimeMainActivity()
     const Intent = plus.android.importClass('android.content.Intent')
     const Settings = plus.android.importClass('android.provider.Settings')

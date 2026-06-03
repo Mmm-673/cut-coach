@@ -2,7 +2,6 @@
   <view class="setting-container">
     <view class="header-section">
       <view class="title">设置</view>
-      <view class="subtitle">管理您的账户和偏好</view>
     </view>
 
     <view class="menu-section">
@@ -18,28 +17,6 @@
         </view>
 
         <view class="divider"></view>
-
-        <view class="menu-item" @click="handleToUpgrade">
-          <view class="menu-item-left">
-            <view class="icon-box icon-green">
-              <view class="iconfont icon-refresh"></view>
-            </view>
-            <view class="menu-text">检查更新</view>
-          </view>
-          <uni-icons type="right" size="18" color="#999"></uni-icons>
-        </view>
-
-        <view class="divider"></view>
-
-        <view class="menu-item" @click="handleCleanTmp">
-          <view class="menu-item-left">
-            <view class="icon-box icon-orange">
-              <view class="iconfont icon-clean"></view>
-            </view>
-            <view class="menu-text">清理缓存</view>
-          </view>
-          <uni-icons type="right" size="18" color="#999"></uni-icons>
-        </view>
       </view>
     </view>
 
@@ -59,14 +36,6 @@ const { proxy } = getCurrentInstance()
 
 function handleToPwd() {
   proxy.$tab.navigateTo('/subpkg/mine/pwd/index')
-}
-
-function handleToUpgrade() {
-  proxy.$modal.showToast('模块建设中~')
-}
-
-function handleCleanTmp() {
-  proxy.$modal.showToast('模块建设中~')
 }
 
 function handleLogout() {

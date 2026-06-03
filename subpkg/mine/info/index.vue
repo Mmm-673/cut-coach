@@ -3,9 +3,6 @@
     <!-- 头像区域 -->
     <view class="avatar-section" @click="goEditAvatar">
       <image class="avatar" :src="coachInfo.avatar || '/static/images/default-avatar.png'" mode="aspectFill"></image>
-      <view class="change-avatar">
-        <uni-icons type="camera" size="18" color="#fff"></uni-icons>
-      </view>
     </view>
 
     <!-- 信息列表 -->
@@ -26,17 +23,9 @@
         <view class="label">简介</view>
         <view class="value">{{ coachInfo.introduction || '暂无简介' }}</view>
       </view>
-      <view class="info-item" v-if="coachInfo.commissionRate">
-        <view class="label">佣金比例</view>
-        <view class="value">{{ coachInfo.commissionRate }}%</view>
-      </view>
+
     </view>
 
-    <!-- 编辑按钮 -->
-    <view class="edit-btn" @click="goEdit">
-      <uni-icons type="compose" size="20" color="#fff"></uni-icons>
-      <text>编辑资料</text>
-    </view>
   </view>
 </template>
 
@@ -73,17 +62,6 @@ const fetchCoachInfo = async () => {
     })
   }
 }
-
-// 跳转到编辑头像
-const goEditAvatar = () => {
-  uni.navigateTo({ url: '/subpkg/mine/avatar/index' })
-}
-
-// 跳转到编辑资料
-const goEdit = () => {
-  uni.navigateTo({ url: '/subpkg/mine/info/edit' })
-}
-
 onShow(() => {
   fetchCoachInfo()
 })

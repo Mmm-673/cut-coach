@@ -8,17 +8,19 @@ import { regeocode } from '@/api/billiard/amap'
 // 定位状态
 let isLocating = false
 
+import { isIOS, isAndroid, isHarmony } from '@/utils/platform'
+
 /**
  * 打开应用设置页面（兼容 iOS、Android、鸿蒙）
  */
 export const openAppSetting = () => {
   // #ifdef APP-PLUS
   const systemInfo = uni.getSystemInfoSync()
-  const platform = systemInfo.platform
 
-  if (platform === 'ios') {
+  if (isIOS()) {
     plus.runtime.openURL(plus.runtime.appid ? 'app-settings:' : 'prefs:root=LOCATION_SERVICES')
-  } else if (platform === 'android') {
+  } else if (isAndroid() || isHarmony()) {
+    // Android 和鸿蒙使用相同的处理方式
     const main = plus.android.runtimeMainActivity()
     const Intent = plus.android.importClass('android.content.Intent')
     const Settings = plus.android.importClass('android.provider.Settings')
@@ -40,21 +42,7 @@ export const openAppSetting = () => {
     }
   } else {
     try {
-      const osName = systemInfo.osName || ''
-      if (osName.toLowerCase().includes('harmony') || systemInfo.systemName?.toLowerCase().includes('harmony')) {
-        const main = plus.android.runtimeMainActivity()
-        const Intent = plus.android.importClass('android.content.Intent')
-        const Settings = plus.android.importClass('android.provider.Settings')
-        try {
-          const intent = new Intent(Settings.ACTION_APPLICATION_SETTINGS)
-          main.startActivity(intent)
-        } catch (he) {
-          const intent = new Intent(Settings.ACTION_SETTINGS)
-          main.startActivity(intent)
-        }
-      } else {
-        uni.openSetting({ fail: () => uni.showToast({ title: '打开设置失败', icon: 'none' }) })
-      }
+      uni.openSetting({ fail: () => uni.showToast({ title: '打开设置失败', icon: 'none' }) })
     } catch (e) {
       uni.openSetting({ fail: () => uni.showToast({ title: '打开设置失败', icon: 'none' }) })
     }
@@ -200,8 +188,8 @@ export const getLocation = ({
     // #ifdef APP-PLUS
     try {
       const systemInfo = uni.getSystemInfoSync()
-      // Android 权限申请
-      if (systemInfo.platform === 'android') {
+      // Android 和鸿蒙权限申请
+      if (isAndroid() || isHarmony()) {
         plus.android.requestPermissions(
             ['android.permission.ACCESS_FINE_LOCATION', 'android.permission.ACCESS_COARSE_LOCATION'],
             (result) => {

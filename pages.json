@@ -220,6 +220,12 @@
           "style": {
             "navigationBarTitleText": "关于我们"
           }
+        },
+        {
+          "path": "qrcode/index",
+          "style": {
+            "navigationBarTitleText": "我的二维码"
+          }
         }
       ]
     },
@@ -295,7 +301,7 @@
   },
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "球了么裁教端",
+    "navigationBarTitleText": "初球裁教端",
     "navigationBarBackgroundColor": "#FFFFFF",
     "backgroundColor": "#f8fbff"
   },
