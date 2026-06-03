@@ -85,15 +85,15 @@ const fetchCoachProfile = async () => {
     const res = await getCoachProfile()
     if (res && res.data) {
       coachProfile.value = {
-        id: res.data.id || '',
+        coachId: res.data.id || '',
         stageName: res.data.stageName || res.data.name || '助教',
         level: res.data.level ?? 0,
         mobile: res.data.mobile || '',
         avatar: res.data.avatar || ''
       }
 
-      // 👈 核心修改：如果拿到了有效 ID，开启渲染开关
-      if (coachProfile.value.id) {
+      // 👈 核心修改：如果拿到了有效 coachId，开启渲染开关
+      if (coachProfile.value.coachId) {
         isLoaded.value = true
         // 👇 核心修复：等待 DOM 渲染完成后，手动触发二维码绘制
         nextTick(() => {
