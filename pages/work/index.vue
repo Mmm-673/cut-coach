@@ -1359,14 +1359,14 @@
 
 	// 打电话（多端兼容）
 	const makeCall = () => {
-		if (!pendingOrder.value.userPhone) {
+		if (!pendingOrder.value.userRealMobile) {
 			uni.showToast({
 				title: '暂无联系电话',
 				icon: 'none'
 			})
 			return
 		}
-		makePhoneCallUtil(pendingOrder.value.userPhone)
+		makePhoneCallUtil(pendingOrder.value.userRealMobile)
 	}
 
 	// 报告异常弹窗
