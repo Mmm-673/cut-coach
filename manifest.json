@@ -32,7 +32,6 @@
                     "<uses-feature android:name=\"android.hardware.camera.autofocus\"/>",
                     "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
                     "<uses-permission android:name=\"android.permission.CAMERA\"/>",
-                    "<uses-permission android:name=\"android.permission.READ_PHONE_STATE\"/>",
                     "<uses-permission android:name=\"android.permission.CHANGE_WIFI_STATE\"/>",
                     "<uses-permission android:name=\"android.permission.WAKE_LOCK\"/>",
                     "<uses-permission android:name=\"android.permission.FLASHLIGHT\"/>",
@@ -47,6 +46,7 @@
             },
             "ios" : {
                 "bundleID" : "com.aksjzt.qiuleme.coach",
+                "bundleIdentifier" : "com.aksjzt.qiuleme.coach",
                 "dSYMs" : false,
                 "plist" : {
                     "NSCameraUsageDescription" : "需要访问您的相机进行拍照",

@@ -1,5 +1,5 @@
 <template>
-  <view class="order-detail-wrapper" :class="{ 'order-detail-finished': !isProcessing }">
+  <view class="order-detail-wrapper" :class="{ 'order-detail-finished': !isProcessing }" :style="{ paddingBottom: footerPaddingBottom }">
     <!-- 进行中状态：显示计时器区域 -->
     <view v-if="orderStatus === ORDER_STATUS.PROCESSING" class="timer-section">
       <uni-tag :text="getStatusText(orderStatus)" :type="getStatusType(orderStatus)" size="normal" class="status-tag" />
@@ -107,10 +107,11 @@
           </view>
         </view>
       </view>
+      <view class="safe-area-bottom"></view>
     </view>
 
     <!-- 底部操作区 -->
-    <view class="footer">
+    <view class="footer" id="orderDetailFooter">
       <!-- 待接单状态显示接单/拒单按钮 -->
       <template v-if="orderStatus === ORDER_STATUS.PENDING">
         <view class="btn-row">
@@ -187,6 +188,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad, onUnload, onShow } from '@dcloudio/uni-app'
+import { nextTick, watch, getCurrentInstance } from 'vue'
 import { openMapNavigation, isMockVenue, calculateDistance } from '@/utils/platform'
 import { getOrderDetail, finishService, acceptOrder as acceptOrderApi, rejectOrder as rejectOrderApi, confirmDeparture as confirmDepartureApi, arrive as arriveApi, startService as startServiceApi, reportException as reportExceptionApi, startTimer as startTimerApi, endTimer as endTimerApi, getInProgressOrder } from '@/api/billiard/order'
 import { getLocation } from '@/utils/location'
@@ -229,6 +231,37 @@ const leftText = ref('00:00:00')
 
 // 状态计算属性
 const isProcessing = computed(() => orderStatus.value === ORDER_STATUS.PROCESSING)
+
+// 底部 footer 动态高度（用于撑开页面 padding-bottom，避免遮挡上方卡片）
+const footerHeight = ref(0)
+const footerPaddingBottom = computed(() => {
+  const h = footerHeight.value || 200
+  return `calc(${h}rpx + env(safe-area-inset-bottom) + 32rpx)`
+})
+
+const instance = getCurrentInstance()
+const measureFooter = () => {
+  nextTick(() => {
+    try {
+      const query = uni.createSelectorQuery().in(instance.proxy)
+      query.select('#orderDetailFooter').boundingClientRect((rect) => {
+        if (rect && rect.height) {
+          // px -> rpx：rpx = px * (750 / windowWidth)
+          const sys = uni.getSystemInfoSync()
+          const ratio = 750 / (sys.windowWidth || 375)
+          footerHeight.value = Math.ceil(rect.height * ratio)
+        }
+      }).exec()
+    } catch (e) {
+      console.warn('测量 footer 高度失败', e)
+    }
+  })
+}
+
+// 状态/进度变化时重新测量 footer 高度
+watch([orderStatus, departureConfirmTime, arriveTime, startTime, () => orderInfo.value.serviceType], () => {
+  measureFooter()
+})
 
 // 获取状态类型（用于uni-tag）
 const getStatusType = (status) => {
@@ -713,13 +746,16 @@ const makeCall = () => {
     uni.showToast({ title: '暂无联系电话', icon: 'none' })
     return
   }
-  uni.makePhoneCall({
-    phoneNumber: realMobile,
-    fail: (err) => {
-      console.error('拨打电话失败:', err)
-      uni.showToast({ title: '拨打电话失败', icon: 'none' })
-    }
-  })
+
+  // #ifdef APP-PLUS
+  // 只有【打包成 Android / iOS App】时，才会执行这里
+    plus.runtime.openURL(`tel:${realMobile}`);
+  // #endif
+
+  // #ifndef APP-PLUS
+  // 只有【不是 App】时（微信小程序、H5、快应用）才执行这里
+    uni.makePhoneCall({ phoneNumber: realMobile });
+  // #endif
 }
 
 const goToUserReviewHistory = () => {
@@ -830,12 +866,7 @@ onUnload(() => {
 .order-detail-wrapper {
   min-height: 100vh;
   background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
-  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
-}
-
-.order-detail-finished {
-  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
 }
 
 .timer-section {

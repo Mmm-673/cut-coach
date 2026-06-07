@@ -183,27 +183,16 @@ export function makePhoneCall(phoneNumber) {
   }
 
   // 3. 调用多端拨打 API
-  uni.makePhoneCall({
-    phoneNumber: cleanPhone,
-    success: () => {
-      console.log('成功唤起拨号盘')
-    },
-    fail: (err) => {
-      console.error('拨打电话失败，具体原因：', err)
 
-      // 如果用户自己点了取消，不需要弹失败提示
-      if (err.errMsg && err.errMsg.includes('cancel')) {
-        return
-      }
+  // #ifdef APP-PLUS
+  // 只有【打包成 Android / iOS App】时，才会执行这里
+  plus.runtime.openURL(`tel:${cleanPhone}`);
+  // #endif
 
-      // 弹出具体错误，方便真机调试
-      uni.showToast({
-        title: `无法拨打: ${err.errMsg || '未知错误'}`,
-        icon: 'none',
-        duration: 3000
-      })
-    }
-  })
+  // #ifndef APP-PLUS
+  // 只有【不是 App】时（微信小程序、H5、快应用）才执行这里
+  uni.makePhoneCall({ phoneNumber: cleanPhone });
+  // #endif
 }
 
 /**

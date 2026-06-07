@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      Android 11 (API 30) 包可见性声明
+      不加这段，uni.makePhoneCall 在 targetSdk >= 30 的包里会因为
+      PackageManager 找不到能处理 tel: 的 Activity 而静默失败（不回 success 也不回 fail）
+    -->
+    <queries>
+        <!-- 拨号 / 打电话 -->
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tel" />
+        </intent>
+
+        <!-- 发短信（如果以后用到 sendSms 也可顺带支持） -->
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="smsto" />
+        </intent>
+    </queries>
+</manifest>
