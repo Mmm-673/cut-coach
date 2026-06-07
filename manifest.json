@@ -24,7 +24,7 @@
         "distribute" : {
             "android" : {
                 "package" : "com.aksjzt.qiuleme.coach",
-                "abiFilters" : [ "armeabi-v7a", "arm64-v8a" ], // 剔除了过时的 x86，能显著减小打包后的 App 体积
+                "abiFilters" : [ "armeabi-v7a", "arm64-v8a" ],
                 "permissions" : [
                     "<uses-permission android:name=\"android.permission.CHANGE_NETWORK_STATE\"/>",
                     "<uses-permission android:name=\"android.permission.VIBRATE\"/>",
@@ -53,7 +53,7 @@
                     "NSPhotoLibraryUsageDescription" : "需要访问您的相册选择图片",
                     "NSPhotoLibraryAddUsageDescription" : "需要保存图片到您的相册",
                     "NSLocationWhenInUseUsageDescription" : "需要获取您的位置信息，为您提供导航服务",
-                    "LSApplicationQueriesSchemes" : [ "iosamap", "baidumap" ]
+                    "LSApplicationQueriesSchemes" : [ "iosamap" ]
                 },
                 "entitlements" : {
                     "com.apple.security.application-groups" : []
@@ -72,7 +72,7 @@
                 },
                 "maps" : {
                     "amap" : {
-                        "__platform__" : [ "android" ],
+                        "__platform__" : [ "ios", "android" ],
                         "appkey_ios" : "adc2a75085763c28cc66d9b7e55afdd5",
                         "appkey_android" : "e5bc05029f822fcaf4b4e2c50283c049",
                         "name" : "amapfhUygwdG"
@@ -84,9 +84,6 @@
                         "__platform__" : [ "ios", "android" ],
                         "appkey_ios" : "adc2a75085763c28cc66d9b7e55afdd5",
                         "appkey_android" : "e5bc05029f822fcaf4b4e2c50283c049"
-                    },
-                    "system" : {
-                        "__platform__" : [ "ios", "android" ]
                     }
                 },
                 "push" : {}
@@ -137,7 +134,7 @@
                 "JPUSH_GOOGLE_STORAGE_BUCKET" : "",
                 "JPUSH_HONOR_APPID" : "",
                 "JPUSH_HUAWEI_APPID" : "",
-                "JPUSH_ISPRODUCTION_IOS" : "",
+                "JPUSH_ISPRODUCTION_IOS" : "true",
                 "JPUSH_MEIZU_APPID" : "",
                 "JPUSH_MEIZU_APPKEY" : "",
                 "JPUSH_OPPO_APPID" : "",
@@ -153,7 +150,7 @@
                     "platforms" : "Android,iOS",
                     "url" : "https://ext.dcloud.net.cn/plugin?id=4035",
                     "android_package_name" : "com.aksjzt.qiuleme.coach",
-                    "ios_bundle_id" : "",
+                    "ios_bundle_id" : "com.aksjzt.qiuleme.coach",
                     "isCloud" : true,
                     "bought" : 1,
                     "pid" : "4035",
@@ -206,7 +203,7 @@
                         "JPUSH_ISPRODUCTION_IOS" : {
                             "des" : "[iOS]是否是生产环境，是填true，不是填false或者不填",
                             "key" : "JPush:ISPRODUCTION",
-                            "value" : ""
+                            "value" : "true"
                         },
                         "JPUSH_MEIZU_APPID" : {
                             "des" : "厂商MEIZU-appId,示例：MZ-12345678",
@@ -337,7 +334,7 @@
             "https" : false,
             "disableHostCheck" : true
         },
-        "title" : "球了么裁教端",
+        "title" : "初球裁教端",
         "router" : {
             "mode" : "hash",
             "base" : "./"
