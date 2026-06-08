@@ -1,0 +1,29 @@
+pages/login/index.vue
+  29fe2de5b0c0c0de 320-325,343,347
+tests/bug-06-order-evaluate.test.js
+  29fe2de5b0c0c0de 2-5,20-32,34,43,53-54,58-69,71
+subpkg/order/detail.vue
+  29fe2de5b0c0c0de 172-173,178-179,236-243
+subpkg/mine/pwd/index.vue
+  29fe2de5b0c0c0de 5,18-19,22,37-38,112-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "c57ab58d9cbae915ac8c9429f9b526c4decc702a",
+  "prompts": {
+    "29fe2de5b0c0c0de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08ad40ef-7c40-4499-8784-3ebb12713478",
+        "model": "doubao-seed-2.0-code"
+      },
+      "human_author": "Ma",
+      "messages": [],
+      "total_additions": 68,
+      "total_deletions": 69,
+      "accepted_lines": 2172,
+      "overriden_lines": 0
+    }
+  }
+}
