@@ -169,12 +169,14 @@
           <button class="btn-end" @click="endService">结束教学</button>
         </view>
       </template>
-      <!-- 待评价状态显示去评价按钮 -->
-      <template v-else-if="orderStatus === ORDER_STATUS.PENDING_REVIEW">
+      <!-- 待评价状态且助教未评价时显示去评价按钮 -->
+      <template v-else-if="shouldShowEvaluateButton">
         <view class="btn-single">
           <button class="btn-primary" @click="goEvaluate">去评价</button>
         </view>
       </template>
+      <!-- 待评价状态且助教已评价时不显示按钮 -->
+      <template v-else-if="orderStatus === ORDER_STATUS.PENDING_REVIEW"></template>
       <!-- 其他状态显示联系客服 -->
       <template v-else>
         <view class="btn-single">
@@ -231,6 +233,14 @@ const leftText = ref('00:00:00')
 
 // 状态计算属性
 const isProcessing = computed(() => orderStatus.value === ORDER_STATUS.PROCESSING)
+const shouldShowEvaluateButton = computed(() => {
+  const reviewStatus = orderInfo.value.coachUserReviewStatus
+  return orderStatus.value === ORDER_STATUS.PENDING_REVIEW &&
+    reviewStatus !== null &&
+    reviewStatus !== undefined &&
+    String(reviewStatus).trim() !== '' &&
+    Number(reviewStatus) === 0
+})
 
 // 底部 footer 动态高度（用于撑开页面 padding-bottom，避免遮挡上方卡片）
 const footerHeight = ref(0)

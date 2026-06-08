@@ -2,27 +2,11 @@
   <view class="pwd-container">
     <view class="header-section">
       <view class="title">修改密码</view>
-      <view class="subtitle">请输入旧密码并设置新密码</view>
+      <view class="subtitle">请设置新密码</view>
     </view>
 
     <view class="form-content">
       <view class="input-group">
-        <view class="input-item flex align-center">
-          <view class="iconfont icon-password icon"></view>
-          <input
-            v-model="user.oldPassword"
-            class="input"
-            type="password"
-            placeholder="请输入旧密码"
-            :maxlength="20"
-            :focus="focusIndex === 0"
-            @focus="onInputFocus(0)"
-            @blur="onInputBlur"
-            confirm-type="next"
-            @confirm="focusNextInput(1)"
-          />
-        </view>
-
         <view class="input-item flex align-center">
           <view class="iconfont icon-password icon"></view>
           <input
@@ -31,11 +15,11 @@
             :password="!showNewPassword"
             placeholder="请输入新密码"
             :maxlength="20"
-            :focus="focusIndex === 1"
-            @focus="onInputFocus(1)"
+            :focus="focusIndex === 0"
+            @focus="onInputFocus(0)"
             @blur="onInputBlur"
             confirm-type="next"
-            @confirm="focusNextInput(2)"
+            @confirm="focusNextInput(1)"
           />
           <view class="password-toggle" @click="showNewPassword = !showNewPassword">
             <uni-icons :type="showNewPassword ? 'eye' : 'eye-slash'" size="20" color="#999"></uni-icons>
@@ -50,8 +34,8 @@
             :password="!showConfirmPassword"
             placeholder="请确认新密码"
             :maxlength="20"
-            :focus="focusIndex === 2"
-            @focus="onInputFocus(2)"
+            :focus="focusIndex === 1"
+            @focus="onInputFocus(1)"
             @blur="onInputBlur"
             confirm-type="done"
             @confirm="submit"
@@ -77,7 +61,6 @@ import { ref, reactive, getCurrentInstance } from "vue"
 
 const { proxy } = getCurrentInstance()
 const user = reactive({
-  oldPassword: undefined,
   newPassword: undefined,
   confirmPassword: undefined
 })
@@ -102,10 +85,6 @@ function focusNextInput(nextIndex) {
 }
 
 function validate() {
-  if (!user.oldPassword) {
-    proxy.$modal.msgError('请输入旧密码')
-    return false
-  }
   if (!user.newPassword) {
     proxy.$modal.msgError('请输入新密码')
     return false
@@ -130,7 +109,8 @@ async function submit() {
 
   isSubmitting.value = true
   try {
-    await updateUserPwd(user.oldPassword, user.newPassword)
+    // 传空字符串作为旧密码，与用户端保持一致
+    await updateUserPwd('', user.newPassword)
     proxy.$modal.msgSuccess("修改成功")
     setTimeout(() => {
       uni.navigateBack()

@@ -7,7 +7,6 @@
       </view>
       <view class="user-info">
         <view class="user-name">{{ coachProfile.stageName || '助教' }}</view>
-        <view class="user-id">ID: {{ coachProfile.coachId || '-' }}</view>
       </view>
     </view>
 

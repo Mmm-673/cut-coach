@@ -9,7 +9,6 @@
             <text class="name">{{ coachProfile.stageName || '助教' }}</text>
             <uni-tag :text="levelName" type="primary" size="small" :inverted="true"></uni-tag>
           </view>
-          <view class="user-id">ID: {{ coachProfile.id || '-' }}</view>
         </view>
       </view>
     </view>
@@ -41,18 +40,6 @@
 
     <!-- 功能菜单 -->
     <view class="section-card">
-      <view class="menu-item" @click="navToOrder">
-        <view class="menu-item-left">
-          <view class="icon-box icon-blue">
-            <uni-icons type="list" size="22" color="#fff"></uni-icons>
-          </view>
-          <view class="menu-text">我的订单</view>
-        </view>
-        <uni-icons type="right" size="18" color="#999"></uni-icons>
-      </view>
-
-      <view class="divider"></view>
-
       <view class="menu-item" @click="navToInfo">
         <view class="menu-item-left">
           <view class="icon-box icon-orange">
@@ -107,18 +94,6 @@
             <uni-icons type="info" size="22" color="#fff"></uni-icons>
           </view>
           <view class="menu-text">关于我们</view>
-        </view>
-        <uni-icons type="right" size="18" color="#999"></uni-icons>
-      </view>
-
-      <view class="divider"></view>
-
-      <view class="menu-item" @click="navToService">
-        <view class="menu-item-left">
-          <view class="icon-box icon-pink">
-            <uni-icons type="headphones" size="22" color="#fff"></uni-icons>
-          </view>
-          <view class="menu-text">客服中心</view>
         </view>
         <uni-icons type="right" size="18" color="#999"></uni-icons>
       </view>

@@ -317,6 +317,12 @@ async function reportLocationAfterLogin() {
   const platform = getPlatform()
   console.log('当前平台:', platform)
 
+  // 显示loading提示
+  uni.showLoading({
+    title: '准备工作台...',
+    mask: true
+  })
+
   try {
     const location = await getPlatformLocation({
       type: 'gcj02',
@@ -334,9 +340,11 @@ async function reportLocationAfterLogin() {
       console.error('位置上报失败', err)
     }
 
+    uni.hideLoading()
     proxy.$tab.reLaunch('/pages/work/index')
 
   } catch (err) {
+    uni.hideLoading()
     console.warn('获取位置失败', err)
 
     if (err.message && err.message.includes('权限')) {
