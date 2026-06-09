@@ -100,12 +100,12 @@
 
       <view class="divider"></view>
 
-      <view class="menu-item" @click="navToSetting">
+      <view class="menu-item" @click="handleLogout">
         <view class="menu-item-left">
           <view class="icon-box icon-gray">
             <uni-icons type="gear" size="22" color="#fff"></uni-icons>
           </view>
-          <view class="menu-text">设置</view>
+          <view class="menu-text">退出登录</view>
         </view>
         <uni-icons type="right" size="18" color="#999"></uni-icons>
       </view>
@@ -114,11 +114,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import {ref, computed, getCurrentInstance} from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getCoachProfile } from '@/api/billiard/coach'
 import { getWalletBalance } from '@/api/billiard/wallet'
+import { useUserStore } from '@/store'
 
+
+const { proxy } = getCurrentInstance()
 // 教练档案
 const coachProfile = ref({
   id: '',
@@ -237,6 +240,14 @@ const navToService = () => {
   uni.navigateTo({ url: '/subpkg/mine/service/index' })
 }
 
+
+const handleLogout = () => {
+  proxy.$modal.confirm('确定注销并退出系统吗？').then(() => {
+    useUserStore().logOut().then(() => {}).finally(()=>{
+      proxy.$tab.reLaunch('/pages/login/index')
+    })
+  })
+}
 const navToSetting = () => {
   uni.navigateTo({ url: '/subpkg/mine/setting/index' })
 }

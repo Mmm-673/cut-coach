@@ -1,6 +1,6 @@
 // 应用全局配置
 export default {
-  baseUrl: 'http://114.67.69.228',
+  baseUrl: 'http://web.qiulem.com',
   appInfo: {
     name: '球了么裁教端',
     version: '1.0.0',
