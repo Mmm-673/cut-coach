@@ -10,7 +10,8 @@ export default {
   msgError(content) {
     uni.showToast({
       title: content,
-      icon: 'error'
+      icon: 'none',
+      duration: 2500
     })
   },
   // 成功消息

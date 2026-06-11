@@ -281,7 +281,8 @@
 		updateLocation,
 		updateFreeTravel,
 		getCoachDashboard,
-		getWorkStatus
+		getWorkStatus,
+		getCoachProfile
 	} from '@/api/billiard/coach'
 	import {
 		getPendingOrders,
@@ -542,7 +543,6 @@
 			const res = await getWorkStatus()
 			if (res.data) {
 				isOnline.value = res.data.workStatus === 1
-				isFreeTravel.value = res.data.freeTravel === 1
 			}
 		} catch (err) {
 			console.error('获取工作状态失败', err)
@@ -1460,6 +1460,15 @@
 		fetchHistoryOrders(true)
 		// 获取当前工作状态
 		await fetchWorkStatus()
+		// 获取教练信息以获取免费出行状态
+		try {
+			const profileRes = await getCoachProfile()
+			if (profileRes.data) {
+				isFreeTravel.value = profileRes.data.freeTravel
+			}
+		} catch (err) {
+			console.error('获取教练信息失败', err)
+		}
 
 		if (!isOnline.value) {
 			stopPolling()

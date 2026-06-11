@@ -238,7 +238,7 @@ async function handlePwdLogin() {
     loginSuccess()
   } catch (err) {
     proxy.$modal.closeLoading()
-    proxy.$modal.msgError(err?.msg || err || '登录失败，请重试')
+    proxy.$modal.msgError(err || '登录失败，请重试')
   } finally {
     isLoggingIn.value = false
   }

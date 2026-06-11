@@ -155,6 +155,7 @@ const levelName = computed(() => {
 const fetchCoachProfile = async () => {
   try {
     const res = await getCoachProfile()
+    console.log(res,'====roxy.$modal.msgError')
     if (res.data) {
       coachProfile.value = {
         id: res.data.id || '',

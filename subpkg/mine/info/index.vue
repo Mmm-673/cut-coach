@@ -13,7 +13,7 @@
       </view>
       <view class="info-item">
         <view class="label">手机号</view>
-        <view class="value">{{ coachInfo.coachMobile || '-' }}</view>
+        <view class="value">{{ coachInfo.mobile || '-' }}</view>
       </view>
       <view class="info-item">
         <view class="label">助教等级</view>

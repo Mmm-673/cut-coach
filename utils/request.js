@@ -110,7 +110,7 @@ const request = config => {
           reject('500')
         } else {
           toast(msg)
-          reject(code)
+          reject(msg)
         }
       }).catch(error => {
         let { message } = error
