@@ -46,7 +46,16 @@ function parseExtras(extras) {
 function handleNotificationNavigation(extras) {
   const data = parseExtras(extras)
   jpushLog('info', '处理通知点击跳转', data)
-
+  // ====== 核心修复 1：点击通知后，立即清空 App 本地及极光服务器的角标数量 ======
+  // #ifdef APP-PLUS
+  jpushLog('info', '开始清空应用角标...')
+  // 传 0 代表清空角标
+  callJPushApi('setBadge', 0) 
+  
+  // 如果是 Android 且配置了厂商通道，部分手机需要同时调用：
+  // callJPushApi('setBadgeNumber', 0) 
+  // #endif
+  // ===================================================================
   setTimeout(() => {
     try {
       if (data.type === 'new_order' && data.orderId) {
@@ -340,6 +349,7 @@ export function getDeviceRegId() {
 /** App 回到前台时，若已登录但尚无 RegID 则补同步 */
 export function retryPushSyncIfNeeded() {
   // #ifdef APP-PLUS
+  callJPushApi('setBadge', 0)
   if (!getToken()) return
   const userId = getUserId()
   if (!userId) return
