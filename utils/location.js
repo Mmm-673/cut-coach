@@ -146,7 +146,7 @@ export const getLocation = ({
       function _doGetLocation() {
         uni.getLocation({
           type,
-          altitude: true,
+          altitude: false,
           success: async (res) => {
             const location = {
               longitude: res.longitude,
