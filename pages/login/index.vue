@@ -94,6 +94,7 @@ import {
   onMounted,
   onUnmounted
 } from "vue"
+import config from '@/config'
 import {
   getCodeImg,
   sendSmsCode
@@ -120,7 +121,7 @@ const {
 const globalConfig = useConfigStore().config
 const userStore = useUserStore()
 
-const isAgreed = ref(true)
+const isAgreed = ref(false)
 const countdown = ref(0)
 const showPassword = ref(false)
 const focusIndex = ref(-1)
@@ -200,7 +201,7 @@ function onCheckChange(e) {
 
 async function handleLogin() {
   if (!isAgreed.value) {
-    return proxy.$modal.msgError("请先同意用户协议")
+    return proxy.$modal.msgError("请先勾选并同意用户协议和隐私政策")
   }
 
   if (activeTab.value === 'pwd') {
@@ -212,7 +213,7 @@ async function handleLogin() {
 
 async function handlePwdLogin() {
   if (!isAgreed.value) {
-    return proxy.$modal.msgError("请先同意用户协议")
+    return proxy.$modal.msgError("请先勾选并同意用户协议和隐私政策")
   }
 
   const { username, password } = pwdForm.value
@@ -246,7 +247,7 @@ async function handlePwdLogin() {
 
 async function handleSmsLogin() {
   if (!isAgreed.value) {
-    return proxy.$modal.msgError("请先同意用户协议")
+    return proxy.$modal.msgError("请先勾选并同意用户协议和隐私政策")
   }
 
   const { mobile, smsCode } = smsForm.value
@@ -376,19 +377,36 @@ async function reportLocationAfterLogin() {
 }
 
 function handleForgetPwd() {
-  uni.navigateTo({ url: '/pages/forgot-password/index' })
+  uni.showToast({
+    title: '请联系负责人进行密码修改',
+    icon: 'none',
+    duration: 2000
+  })
 }
 
 function handleContactService() {
-  uni.navigateTo({ url: '/subpkg/mine/service/index' })
+  uni.showModal({
+    title: '联系客服',
+    content: `客服电话：${config.appInfo.customerServicePhone}\n工作时间：${config.appInfo.customerServiceHours}`,
+    showCancel: false
+  })
+}
+
+function openAgreementPage(title) {
+  const agreement = config.appInfo.agreements.find(item => item.title === title)
+  if (!agreement?.url) return
+
+  uni.navigateTo({
+    url: `/subpkg/common/webview/index?url=${encodeURIComponent(agreement.url)}&title=${encodeURIComponent(title)}`
+  })
 }
 
 function handlePrivacy() {
-  uni.navigateTo({ url: '/subpkg/common/privacy/index' })
+  openAgreementPage('隐私政策')
 }
 
 function handleUserAgrement() {
-  uni.navigateTo({ url: '/subpkg/common/agreement/index' })
+  openAgreementPage('用户服务协议')
 }
 
 function onKeyboardHeightChange(e) {

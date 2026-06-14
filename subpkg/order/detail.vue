@@ -2,7 +2,7 @@
   <view class="order-detail-wrapper" :class="{ 'order-detail-finished': !isProcessing }" :style="{ paddingBottom: footerPaddingBottom }">
     <!-- 进行中状态：显示计时器区域 -->
     <view v-if="orderStatus === ORDER_STATUS.PROCESSING" class="timer-section">
-      <uni-tag :text="getStatusText(orderStatus)" :type="getStatusType(orderStatus)" size="normal" class="status-tag" />
+      <uni-tag :text="getStatusText(orderStatus)" :type="getStatusType(orderStatus)" size="normal" class="status-tag"  style="font-weight: bold"/>
       <template v-if="orderInfo.orderId">
         <text class="big-time">{{ usedText }}</text>
         <text class="time-label">已教学时长</text>
@@ -779,7 +779,16 @@ const goToUserReviewHistory = () => {
 }
 
 const contactService = () => {
-  uni.showToast({ title: '正在联系客服', icon: 'none' })
+  const hotline = '15900560488'
+  // #ifdef APP-PLUS
+  // 只有【打包成 Android / iOS App】时，才会执行这里
+  plus.runtime.openURL(`tel:${hotline}`);
+  // #endif
+
+  // #ifndef APP-PLUS
+  // 只有【不是 App】时（微信小程序、H5、快应用）才执行这里
+  uni.makePhoneCall({ phoneNumber: hotline });
+  // #endif
 }
 
 const goEvaluate = () => {

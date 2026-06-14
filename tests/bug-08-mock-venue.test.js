@@ -30,7 +30,7 @@ describe('BUG-08 Mock 场馆数据过滤', () => {
   it('正常场馆数据不应被误过滤', () => {
     expect(isMockVenue('台球俱乐部', '北京市朝阳区xx路')).toBe(false)
     expect(isMockVenue('星牌台球厅', '上海市浦东新区xx号')).toBe(false)
-    expect(isMockVenue('球了么球房', '杭州市西湖区xx街')).toBe(false)
+    expect(isMockVenue('初球裁教版球房', '杭州市西湖区xx街')).toBe(false)
   })
 
   it('部分匹配 "Mock" 但非模拟数据的不应被误过滤', () => {

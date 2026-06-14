@@ -108,7 +108,7 @@ export function openMapNavigation(options) {
 
   if (isIOS()) {
     // iOS 先尝试高德地图，再尝试百度地图，最后用系统地图
-    const aMapUrl = `iosamap://path?sourceApplication=${encodeURIComponent('球了么裁教')}&daddr=${lat},${lon}&dname=${encodeURIComponent(name)}&dev=0&t=${mode === 'driving' ? '0' : '2'}`
+    const aMapUrl = `iosamap://path?sourceApplication=${encodeURIComponent('初球裁教版')}&daddr=${lat},${lon}&dname=${encodeURIComponent(name)}&dev=0&t=${mode === 'driving' ? '0' : '2'}`
     const baiduUrl = `baidumap://map/direction?destination=name:${encodeURIComponent(name)}|latlng:${lat},${lon}&mode=${mode === 'driving' ? 'driving' : 'walking'}&coord_type=gcj02`
 
     plus.runtime.openURL(aMapUrl, (err) => {
@@ -278,12 +278,12 @@ export const showLocationPermissionGuide = () => {
 }
 
 export const getLocation = (options = {}) => {
-  const { type = 'gcj02', altitude = true } = options
+  const { type = 'gcj02', altitude = false } = options
 
   return new Promise((resolve, reject) => {
     uni.getLocation({
       type,
-      altitude,
+      altitude: false,
       success: (res) => {
         resolve({
           longitude: res.longitude,

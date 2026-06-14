@@ -34,30 +34,6 @@
             <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
           </view>
         </view>
-        <view class="info-item">
-          <view class="item-left">
-            <view class="icon-wrapper website-icon">
-              <uni-icons type="globe" size="18" color="#fff"></uni-icons>
-            </view>
-            <text class="item-label">官方网站</text>
-          </view>
-          <view class="item-right">
-            <text class="item-value">-</text>
-            <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
-          </view>
-        </view>
-        <view class="info-item">
-          <view class="item-left">
-            <view class="icon-wrapper email-icon">
-              <uni-icons type="email" size="18" color="#fff"></uni-icons>
-            </view>
-            <text class="item-label">联系邮箱</text>
-          </view>
-          <view class="item-right">
-            <text class="item-value">-</text>
-            <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
-          </view>
-        </view>
       </view>
     </view>
 
@@ -79,7 +55,7 @@
 
     <!-- 版权信息 -->
     <view class="copyright-section">
-      <text class="copyright-text">Copyright © 2026 球了么 All Rights Reserved.</text>
+      <text class="copyright-text">Copyright © 2026 初球裁教版 All Rights Reserved.</text>
     </view>
   </view>
 </template>
@@ -92,7 +68,7 @@ const version = ref(useConfigStore().config.appInfo.version || '1.2.0')
 
 const copyAppName = () => {
   uni.setClipboardData({
-    data: '球了么裁教端',
+    data: '初球裁教版',
     success: () => {
       uni.showToast({ title: '复制成功', icon: 'success' })
     }

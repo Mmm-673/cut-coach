@@ -8,7 +8,7 @@
     <scroll-view class="content" scroll-y>
       <view class="text-content">
         <text class="section-title">一、服务条款</text>
-        <text class="paragraph">欢迎使用球了么裁教端服务。在使用本服务前，请您仔细阅读以下条款。</text>
+        <text class="paragraph">欢迎使用初球裁教版服务。在使用本服务前，请您仔细阅读以下条款。</text>
 
         <text class="section-title">二、用户资格</text>
         <text class="paragraph">您需要具备完全民事行为能力才能使用本服务。</text>

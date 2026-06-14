@@ -27,7 +27,7 @@
 				</view>
 			</view>
 			<uni-tag :text="isOnline ? '在线接单中' : '已下线，不接收新订单'" :type="isOnline ? 'success' : 'default'" size="normal"
-				class="status-tag" />
+				class="status-tag" style="font-weight: bold" />
 		</uni-card>
 
 		<!-- 空订单状态 -->
@@ -43,11 +43,11 @@
 			<view class="pending-order">
 				<view class="pending-header">
 					<view class="location">
-						<uni-icons type="location" size="18" color="#2F6BEE"></uni-icons>
+						<uni-icons  v-if="pendingOrder.serviceType === 1 " type="location" size="18" color="#2F6BEE" ></uni-icons>
 						<text class="location-text">{{ pendingOrder.venueName }}</text>
 					</view>
 					<view class="countdown" v-if="pendingOrder.expireAt">
-						<uni-tag text="剩余" type="warning" size="small" />
+						<uni-tag text="剩余" type="warning" size="small" style="font-weight: bold" />
 						<text class="time-text">{{ pendingCountdownText }}</text>
 					</view>
 				</view>
@@ -87,7 +87,7 @@
 					<text class="detail-label">预约时间：</text>
 					<text class="detail-value">{{ formatTime(pendingOrder.bookingTime) }}</text>
 				</view>
-				<view class="order-detail-row">
+				<view class="order-detail-row" v-if="pendingOrder.serviceType === 1">
 					<text class="detail-label">球厅地址：</text>
 					<text class="detail-value">{{ pendingOrder.venueAddress }}</text>
 				</view>
@@ -108,7 +108,7 @@
 			<view class="accepted-order">
 				<view class="order-info-header">
 					<text class="order-title">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '陪游' }}</text>
-					<uni-tag :text="acceptedStageText" type="warning" size="small" />
+					<uni-tag :text="acceptedStageText" type="warning" size="small" style="font-weight: bold" />
 				</view>
 
 				<view class="order-detail-row">
@@ -198,8 +198,10 @@
 
 				<uni-section title="订单详情" type="line" margin-top="20rpx">
 					<view class="detail-box" @click="goToDetail">
-						<image class="shop-img" :src="pendingOrder.shopImg || 'https://picsum.photos/120/120'"
+						<image class="shop-img" v-if="pendingOrder.serviceType === 1"  :src="pendingOrder.shopImg || 'https://picsum.photos/120/120'"
 							mode="aspectFill"></image>
+            <image class="shop-img" v-else :src="pendingOrder.userAvatar"
+                   mode="aspectFill"></image>
 						<view class="info">
 							<text class="shop-name">{{ pendingOrder.venueName }}</text>
 							<view class="contact-row">
@@ -215,7 +217,7 @@
 								<text>支持客户加钟，时长自动更新</text>
 							</view>
 						</view>
-						<button class="nav-btn" @click.stop="navigate">导航</button>
+						<button class="nav-btn" @click.stop="navigate" v-if="pendingOrder.serviceType === 1">导航</button>
 					</view>
 				</uni-section>
 			</view>
@@ -230,7 +232,7 @@
 					</view>
 					<text class="data-value">{{ item.value }}</text>
 					<text class="data-label">{{ item.label }}</text>
-					<uni-tag text="实时" type="success" size="mini" class="real-tag"></uni-tag>
+					<uni-tag text="实时" type="success" size="mini" class="real-tag" style="font-weight: bold"></uni-tag>
 				</view>
 			</view>
 		</uni-section>
@@ -253,7 +255,7 @@
 					<view class="order-bottom">
 						<text class="order-time">{{ formatOrderTime(item.bookingTime) }}</text>
 						<uni-tag :text="getHistoryStatusText(item.status)" :type="getHistoryStatusType(item.status)"
-							size="small" />
+							size="small" style="font-weight: bold" />
 					</view>
 				</view>
 				<view class="empty-tip" v-if="!displayHistoryOrders.length">

@@ -37,6 +37,7 @@
                 :text="getStatusText(order.status)"
                 :type="getStatusType(order.status)"
                 size="small"
+                style="font-weight: bold"
             />
           </view>
           <view class="order-body">
@@ -185,7 +186,7 @@ const getStatusText = (status) => {
     20: '待接单',
     30: '已接单',
     40: '进行中',
-    50: '待评价',
+    50: '用户待评价',
     60: '已完成',
     70: '已取消'
   }

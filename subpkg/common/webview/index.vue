@@ -23,10 +23,17 @@
       }
     },
     onLoad(event) {
-      this.params = event
-      if (event.title) {
+      const url = event.url ? decodeURIComponent(event.url) : ''
+      const title = event.title ? decodeURIComponent(event.title) : ''
+
+      this.params = {
+        ...event,
+        url
+      }
+
+      if (title) {
         uni.setNavigationBarTitle({
-          title: event.title
+          title
         })
       }
     }

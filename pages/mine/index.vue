@@ -7,7 +7,7 @@
         <view class="user-detail">
           <view class="user-name">
             <text class="name">{{ coachProfile.stageName || '助教' }}</text>
-            <uni-tag :text="levelName" type="primary" size="small" :inverted="true"></uni-tag>
+            <uni-tag :text="levelName" type="primary" size="small" :inverted="true" style="font-weight: bold"></uni-tag>
           </view>
         </view>
       </view>
@@ -18,7 +18,12 @@
       <view class="card-title">我的钱包</view>
       <view class="balance-wrap">
         <view class="balance-label">可提现余额</view>
-        <view class="balance">¥{{ (walletInfo.balance / 100).toFixed(2) || '0.00' }}</view>
+        <view class="balance-row">
+          <view class="balance">{{ showBalance ? `¥${(walletInfo.balance / 100).toFixed(2)}` : '¥******' }}</view>
+          <view class="balance-eye" @click="showBalance = !showBalance">
+            <uni-icons :type="showBalance ? 'eye' : 'eye-slash'" size="22" color="#2f6bee"></uni-icons>
+          </view>
+        </view>
       </view>
       <view class="pending-audit" v-if="walletInfo.freezePrice > 0">
         <uni-icons type="wallet" size="16" color="#F59E0b"></uni-icons>
@@ -100,6 +105,18 @@
 
       <view class="divider"></view>
 
+      <view class="menu-item" @click="handleCancelAccount">
+        <view class="menu-item-left">
+          <view class="icon-box icon-red">
+            <uni-icons type="trash" size="22" color="#fff"></uni-icons>
+          </view>
+          <view class="menu-text">注销账号</view>
+        </view>
+        <uni-icons type="right" size="18" color="#999"></uni-icons>
+      </view>
+
+      <view class="divider"></view>
+
       <view class="menu-item" @click="handleLogout">
         <view class="menu-item-left">
           <view class="icon-box icon-gray">
@@ -110,18 +127,40 @@
         <uni-icons type="right" size="18" color="#999"></uni-icons>
       </view>
     </view>
+
+    <view v-if="showCancelAccountPopup" class="popup-mask" @click="closeCancelAccountPopup">
+      <view class="cancel-popup" @click.stop>
+        <view class="popup-title">注销账号</view>
+        <view class="popup-desc">请输入注销原因，原因非必填。</view>
+        <textarea
+          v-model="cancelReason"
+          class="reason-input"
+          placeholder="请输入注销原因（选填）"
+          maxlength="255"
+          :show-confirm-bar="false"
+        />
+        <view class="popup-actions">
+          <button class="popup-cancel-btn cu-btn" @click="closeCancelAccountPopup">取消</button>
+          <button class="popup-submit-btn cu-btn" :loading="cancelSubmitting" @click="submitCancelAccount">提交</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup>
 import {ref, computed, getCurrentInstance} from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { getCoachProfile } from '@/api/billiard/coach'
+import { getCoachProfile, cancelAccount } from '@/api/billiard/coach'
 import { getWalletBalance } from '@/api/billiard/wallet'
 import { useUserStore } from '@/store'
 
 
 const { proxy } = getCurrentInstance()
+const showCancelAccountPopup = ref(false)
+const cancelReason = ref('')
+const cancelSubmitting = ref(false)
+const showBalance = ref(true)
 // 教练档案
 const coachProfile = ref({
   id: '',
@@ -249,6 +288,36 @@ const handleLogout = () => {
     })
   })
 }
+
+const handleCancelAccount = () => {
+  proxy.$modal.confirm('确定注销账号吗？注销成功后将退出登录。').then(() => {
+    showCancelAccountPopup.value = true
+  })
+}
+
+const closeCancelAccountPopup = () => {
+  if (cancelSubmitting.value) return
+  showCancelAccountPopup.value = false
+  cancelReason.value = ''
+}
+
+const submitCancelAccount = () => {
+  if (cancelSubmitting.value) return
+  cancelSubmitting.value = true
+  cancelAccount({
+    reason: cancelReason.value
+  }).then(res => {
+    if (res.code === 0 || res.code === 200) {
+      proxy.$modal.msgSuccess('账号注销成功')
+      useUserStore().logOut().then(() => {}).finally(() => {
+        proxy.$tab.reLaunch('/pages/login/index')
+      })
+    } else {
+      proxy.$modal.msgError(res.msg || '注销账号失败')
+    }
+  })
+}
+
 const navToSetting = () => {
   uni.navigateTo({ url: '/subpkg/mine/setting/index' })
 }
@@ -340,11 +409,32 @@ page {
   margin-bottom: 10rpx;
 }
 
+.balance-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+}
+
 .balance {
   font-size: 64rpx;
   font-weight: bold;
   color: #2f6bee;
   line-height: 1.2;
+}
+
+.balance-eye {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(47, 107, 238, 0.08);
+}
+
+.balance-eye:active {
+  opacity: 0.7;
 }
 
 .pending-audit {
@@ -462,15 +552,93 @@ page {
   background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
 }
 
+.icon-red {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
 .menu-text {
   font-size: 30rpx;
   color: #333;
   font-weight: 500;
 }
 
+.danger-text {
+  color: #ef4444;
+}
+
 .divider {
   height: 1rpx;
   background: #f0f0f0;
   margin: 0;
+}
+
+.popup-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.cancel-popup {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 40rpx;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  border-radius: 32rpx 32rpx 0 0;
+}
+
+.popup-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.popup-desc {
+  font-size: 26rpx;
+  color: #999;
+  margin-bottom: 24rpx;
+}
+
+.reason-input {
+  width: 100%;
+  height: 180rpx;
+  box-sizing: border-box;
+  padding: 24rpx;
+  background: #f7f8fa;
+  border-radius: 20rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 24rpx;
+  margin-top: 32rpx;
+}
+
+.popup-cancel-btn,
+.popup-submit-btn {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 20rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.popup-cancel-btn {
+  background: #f3f4f6 !important;
+  color: #666;
+}
+
+.popup-submit-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: #fff;
 }
 </style>

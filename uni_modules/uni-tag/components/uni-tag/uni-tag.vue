@@ -132,6 +132,7 @@
 		border-width: 1rpx;
 		border-style: solid;
 		border-color: $uni-info;
+    font-weight: bold;
 		/* #ifdef H5 */
 		cursor: pointer;
 		/* #endif */

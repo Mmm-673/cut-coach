@@ -51,6 +51,15 @@ export function getWorkStatus() {
   })
 }
 
+// 注销账号
+export function cancelAccount(data) {
+  return request({
+    url: '/coach-api/billiard/coach/account/cancel-account',
+    method: 'post',
+    data: data
+  })
+}
+
 // 获取评价列表
 export function getReviewPage(params) {
   return request({

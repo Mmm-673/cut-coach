@@ -55,7 +55,7 @@
             <uni-icons type="location-filled" size="18" color="#2F6BEE"></uni-icons>
             <text class="location-text">XX台球厅（XX路店）</text>
           </view>
-          <uni-tag text="剩余" type="warning" size="small" />
+          <uni-tag text="剩余" type="warning" size="small"  style="font-weight: bold"/>
           <text class="countdown-tag">{{ pendingCountdownText }}</text>
         </view>
         <view class="pending-info">
@@ -132,7 +132,7 @@
             </view>
             <text class="data-value">{{ item.value }}</text>
             <text class="data-label">{{ item.label }}</text>
-            <uni-tag text="实时" type="success" size="mini" class="real-time-tag" />
+            <uni-tag text="实时" style="font-weight: bold" type="success" size="mini" class="real-time-tag" />
           </view>
         </uni-grid-item>
       </uni-grid>
