@@ -5,22 +5,45 @@ import { useConfigStore, useUserStore } from '@/store'
 import { getCurrentInstance } from 'vue'
 import { onLaunch, onShow } from '@dcloudio/uni-app'
 import { initPushService, syncPushForUser, retryPushSyncIfNeeded } from '@/utils/jpush'
+import { shouldShowIosPrivacy, setPrivacyAgreedCallback } from '@/utils/privacy'
+
 
 const { proxy } = getCurrentInstance()
 
 onLaunch(() => {
+  setPrivacyAgreedCallback(continueAppInit)
   initApp()
 })
 
+
 onShow(() => {
   // #ifdef APP-PLUS
+  if (shouldShowIosPrivacy()) {
+    return
+  }
   retryPushSyncIfNeeded()
   // #endif
 })
 
+// 初始化应用
 function initApp() {
+  // 本地配置不涉隐私，需尽早初始化，避免登录页渲染时报错
   initConfig()
 
+  // #ifdef APP-PLUS
+  setStatusBarHeight()
+
+  // iOS 需先同意隐私协议，弹窗挂载在登录页，此处仅阻断后续初始化
+  if (shouldShowIosPrivacy()) {
+    return
+  }
+  // #endif
+
+  continueAppInit()
+}
+
+/** 应用核心初始化流程 */
+function continueAppInit() {
   // #ifdef APP-PLUS
   initPushService()
   // #endif

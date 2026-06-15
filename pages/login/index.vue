@@ -85,6 +85,9 @@
       遇到问题？<text class="text-blue" @click="handleContactService">联系客服</text>
     </view>
   </view>
+    <!-- #ifdef APP-PLUS -->
+    <ios-privacy-dialog ref="privacyDialogRef" />
+    <!-- #endif -->
 </template>
 
 <script setup>
@@ -92,7 +95,7 @@ import {
   ref,
   getCurrentInstance,
   onMounted,
-  onUnmounted
+  onUnmounted, nextTick
 } from "vue"
 import config from '@/config'
 import {
@@ -103,8 +106,12 @@ import {
   useConfigStore,
   useUserStore
 } from '@/store'
+import { onShow } from '@dcloudio/uni-app'
+
 import { syncPushForUser } from '@/utils/jpush'
 import { getUserId } from '@/utils/auth'
+import { shouldShowIosPrivacy, hasPrivacyRefused } from '@/utils/privacy'
+
 
 const {
   proxy
@@ -119,6 +126,7 @@ const focusIndex = ref(-1)
 const keyboardHeight = ref(0)
 const isLoggingIn = ref(false)
 const activeTab = ref('pwd')
+const privacyDialogRef = ref(null)
 
 const pwdForm = ref({
   username: "",
@@ -137,6 +145,24 @@ function switchTab(tab) {
   activeTab.value = tab
   focusIndex.value = -1
 }
+
+/** 打开 iOS 隐私协议弹窗 */
+function openPrivacyDialogIfNeeded() {
+  if (!shouldShowIosPrivacy() && !hasPrivacyRefused()) {
+    return
+  }
+  nextTick(() => {
+    privacyDialogRef.value?.open()
+  })
+}
+
+onMounted(() => {
+  openPrivacyDialogIfNeeded()
+})
+
+onShow(() => {
+  openPrivacyDialogIfNeeded()
+})
 
 async function handleGetSmsCode() {
   if (!/^1[3-9]\d{9}$/.test(smsForm.value.mobile)) {
