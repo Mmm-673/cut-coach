@@ -14,8 +14,8 @@ let onPrivacyAgreedCallback = null
 
 /** 协议链接 */
 export const PRIVACY_LINKS = {
-  userAgreement: 'http://web.qiulem.com/agreement/userAgreement.html',
-  userPrivacy: 'http://web.qiulem.com/agreement/userPrivacy.html'
+  userAgreement: 'http://web.qiulem.com/agreement/coachPrivacy.html',
+  userPrivacy: 'http://web.qiulem.com/agreement/coachAgreement.html'
 }
 
 /** 首次弹窗配置 */

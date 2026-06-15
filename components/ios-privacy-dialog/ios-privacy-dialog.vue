@@ -139,10 +139,11 @@ defineExpose({
   max-width: 86vw;
   padding: 48rpx 40rpx 40rpx;
   border-radius: 24rpx;
-  background: #1e252b;
+  background: #ffffff;
   box-sizing: border-box;
   position: relative;
   z-index: 10001;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.12);
 }
 
 .privacy-dialog__title {
@@ -150,7 +151,7 @@ defineExpose({
   margin-bottom: 28rpx;
   font-size: 34rpx;
   font-weight: 600;
-  color: #ffffff;
+  color: #1f2937;
   text-align: center;
   line-height: 1.4;
 }
@@ -164,7 +165,7 @@ defineExpose({
   display: block;
   margin-bottom: 20rpx;
   font-size: 28rpx;
-  color: #c8cdd2;
+  color: #6b7280;
   line-height: 1.8;
   text-indent: 2em;
 }
@@ -198,13 +199,14 @@ defineExpose({
 
 .privacy-dialog__link {
   font-size: 28rpx;
-  color: #00bb88;
+  color: #2f6bff;
   line-height: 1.6;
+  text-decoration: underline;
 }
 
 .privacy-dialog__link-sep {
   font-size: 28rpx;
-  color: #c8cdd2;
+  color: #9ca3af;
 }
 
 .privacy-dialog__actions {
@@ -228,12 +230,12 @@ defineExpose({
 }
 
 .privacy-dialog__btn--refuse {
-  color: #c8cdd2;
-  background: #2a3338;
+  color: #6b7280;
+  background: #f3f4f6;
 }
 
 .privacy-dialog__btn--accept {
   color: #ffffff;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #2f6bff 0%, #1a50d9 100%);
 }
 </style>

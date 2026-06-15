@@ -130,9 +130,9 @@
                     }
                 }
             },
-          "splashscreen" : {
-            "useOriginalMsgbox" : true
-          }
+            "splashscreen" : {
+                "useOriginalMsgbox" : true
+            }
         },
         "nativePlugins" : {
             "JG-JPush" : {
