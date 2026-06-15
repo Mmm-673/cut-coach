@@ -15,7 +15,7 @@
 				</view>
 			</view>
 			<view class="status-row">
-				<text class="status-label">免费出行</text>
+				<text class="status-label">低碳出行</text>
 				<view class="switch-wrapper">
 					<text class="label-off" :class="{ active: !isFreeTravel }">关闭</text>
 					<view class="custom-switch"
@@ -24,6 +24,15 @@
 						<view class="switch-knob"></view>
 					</view>
 					<text class="label-on" :class="{ active: isFreeTravel }">开启</text>
+				</view>
+			</view>
+			<view class="status-row">
+				<text class="status-label">更新位置</text>
+				<view class="button-wrapper">
+					<button class="update-location-btn" :class="{ 'is-disabled': updatingLocation }"
+						@click="reportLocationAfterLogin">
+						{{ updatingLocation ? '更新中...' : '更新位置' }}
+					</button>
 				</view>
 			</view>
 			<uni-tag :text="isOnline ? '在线接单中' : '已下线，不接收新订单'" :type="isOnline ? 'success' : 'default'" size="normal"
@@ -53,7 +62,7 @@
 				</view>
 
 				<view class="order-info">
-					<text class="order-name">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '陪游' }}
+					<text class="order-name">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '达人带路' }}
 						{{ Math.round(pendingOrder.serviceDuration) }}分钟</text>
 					<text class="order-price">¥{{ (pendingOrder.totalAmount / 100).toFixed(2) }}</text>
 				</view>
@@ -107,7 +116,7 @@
 		<uni-card v-else-if="orderStatus === 'accepted'" title="已接单" :is-shadow="true" :border="false">
 			<view class="accepted-order">
 				<view class="order-info-header">
-					<text class="order-title">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '陪游' }}</text>
+					<text class="order-title">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '达人带路' }}</text>
 					<uni-tag :text="acceptedStageText" type="warning" size="small" style="font-weight: bold" />
 				</view>
 
@@ -145,7 +154,7 @@
 					</view>
 				</template>
 
-				<!-- 陪游简化流程：接单后直接可以开始 -->
+				<!-- 达人带路简化流程：接单后直接可以开始 -->
 				<template v-else>
 					<view class="status-hint" v-if="!pendingOrder.startTime">
 						<uni-icons type="info" size="20" color="#007AFF"></uni-icons>
@@ -153,7 +162,7 @@
 					</view>
 				</template>
 
-				<!-- 开始服务按钮 - 陪练需要到达后才显示，陪游接单后就显示 -->
+				<!-- 开始服务按钮 - 陪练需要到达后才显示，达人带路接单后就显示 -->
 				<view class="btn-group" v-if="canStartService">
 					<button class="btn btn-exception" v-if="pendingOrder.serviceType === 1"
 						@click="showReportException">报告异常</button>
@@ -172,7 +181,7 @@
 					</button>
 				</view>
 
-				<!-- 仅联系客户 - 陪游显示 -->
+				<!-- 仅联系客户 - 达人带路显示 -->
 				<view class="nav-row" v-else>
 					<button class="call-btn nav-btn" @click="makeCall">
 						<uni-icons type="phone" size="16" color="#fff"></uni-icons>
@@ -210,7 +219,7 @@
 									<uni-icons type="phone" size="16" color="#10B981"></uni-icons>
 								</button>
 							</view>
-							<text class="service-name">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '陪游' }}</text>
+							<text class="service-name">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '达人带路' }}</text>
 							<text class="service-price">¥{{ (pendingOrder.totalAmount / 100).toFixed(2) }}</text>
 							<view class="tip-box">
 								<uni-icons type="info" size="14" color="#F59E0B"></uni-icons>
@@ -249,7 +258,7 @@
 				<view class="history-order-item" v-for="item in displayHistoryOrders" :key="item.orderId"
 					@click="goToOrderDetail(item)">
 					<view class="order-top">
-						<text class="order-title">{{ item.serviceType === 1 ? '台球陪练' : '陪游' }}</text>
+						<text class="order-title">{{ item.serviceType === 1 ? '台球陪练' : '达人带路' }}</text>
 						<text class="order-price">¥{{ (item.totalAmount / 100).toFixed(2) }}</text>
 					</view>
 					<view class="order-bottom">
@@ -319,6 +328,7 @@
 	const isFreeTravel = ref(false)
 	const switchLoading = ref(false)
 	const freeTravelLoading = ref(false)
+	const updatingLocation = ref(false)
 
 	// 订单状态
 	const orderStatus = ref('idle')
@@ -382,7 +392,7 @@
 			// 陪练：必须到达后才能开始
 			return !!pendingOrder.value.arriveTime
 		} else {
-			// 陪游：接单后就可以开始
+			// 达人带路：接单后就可以开始
 			return true
 		}
 	})
@@ -627,6 +637,73 @@
 		}
 	}
 
+	// 更新位置方法（从登录页面迁移）
+	const reportLocationAfterLogin = async () => {
+		if (updatingLocation.value) return
+
+		updatingLocation.value = true
+
+		// 显示loading提示
+		uni.showLoading({
+			title: '更新位置中...',
+			mask: true
+		})
+
+		try {
+			const location = await getCurrentLocation()
+
+			try {
+				await updateLocation({
+					longitude: location.longitude,
+					latitude: location.latitude
+				})
+				console.log('位置更新成功', location)
+				uni.showToast({
+					title: '位置更新成功',
+					icon: 'success'
+				})
+			} catch (err) {
+				console.error('位置更新失败', err)
+				uni.showToast({
+					title: err,
+					icon: 'none'
+				})
+			}
+		} catch (err) {
+			console.warn('获取位置失败', err)
+
+			if (err.message && err.message.includes('权限')) {
+				uni.showModal({
+					title: '位置权限',
+					content: '需要位置权限才能更新位置，是否前往设置？',
+					confirmText: '去设置',
+					cancelText: '取消',
+					success: (res) => {
+						if (res.confirm) {
+							// 这里可以添加打开权限设置的方法
+							uni.openSetting({
+								success: (res) => {
+									if (res.authSetting['scope.userLocation']) {
+										// 权限已开启，再次尝试更新位置
+										reportLocationAfterLogin()
+									}
+								}
+							})
+						}
+					}
+				})
+			} else {
+				uni.showToast({
+					title: '获取位置失败',
+					icon: 'none'
+				})
+			}
+		} finally {
+			uni.hideLoading()
+			updatingLocation.value = false
+		}
+	}
+
 	// 校验是否在允许范围内（默认200米）
 	const checkLocationInRange = (targetLat, targetLon, maxDistance = 200) => {
 		return new Promise(async (resolve, reject) => {
@@ -701,14 +778,14 @@
 		})
 	}
 
-	// 免费出行开关点击
+	// 低碳出行开关点击
 	const handleFreeTravelSwitchClick = () => {
 		if (freeTravelLoading.value) return
 		const targetStatus = !isFreeTravel.value
 
 		uni.showModal({
 			title: '确认切换',
-			content: targetStatus ? '确认开启免费出行？' : '确认关闭免费出行？',
+			content: targetStatus ? '确认开启低碳出行？' : '确认关闭低碳出行？',
 			success: async (res) => {
 				if (res.confirm) {
 					freeTravelLoading.value = true
@@ -717,9 +794,9 @@
 							freeTravel: targetStatus
 						})
 						isFreeTravel.value = targetStatus
-						proxy.$modal.msgSuccess(targetStatus ? '已开启免费出行' : '已关闭免费出行')
+						proxy.$modal.msgSuccess(targetStatus ? '已开启低碳出行' : '已关闭低碳出行')
 					} catch (err) {
-						console.error('切换免费出行失败', err)
+						console.error('切换低碳出行失败', err)
 						proxy.$modal.msgError(err?.msg || '操作失败')
 					} finally {
 						freeTravelLoading.value = false
@@ -1462,7 +1539,7 @@
 		fetchHistoryOrders(true)
 		// 获取当前工作状态
 		await fetchWorkStatus()
-		// 获取教练信息以获取免费出行状态
+		// 获取教练信息以获取低碳出行状态
 		try {
 			const profileRes = await getCoachProfile()
 			if (profileRes.data) {
@@ -1579,6 +1656,36 @@
 
 	.status-tag {
 		margin-top: 24rpx;
+	}
+
+	.update-location-btn {
+		height: 72rpx;
+		line-height: 72rpx;
+		padding: 0 24rpx;
+		background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
+		color: #fff;
+		font-size: 28rpx;
+		border-radius: 16rpx;
+		font-weight: 500;
+		transition: all 0.2s;
+		border: none;
+		box-shadow: 0 4rpx 12rpx rgba(16, 185, 129, 0.25);
+	}
+
+	.update-location-btn:active {
+		transform: scale(0.97);
+	}
+
+	.update-location-btn.is-disabled {
+		background: #a7f3d0 !important;
+		color: #fff !important;
+		opacity: 0.6;
+		pointer-events: none;
+	}
+
+	.button-wrapper {
+		display: flex;
+		justify-content: flex-end;
 	}
 
 	.switch-wrapper {

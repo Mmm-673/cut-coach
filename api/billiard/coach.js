@@ -26,7 +26,7 @@ export function getCoachProfile() {
   })
 }
 
-// 切换免费出行开关
+// 切换低碳出行开关
 export function updateFreeTravel(data) {
   return request({
     url: '/coach-api/billiard/coach/free-travel',

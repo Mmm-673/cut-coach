@@ -43,7 +43,7 @@
           <view class="order-body">
             <view class="order-info-row">
               <text class="label">服务类型</text>
-              <text class="value">{{order.serviceType === 1 ? '台球陪练' : '陪游'}}</text>
+              <text class="value">{{order.serviceType === 1 ? '台球陪练' : '达人带路'}}</text>
             </view>
             <view class="order-info-row">
               <text class="label">预约时间</text>

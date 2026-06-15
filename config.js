@@ -8,8 +8,8 @@ export default {
     customerServicePhone: '15900560488',
     customerServiceHours: '9:00-21:00',
     agreements: [
-      { title: '隐私政策', url: 'https://www.baidu.com' },
-      { title: '用户服务协议', url: 'https://www.baidu.com' }
+      { title: '隐私政策', url: 'http://web.qiulem.com/agreement/coachPrivacy.html' },
+      { title: '用户服务协议', url: 'http://web.qiulem.com/agreement/coachAgreement.html' }
     ]
   }
 }

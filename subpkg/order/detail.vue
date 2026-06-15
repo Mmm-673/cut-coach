@@ -33,7 +33,7 @@
       </view>
       <view class="info-row">
         <text class="label">教学类型</text>
-        <text class="value">{{ orderInfo.serviceType === 1 ? '台球陪练' : '陪游' }}</text>
+        <text class="value">{{ orderInfo.serviceType === 1 ? '台球陪练' : '达人带路' }}</text>
       </view>
       <view class="info-row">
         <text class="label">教学时长</text>
@@ -152,7 +152,7 @@
           </template>
         </template>
 
-        <!-- 陪游简化流程：接单后直接可以开始 -->
+        <!-- 达人带路简化流程：接单后直接可以开始 -->
         <template v-else>
           <view class="status-hint">
             <uni-icons type="info" size="20" color="#007AFF"></uni-icons>
@@ -604,7 +604,7 @@ const checkLocationInRange = (targetLat, targetLon, maxDistance = 200) => {
 }
 
 const arrive = async () => {
-  // 陪练需要位置校验，陪游不需要
+  // 陪练需要位置校验，达人带路不需要
   if (orderInfo.value.serviceType === 1) {
     uni.showLoading({ title: '校验位置...' })
 
@@ -636,7 +636,7 @@ const arrive = async () => {
       }
     }
   } else {
-    // 陪游直接到达
+    // 达人带路直接到达
     try {
       await arriveApi({
         orderId: orderId.value

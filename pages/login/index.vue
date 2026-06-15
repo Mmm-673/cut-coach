@@ -62,7 +62,7 @@
 
       <view class="action-btn">
         <button @click="handleLogin" :disabled="isLoggingIn" class="login-btn cu-btn block bg-blue lg round">
-          {{ isLoggingIn ? '登录中...' : '登录' }}
+          {{ isLoggingIn ? '登录中...' : '登录/注册' }}
         </button>
       </view>
 
@@ -99,15 +99,6 @@ import {
   getCodeImg,
   sendSmsCode
 } from '@/api/login'
-import {
-  updateLocation,
-  getWorkStatus
-} from '@/api/billiard/coach'
-import {
-  getLocation as getPlatformLocation,
-  showLocationPermissionGuide,
-  getPlatform
-} from '@/utils/platform'
 import {
   useConfigStore,
   useUserStore
@@ -282,10 +273,10 @@ async function handleSmsLogin() {
 function loginSuccess() {
   userStore.getInfo().then(() => {
     bindPushAfterLogin()
-    checkAndReportLocation()
+    proxy.$tab.reLaunch('/pages/work/index')
   }).catch(() => {
     bindPushAfterLogin()
-    checkAndReportLocation()
+    proxy.$tab.reLaunch('/pages/work/index')
   })
 }
 
@@ -298,83 +289,6 @@ function bindPushAfterLogin() {
   // #endif
 }
 
-async function checkAndReportLocation() {
-  try {
-    const statusRes = await getWorkStatus()
-    const isOnline = statusRes?.data?.workStatus === 1
-
-    if (isOnline) {
-      await reportLocationAfterLogin()
-    } else {
-      proxy.$tab.reLaunch('/pages/work/index')
-    }
-  } catch (err) {
-    console.error('检查工作状态失败', err)
-    proxy.$tab.reLaunch('/pages/work/index')
-  }
-}
-
-async function reportLocationAfterLogin() {
-  const platform = getPlatform()
-  console.log('当前平台:', platform)
-
-  // 显示loading提示
-  uni.showLoading({
-    title: '准备工作台...',
-    mask: true
-  })
-
-  try {
-    const location = await getPlatformLocation({
-      type: 'gcj02',
-      highAccuracy: true,
-      timeout: 15000
-    })
-
-    try {
-      await updateLocation({
-        longitude: location.longitude,
-        latitude: location.latitude
-      })
-      console.log('位置上报成功', location)
-    } catch (err) {
-      console.error('位置上报失败', err)
-    }
-
-    uni.hideLoading()
-    proxy.$tab.reLaunch('/pages/work/index')
-
-  } catch (err) {
-    uni.hideLoading()
-    console.warn('获取位置失败', err)
-
-    if (err.message && err.message.includes('权限')) {
-      uni.showModal({
-        title: '位置权限',
-        content: '需要位置权限才能提供更好的服务，是否前往设置？',
-        confirmText: '去设置',
-        cancelText: '跳过',
-        success: (res) => {
-          if (res.confirm) {
-            showLocationPermissionGuide()
-          }
-          setTimeout(() => {
-            proxy.$tab.reLaunch('/pages/work/index')
-          }, 100)
-        }
-      })
-    } else {
-      uni.showToast({
-        title: '获取位置失败，已进入工作台',
-        icon: 'none',
-        duration: 2000
-      })
-      setTimeout(() => {
-        proxy.$tab.reLaunch('/pages/work/index')
-      }, 1500)
-    }
-  }
-}
 
 function handleForgetPwd() {
   uni.showToast({

@@ -146,7 +146,7 @@ cut-coach/
 
 **核心功能**：
 - 工作状态切换（上线/下线）
-- 免费出行开关
+- 低碳出行开关
 - 待接单订单处理
 - 已接单服务流程
 - 教学中计时
@@ -244,7 +244,7 @@ export default {
 | `updateWorkStatus(data)` | 切换工作状态（上线/下线）|
 | `updateLocation(data)` | 更新教练位置 |
 | `getCoachProfile()` | 获取教练个人信息 |
-| `updateFreeTravel(data)` | 切换免费出行开关 |
+| `updateFreeTravel(data)` | 切换低碳出行开关 |
 | `getCoachDashboard()` | 获取教练看板数据 |
 | `getWorkStatus()` | 查询当前工作状态 |
 

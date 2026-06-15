@@ -27,10 +27,18 @@
               @complete="onQrcodeComplete"
           ></uqrcode>
 
+          <!-- 二维码中心头像 -->
+          <view class="qrcode-avatar" v-if="isLoaded && coachProfile.avatar">
+            <image class="avatar-img" :src="coachProfile.avatar" mode="aspectFill"></image>
+          </view>
+
           <view v-else class="loading-placeholder" style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; color: #999;">
             二维码生成中...
           </view>
         </view>
+
+        <!-- 用于合成图片的隐藏 canvas -->
+        <canvas canvas-id="composite-canvas" style="width: 200px; height: 200px; position: absolute; left: -9999rpx;"></canvas>
 
         <view class="qrcode-tip">
           <uni-icons type="info" size="16" color="#9ca3af"></uni-icons>
@@ -119,11 +127,18 @@ const fetchCoachProfile = async () => {
 
 const onQrcodeComplete = (res) => {
   console.log('====== 二维码完成回调 ======')
-  console.log(res)
+  console.log('res类型：', typeof res)
+  console.log('res值：', res)
+  console.log('res对象属性：', res ? Object.keys(res) : 'undefined')
 
-  if (res && res.success) {
+  if (typeof res === 'string') {
+    qrcodeFilePath.value = res
+  } else if (res && res.tempFilePath) {
+    qrcodeFilePath.value = res.tempFilePath
+  } else if (res && res.success) {
     qrcodeFilePath.value = res.tempFilePath || ''
-  } else if (typeof res === 'string') {
+  } else if (res) {
+    // 如果以上条件都不满足，尝试直接将 res 作为图片路径
     qrcodeFilePath.value = res
   }
 
@@ -277,6 +292,23 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+
+.qrcode-avatar {
+  position: absolute;
+  width: 85rpx;
+  height: 85rpx;
+  border-radius: 20%;
+  border: 4rpx solid #fff;
+  overflow: hidden;
+  background: #fff;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 20%;
 }
 
 .qrcode-tip {

@@ -91,9 +91,9 @@ Controller 类：`CoachSelfController`
 
 ---
 
-### 1.5 POST /coach-api/billiard/coach/free-travel — 切换免费出行开关
+### 1.5 POST /coach-api/billiard/coach/free-travel — 切换低碳出行开关
 
-**功能**：助教主动开启或关闭“免费出行”。开启后，用户端展示“免费出行”标签，且用户下单时车费记为 0。
+**功能**：助教主动开启或关闭“低碳出行”。开启后，用户端展示“低碳出行”标签，且用户下单时车费记为 0。
 
 **请求体：**
 
@@ -105,11 +105,11 @@ Controller 类：`CoachSelfController`
 
 | 参数 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `freeTravel` | boolean | 是 | true=开启免费出行（免收车费），false=关闭 |
+| `freeTravel` | boolean | 是 | true=开启低碳出行（免收车费），false=关闭 |
 
 **业务规则：**
 - 更新 `billiard_coach.travel_fee_enabled` 字段（true 对应 0，false 对应 1；或根据具体设计，此处仅为开关标识）。
-- 若开启免费出行，自动为该助教的 `tags` 追加“免费出行”标签；若关闭则移除该标签。
+- 若开启低碳出行，自动为该助教的 `tags` 追加“低碳出行”标签；若关闭则移除该标签。
 
 **响应**：`CommonResult<Boolean>`
 
@@ -219,7 +219,7 @@ Controller 类：`CoachOrderController`
 | `venueAddress`    | string | 否 | 球厅地址                             |
 | `venueLongitude`  | decimal | 否 | 球厅经度                             |
 | `venueLatitude`   | decimal | 否 | 球厅纬度                             |
-| `serviceType`     | tinyint | 是 | 服务类型：1=台球陪练 2=陪游                 |
+| `serviceType`     | tinyint | 是 | 服务类型：1=台球陪练 2=达人带路                 |
 | `bookingTime`     | long | 是 | 预约服务开始时间（毫秒时间戳）                         |
 | `serviceDuration` | int | 是 | 预定时长（分钟）                         |
 | `totalAmount`     | int | 是 | 订单金额（分）                          |
@@ -381,7 +381,7 @@ Controller 类：`CoachOrderController`
 | --- | --- | --- | --- |
 | `orderId` | bigint | 是 | 订单ID |
 | `orderNo` | string | 是 | 订单号 |
-| `serviceType` | tinyint | 是 | 服务类型：1=台球陪练 2=陪游 |
+| `serviceType` | tinyint | 是 | 服务类型：1=台球陪练 2=达人带路 |
 | `bookingTime` | long | 是 | 预约服务开始时间（毫秒时间戳） |
 | `serviceDuration` | int | 是 | 预定总时长（分钟） |
 | `actualDuration` | int | 否 | 实际服务时长（分钟），服务结束后有值 |

@@ -21,7 +21,7 @@
       </view>
       <view class="info-row">
         <text class="label">服务类型</text>
-        <text class="value">{{ orderInfo.serviceType === 1 ? '台球陪练' : '陪游' }}</text>
+        <text class="value">{{ orderInfo.serviceType === 1 ? '台球陪练' : '达人带路' }}</text>
       </view>
       <view class="info-row">
         <text class="label">教学时长</text>
