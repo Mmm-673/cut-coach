@@ -650,8 +650,9 @@
 		})
 
 		try {
-			const location = await getCurrentLocation()
 
+			const location = await getCurrentLocation()
+      console.log(location,'====location')
 			try {
 				await updateLocation({
 					longitude: location.longitude,
