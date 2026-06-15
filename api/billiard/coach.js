@@ -9,7 +9,7 @@ export function updateWorkStatus(data) {
   })
 }
 
-// 更新助教坐标
+// 更新裁教坐标
 export function updateLocation(data) {
   return request({
     url: '/coach-api/billiard/coach/location',
@@ -18,7 +18,7 @@ export function updateLocation(data) {
   })
 }
 
-// 获取助教个人信息
+// 获取裁教个人信息
 export function getCoachProfile() {
   return request({
     url: '/coach-api/billiard/coach/profile',
@@ -35,7 +35,7 @@ export function updateFreeTravel(data) {
   })
 }
 
-// 获取助教看板数据
+// 获取裁教看板数据
 export function getCoachDashboard() {
   return request({
     url: '/coach-api/billiard/coach/dashboard',
@@ -69,7 +69,7 @@ export function getReviewPage(params) {
   })
 }
 
-// 助教评价用户
+// 裁教评价用户
 export function createUserReview(data) {
   return request({
     url: '/coach-api/billiard/coach/review/create-user-review',

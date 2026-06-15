@@ -57,7 +57,7 @@
     {
       "path": "pages/index",
       "style": {
-        "navigationBarTitleText": "台球助教端",
+        "navigationBarTitleText": "台球裁教端",
         "navigationStyle": "custom"
       }
     },

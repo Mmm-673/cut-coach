@@ -1,7 +1,7 @@
 /**
- * BUG-06 测试：待评价订单详情应根据助教评价状态显示"去评价"按钮
+ * BUG-06 测试：待评价订单详情应根据裁教评价状态显示"去评价"按钮
  * - PENDING_REVIEW 状态且 coachUserReviewStatus 为 0 时显示"去评价"
- * - coachUserReviewStatus 为 1 表示助教已评价，不再显示"去评价"
+ * - coachUserReviewStatus 为 1 表示裁教已评价，不再显示"去评价"
  * - 缺失或异常状态不显示"去评价"
  */
 import { describe, it, expect } from 'vitest'

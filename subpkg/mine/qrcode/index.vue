@@ -6,7 +6,7 @@
         <image class="avatar" :src="coachProfile.avatar || '/static/images/default-avatar.png'" mode="aspectFill"></image>
       </view>
       <view class="user-info">
-        <view class="user-name">{{ coachProfile.stageName || '助教' }}</view>
+        <view class="user-name">{{ coachProfile.stageName || '裁教' }}</view>
       </view>
     </view>
 
@@ -93,7 +93,7 @@ const fetchCoachProfile = async () => {
     if (res && res.data) {
       coachProfile.value = {
         coachId: res.data.id || '',
-        stageName: res.data.stageName || res.data.name || '助教',
+        stageName: res.data.stageName || res.data.name || '裁教',
         level: res.data.level ?? 0,
         mobile: res.data.mobile || '',
         avatar: res.data.avatar || ''

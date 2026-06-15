@@ -76,7 +76,7 @@
 
 ## API 接口清单
 
-### 助教模块 (coach.js)
+### 裁教模块 (coach.js)
 1. `PUT /coach-api/billiard/coach/work-status` - 切换工作状态
 2. `POST /coach-api/billiard/coach/location` - 更新坐标
 3. `GET /coach-api/billiard/coach/profile` - 获取个人信息

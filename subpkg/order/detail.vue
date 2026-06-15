@@ -169,13 +169,13 @@
           <button class="btn-end" @click="endService">结束教学</button>
         </view>
       </template>
-      <!-- 待评价状态且助教未评价时显示去评价按钮 -->
+      <!-- 待评价状态且裁教未评价时显示去评价按钮 -->
       <template v-else-if="shouldShowEvaluateButton">
         <view class="btn-single">
           <button class="btn-primary" @click="goEvaluate">去评价</button>
         </view>
       </template>
-      <!-- 待评价状态且助教已评价时不显示按钮 -->
+      <!-- 待评价状态且裁教已评价时不显示按钮 -->
       <template v-else-if="orderStatus === ORDER_STATUS.PENDING_REVIEW"></template>
       <!-- 其他状态显示联系客服 -->
       <template v-else>

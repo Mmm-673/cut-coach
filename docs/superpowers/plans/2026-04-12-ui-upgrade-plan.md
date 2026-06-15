@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 为台球助教端应用进行整体 UI 升级，采用现代商务风格，统一视觉设计，优化交互体验
+**Goal:** 为台球裁教端应用进行整体 UI 升级，采用现代商务风格，统一视觉设计，优化交互体验
 
 **Architecture:** 渐进式升级，先搭建设计系统，再逐个页面升级，保持功能不变，仅优化视觉表现
 

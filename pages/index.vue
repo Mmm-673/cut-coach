@@ -2,7 +2,7 @@
   <view class="workbench-wrapper">
     <!-- 顶部标题栏 -->
     <uni-nav-bar
-      title="助教工作台"
+      title="裁教工作台"
       left-icon=""
       :fixed="false"
       :border="false"

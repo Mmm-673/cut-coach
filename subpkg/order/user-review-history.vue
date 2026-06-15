@@ -49,7 +49,7 @@
               <uni-icons type="person" size="36" color="#ccc"></uni-icons>
             </view>
             <view class="coach-detail">
-              <view class="coach-name">{{ item.coachStageName || '助教' }}</view>
+              <view class="coach-name">{{ item.coachStageName || '裁教' }}</view>
               <view class="time">{{ formatTime(item.createTime) }}</view>
             </view>
             <view class="coach-stars">

@@ -14,7 +14,7 @@ const baseUrl = config.baseUrl
 export const useUserStore = defineStore('user', () => {
   const token = ref(getAccessToken())
   const id = ref(getUserId())
-  const name = ref(storage.get(constant.name) || '助教')
+  const name = ref(storage.get(constant.name) || '裁教')
   const avatar = ref(storage.get(constant.avatar) || defAva)
   const roles = ref(storage.get(constant.roles) || ['ROLE_COACH'])
   const permissions = ref(storage.get(constant.permissions) || ['*'])
@@ -93,7 +93,7 @@ export const useUserStore = defineStore('user', () => {
           userAvatar = (isEmpty(userAvatar)) ? defAva : baseUrl + userAvatar
         }
         const userid = (isEmpty(user) || isEmpty(user.userId)) ? getUserId() : user.userId
-        const username = (isEmpty(user) || isEmpty(user.userName)) ? '助教' : user.userName
+        const username = (isEmpty(user) || isEmpty(user.userName)) ? '裁教' : user.userName
         if (res.roles && res.roles.length > 0) {
           SET_ROLES(res.roles)
           SET_PERMISSIONS(res.permissions)

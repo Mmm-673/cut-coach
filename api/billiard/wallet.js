@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-// 查询助教可提现余额
+// 查询裁教可提现余额
 export function getWalletBalance() {
   return request({
     url: '/coach-api/billiard/wallet/balance',

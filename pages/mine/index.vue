@@ -6,7 +6,7 @@
         <image class="avatar" :src="coachProfile.avatar || '/static/images/default-avatar.png'" mode="aspectFill"></image>
         <view class="user-detail">
           <view class="user-name">
-            <text class="name">{{ coachProfile.stageName || '助教' }}</text>
+            <text class="name">{{ coachProfile.stageName || '裁教' }}</text>
             <uni-tag :text="levelName" type="primary" size="small" :inverted="true" style="font-weight: bold"></uni-tag>
           </view>
         </view>
@@ -180,14 +180,14 @@ const walletInfo = ref({
 
 // 级别映射
 const levelNameMap = {
-  0: '初级助教',
-  1: '中级助教',
-  2: '高级助教'
+  0: '初级裁教',
+  1: '中级裁教',
+  2: '高级裁教'
 }
 
 // 计算属性：级别名称
 const levelName = computed(() => {
-  return levelNameMap[coachProfile.value.level] || '普通助教'
+  return levelNameMap[coachProfile.value.level] || '普通裁教'
 })
 
 // 获取教练档案
@@ -198,7 +198,7 @@ const fetchCoachProfile = async () => {
     if (res.data) {
       coachProfile.value = {
         id: res.data.id || '',
-        stageName: res.data.stageName || res.data.name || '助教',
+        stageName: res.data.stageName || res.data.name || '裁教',
         level: res.data.level ?? 0,
         mobile: res.data.mobile || '',
         avatar: res.data.avatar || '',

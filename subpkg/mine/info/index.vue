@@ -16,7 +16,7 @@
         <view class="value">{{ coachInfo.mobile || '-' }}</view>
       </view>
       <view class="info-item">
-        <view class="label">助教等级</view>
+        <view class="label">裁教等级</view>
         <view class="value">{{ levelName }}</view>
       </view>
       <view class="info-item">
@@ -38,13 +38,13 @@ const coachInfo = ref({})
 
 // 等级映射
 const levelNameMap = {
-  0: '初级助教',
-  1: '中级助教',
-  2: '高级助教'
+  0: '初级裁教',
+  1: '中级裁教',
+  2: '高级裁教'
 }
 
 const levelName = computed(() => {
-  return levelNameMap[coachInfo.value.level] || '普通助教'
+  return levelNameMap[coachInfo.value.level] || '普通裁教'
 })
 
 // 获取教练信息

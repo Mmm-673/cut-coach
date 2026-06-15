@@ -36,7 +36,7 @@ export function smsLogin(data) {
   })
 }
 
-// 助教退出登录
+// 裁教退出登录
 export function logout() {
   return request({
     url: '/coach-api/billiard/coach/auth/logout',
@@ -65,7 +65,7 @@ export function getInfo() {
   return Promise.resolve({
     user: {
       userId: uni.getStorageSync('Coach-User-Id'),
-      userName: '助教'
+      userName: '裁教'
     },
     roles: ['ROLE_COACH'],
     permissions: ['*']
