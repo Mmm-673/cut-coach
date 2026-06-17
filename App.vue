@@ -23,6 +23,7 @@ onShow(() => {
   }
   retryPushSyncIfNeeded()
   // #endif
+  checkLoginAndRestore()
 })
 
 // 初始化应用
@@ -72,11 +73,19 @@ async function checkLoginAndRestore() {
   // 有 token，尝试恢复用户信息
   try {
     const userStore = useUserStore()
-    // 先从本地存储恢复基本信息(store 初始化时已经做了)
-    // 再从服务端获取最新用户信息，验证 token 是否有效
-    await userStore.getInfo()
-    // 验证成功，进入首页
-    proxy.$tab.reLaunch('/pages/work/index')
+
+    // 检查本地存储中是否有用户信息
+    const hasLocalUserInfo = userStore.name && userStore.avatar
+
+    if (hasLocalUserInfo) {
+      // 本地存储中有用户信息，直接进入首页
+      proxy.$tab.reLaunch('/pages/work/index')
+    } else {
+      // 本地存储中没有用户信息，从服务端获取
+      await userStore.getInfo()
+      // 验证成功，进入首页
+      proxy.$tab.reLaunch('/pages/work/index')
+    }
   } catch (error) {
     console.warn('恢复登录状态失败，需要重新登录:', error)
     // token 无效或过期，跳转登录页

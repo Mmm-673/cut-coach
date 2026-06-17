@@ -378,10 +378,11 @@ export function syncPushForUser(userId) {
 export function clearPushAlias() {
   // #ifdef APP-PLUS
   pendingSyncUserId = null
-  if (callJPushApi('deleteAlias', { sequence: 2 })) {
-    jpushLog('success', '已请求清除推送别名')
-  }
+  callJPushApi('deleteAlias', { sequence: Date.now() })
+  callJPushApi('clearAllNotifications')
+  clearAllJpushBadges()
   uni.removeStorageSync('device_reg_id')
+  jpushLog('info', '用户登出，推送信息全部清理完成')
   // #endif
 }
 
@@ -392,7 +393,7 @@ export function getDeviceRegId() {
 /** App 回到前台时，若已登录但尚无 RegID 则补同步 */
 export function retryPushSyncIfNeeded() {
   // #ifdef APP-PLUS
-  callJPushApi('setBadge', 0)
+  clearAllJpushBadges()
   if (!getToken()) return
   const userId = getUserId()
   if (!userId) return

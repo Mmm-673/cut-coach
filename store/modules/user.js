@@ -113,7 +113,6 @@ export const useUserStore = defineStore('user', () => {
   // 退出系统
   const logOutAction = () => {
     return new Promise((resolve, reject) => {
-      // clearPushAlias()
       logout().then(() => {
         SET_TOKEN('')
         SET_ROLES([])
@@ -121,6 +120,7 @@ export const useUserStore = defineStore('user', () => {
         removeAuthInfo()
         storage.clean()
         resolve()
+        clearPushAlias()
       }).catch(() => {
         // 即使退出接口失败，也要清理本地状态
         SET_TOKEN('')
