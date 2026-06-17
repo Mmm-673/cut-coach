@@ -60,6 +60,41 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue' // 引入 nextTick
 import { getCoachProfile } from '@/api/billiard/coach'
+import constant from '@/utils/constant'
+
+// 检查用户是否已同意相机/相册权限说明
+const hasMediaPermissionAgreed = () => {
+  const agreed = uni.getStorageSync(constant.mediaPermissionAgreed)
+  return !!agreed
+}
+
+// 设置用户同意相机/相册权限说明
+const setMediaPermissionAgreed = (agreed = true) => {
+  uni.setStorageSync(constant.mediaPermissionAgreed, agreed)
+}
+
+// 显示相机/相册权限说明弹框
+const showMediaPermissionExplanation = () => {
+  return new Promise((resolve, reject) => {
+    uni.showModal({
+      title: '相机/相册权限说明',
+      content: '为了保存二维码到相册，我们需要访问您的相册。我们会严格保护您的隐私安全，只会在您明确同意的情况下访问。是否同意获取相册权限？',
+      confirmText: '同意',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          setMediaPermissionAgreed(true)
+          resolve(true)
+        } else {
+          reject(new Error('用户拒绝相机/相册权限说明'))
+        }
+      },
+      fail: () => {
+        reject(new Error('弹框显示失败'))
+      }
+    })
+  })
+}
 
 const uqrcodeRef = ref(null)
 const qrcodeFilePath = ref('')
@@ -171,10 +206,25 @@ const saveQrcode = () => {
     return
   }
 
-  uni.showLoading({
-    title: '保存中...'
-  })
+  // 检查用户是否已同意相机/相册权限说明
+  if (!hasMediaPermissionAgreed()) {
+    showMediaPermissionExplanation().then(() => {
+      // 用户同意后，继续执行保存二维码
+      saveQrcodeToAlbum(instance)
+    }).catch((err) => {
+      uni.showToast({
+        title: '保存失败,未开启权限',
+        icon: 'none'
+      })
+    })
+  } else {
+    // 用户已同意，直接执行保存二维码
+    saveQrcodeToAlbum(instance)
+  }
+}
 
+// 保存二维码到相册
+const saveQrcodeToAlbum = (instance) => {
   instance.save({
     success: () => {
       uni.showToast({

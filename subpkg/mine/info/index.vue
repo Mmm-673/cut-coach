@@ -25,7 +25,6 @@
       </view>
 
     </view>
-
   </view>
 </template>
 
@@ -46,6 +45,27 @@ const levelNameMap = {
 const levelName = computed(() => {
   return levelNameMap[coachInfo.value.level] || '普通裁教'
 })
+
+// 头像预览
+const previewAvatar = () => {
+  if (!coachInfo.value.avatar) {
+    uni.showToast({
+      title: '暂无头像',
+      icon: 'none'
+    })
+    return
+  }
+
+  uni.previewImage({
+    urls: [coachInfo.value.avatar],
+    current: 0
+  })
+}
+
+// 点击头像事件
+const goEditAvatar = () => {
+  previewAvatar()
+}
 
 // 获取教练信息
 const fetchCoachInfo = async () => {

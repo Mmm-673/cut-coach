@@ -1,4 +1,5 @@
 import { regeocode } from '@/api/billiard/amap'
+import constant from '@/utils/constant'
 
 /**
  * 统一的定位工具模块
@@ -9,6 +10,46 @@ import { regeocode } from '@/api/billiard/amap'
 let isLocating = false
 
 import { isIOS, isAndroid, isHarmony } from '@/utils/platform'
+
+/**
+ * 检查用户是否已同意定位权限说明
+ */
+export const hasLocationPermissionAgreed = () => {
+  const agreed = uni.getStorageSync(constant.locationPermissionAgreed)
+  return !!agreed
+}
+
+/**
+ * 设置用户同意定位权限说明
+ */
+export const setLocationPermissionAgreed = (agreed = true) => {
+  uni.setStorageSync(constant.locationPermissionAgreed, agreed)
+}
+
+/**
+ * 显示定位权限说明弹框
+ */
+export const showLocationPermissionExplanation = () => {
+  return new Promise((resolve, reject) => {
+    uni.showModal({
+      title: '定位权限说明',
+      content: '为了更好地为您提供服务，我们需要获取您的位置信息。位置信息仅用于订单服务和导航功能，我们会严格保护您的隐私安全。是否同意获取位置权限？',
+      confirmText: '同意',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          setLocationPermissionAgreed(true)
+          resolve(true)
+        } else {
+          reject(new Error('用户拒绝定位权限说明'))
+        }
+      },
+      fail: () => {
+        reject(new Error('弹框显示失败'))
+      }
+    })
+  })
+}
 
 /**
  * 打开应用设置页面（兼容 iOS、Android、鸿蒙）
@@ -102,7 +143,8 @@ export const showPermissionModal = ({
  */
 export const getLocation = ({
                               needRegeocode = false,
-                              type = 'gcj02'
+                              type = 'gcj02',
+                              showExplanation = true // 是否显示权限说明弹框，默认显示
                             } = {}) => {
   return new Promise((resolve, reject) => {
     if (isLocating) {
@@ -110,121 +152,62 @@ export const getLocation = ({
       return
     }
 
-    isLocating = true
+    // 检查是否需要显示权限说明弹框
+    if (showExplanation && !hasLocationPermissionAgreed()) {
+      showLocationPermissionExplanation().then(() => {
+        // 用户同意后，继续执行定位
+        isLocating = true
+        _doGetLocation()
+      }).catch((err) => {
+        // 用户拒绝或弹框显示失败，直接拒绝
+        reject(err)
+      })
+    } else {
+      // 不需要显示弹框或用户已同意，直接执行定位
+      isLocating = true
+      _doGetLocation()
+    }
 
-    const doLocate = () => {
-      // #ifdef MP-WEIXIN
-      // 微信小程序先获取权限
-      uni.getSetting({
-        success: (res) => {
-          if (!res.authSetting['scope.userLocation']) {
-            uni.authorize({
-              scope: 'scope.userLocation',
-              success: () => {
-                _doGetLocation()
-              },
-              fail: (err) => {
-                console.error('授权失败:', err)
-                isLocating = false
-                reject(new Error('permission_denied'))
-              }
-            })
-          } else {
-            _doGetLocation()
+    function _doGetLocation() {
+      uni.getLocation({
+        type,
+        altitude: false,
+        success: async (res) => {
+          const location = {
+            longitude: res.longitude,
+            latitude: res.latitude
+          }
+
+          try {
+            if (needRegeocode) {
+              const geoRes = await regeocode(location)
+              resolve({
+                ...location,
+                regeocodeData: geoRes.data
+              })
+            } else {
+              resolve(location)
+            }
+          } catch (e) {
+            resolve(location)
+          } finally {
+            isLocating = false
           }
         },
-        fail: () => {
-          _doGetLocation()
+        fail: (err) => {
+          isLocating = false
+
+          // 微信小程序错误码处理
+          let errorMsg = err.errMsg || ''
+          if (errorMsg.includes('auth deny') || errorMsg.includes('authorize') || errorMsg.includes('denied') ||
+              (err.errCode === 101000006)) {
+            reject(new Error('permission_denied'))
+          } else {
+            reject(err)
+          }
         }
       })
-      // #endif
-
-      // #ifndef MP-WEIXIN
-      _doGetLocation()
-      // #endif
-
-      function _doGetLocation() {
-        uni.getLocation({
-          type,
-          altitude: false,
-          success: async (res) => {
-            const location = {
-              longitude: res.longitude,
-              latitude: res.latitude
-            }
-
-            try {
-              if (needRegeocode) {
-                const geoRes = await regeocode(location)
-                resolve({
-                  ...location,
-                  regeocodeData: geoRes.data
-                })
-              } else {
-                resolve(location)
-              }
-            } catch (e) {
-              resolve(location)
-            } finally {
-              isLocating = false
-            }
-          },
-          fail: (err) => {
-            isLocating = false
-
-            // 微信小程序错误码处理
-            let errorMsg = err.errMsg || ''
-            if (errorMsg.includes('auth deny') || errorMsg.includes('authorize') || errorMsg.includes('denied') ||
-                (err.errCode === 101000006)) {
-              reject(new Error('permission_denied'))
-            } else {
-              reject(err)
-            }
-          }
-        })
-      }
     }
-
-    // #ifdef APP-PLUS
-    try {
-      const systemInfo = uni.getSystemInfoSync()
-      // Android 和鸿蒙权限申请
-      if (isAndroid() || isHarmony()) {
-        plus.android.requestPermissions(
-            ['android.permission.ACCESS_FINE_LOCATION', 'android.permission.ACCESS_COARSE_LOCATION'],
-            (result) => {
-              // 检查授权结果 - 使用标准方式检查
-              const granted = result.granted || []
-              if (granted.length > 0 &&
-                  (granted.includes('android.permission.ACCESS_FINE_LOCATION') ||
-                   granted.includes('android.permission.ACCESS_COARSE_LOCATION'))) {
-                // 授权成功
-                doLocate()
-              } else {
-                // 权限被拒绝
-                isLocating = false
-                reject(new Error('permission_denied'))
-              }
-            },
-            (error) => {
-              console.error('权限申请失败：', error)
-              isLocating = false
-              reject(new Error('permission_error'))
-            }
-        )
-      } else {
-        // iOS 直接执行定位，系统会自动弹授权
-        doLocate()
-      }
-    } catch (e) {
-      isLocating = false
-      reject(e)
-    }
-    // #endif
-
-    // #ifndef APP-PLUS
-    doLocate()
-    // #endif
   })
 }
 

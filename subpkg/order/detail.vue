@@ -191,7 +191,7 @@
 import { ref, computed } from 'vue'
 import { onLoad, onUnload, onShow } from '@dcloudio/uni-app'
 import { nextTick, watch, getCurrentInstance } from 'vue'
-import { openMapNavigation, isMockVenue, calculateDistance } from '@/utils/platform'
+import { openMapNavigation, isMockVenue, calculateDistance, makePhoneCall } from '@/utils/platform'
 import { getOrderDetail, finishService, acceptOrder as acceptOrderApi, rejectOrder as rejectOrderApi, confirmDeparture as confirmDepartureApi, arrive as arriveApi, startService as startServiceApi, reportException as reportExceptionApi, startTimer as startTimerApi, endTimer as endTimerApi, getInProgressOrder } from '@/api/billiard/order'
 import { getLocation } from '@/utils/location'
 
@@ -757,15 +757,8 @@ const makeCall = () => {
     return
   }
 
-  // #ifdef APP-PLUS
-  // 只有【打包成 Android / iOS App】时，才会执行这里
-    plus.runtime.openURL(`tel:${realMobile}`);
-  // #endif
-
-  // #ifndef APP-PLUS
-  // 只有【不是 App】时（微信小程序、H5、快应用）才执行这里
-    uni.makePhoneCall({ phoneNumber: realMobile });
-  // #endif
+  // 使用封装好的拨打电话函数，包含权限管控
+  makePhoneCall(realMobile)
 }
 
 const goToUserReviewHistory = () => {

@@ -627,7 +627,7 @@
 				})
 			} else {
 				uni.showToast({
-					title: '定位失败',
+					title: '更新失败',
 					icon: 'none'
 				})
 			}
@@ -642,12 +642,6 @@
 		if (updatingLocation.value) return
 
 		updatingLocation.value = true
-
-		// 显示loading提示
-		uni.showLoading({
-			title: '更新位置中...',
-			mask: true
-		})
 
 		try {
 
@@ -839,7 +833,7 @@
 			proxy.$modal.msgSuccess(targetStatus ? '已上线' : '已下线')
 		} catch (err) {
 			console.error('切换状态失败', err)
-			proxy.$modal.msgError(err?.msg || '操作失败')
+			proxy.$modal.msgError(err || '操作失败')
 		} finally {
 			switchLoading.value = false
 		}

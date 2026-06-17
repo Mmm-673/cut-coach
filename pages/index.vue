@@ -142,6 +142,7 @@
 
 <script setup>
 import { ref, onUnmounted } from 'vue'
+import { makePhoneCall } from '@/utils/platform'
 
 const isOnline = ref(false)
 const orderStatus = ref('idle')
@@ -276,7 +277,7 @@ const navigate = () => {
 }
 
 const makeCall = () => {
-  uni.makePhoneCall({ phoneNumber: '138****8888' })
+  makePhoneCall('138****8888')
 }
 
 const viewMoreOrders = () => {
