@@ -38,7 +38,7 @@
         </view>
 
         <!-- 用于合成图片的隐藏 canvas -->
-        <canvas canvas-id="composite-canvas" style="width: 200px; height: 200px; position: absolute; left: -9999rpx;"></canvas>
+        <canvas canvas-id="composite-canvas" style="width: 300px; height: 450px; position: absolute; left: -9999rpx;"></canvas>
 
         <view class="qrcode-tip">
           <uni-icons type="info" size="16" color="#9ca3af"></uni-icons>
@@ -52,6 +52,10 @@
       <button class="save-btn" @click="saveQrcode">
         <uni-icons type="download" size="18" color="#fff"></uni-icons>
         <text>保存二维码</text>
+      </button>
+      <button class="save-btn" @click="savePoster" style="margin-top: 20rpx; background: linear-gradient(135deg, #10B981 0%, #059669 100%);">
+        <uni-icons type="image" size="18" color="#fff"></uni-icons>
+        <text>导出海报</text>
       </button>
     </view>
   </view>
@@ -166,18 +170,18 @@ const onQrcodeComplete = (res) => {
   console.log('res值：', res)
   console.log('res对象属性：', res ? Object.keys(res) : 'undefined')
 
-  if (typeof res === 'string') {
-    qrcodeFilePath.value = res
-  } else if (res && res.tempFilePath) {
-    qrcodeFilePath.value = res.tempFilePath
-  } else if (res && res.success) {
-    qrcodeFilePath.value = res.tempFilePath || ''
-  } else if (res) {
-    // 如果以上条件都不满足，尝试直接将 res 作为图片路径
-    qrcodeFilePath.value = res
+  // 直接调用组件的 toTempFilePath 方法获取二维码图片路径
+  if (uqrcodeRef.value) {
+    uqrcodeRef.value.toTempFilePath({
+      success: (res) => {
+        console.log('二维码临时路径：', res.tempFilePath)
+        qrcodeFilePath.value = res.tempFilePath
+      },
+      fail: (err) => {
+        console.error('获取二维码临时路径失败：', err)
+      }
+    })
   }
-
-  console.log('最终图片路径：', qrcodeFilePath.value)
 }
 
 // 长按事件
@@ -243,6 +247,132 @@ const saveQrcodeToAlbum = (instance) => {
     complete: () => {
       uni.hideLoading()
     }
+  })
+}
+
+// 导出海报
+const savePoster = () => {
+  // 检查用户是否已同意相机/相册权限说明
+  if (!hasMediaPermissionAgreed()) {
+    showMediaPermissionExplanation().then(() => {
+      // 用户同意后，继续执行保存海报
+      generateAndSavePoster()
+    }).catch((err) => {
+      uni.showToast({
+        title: '导出失败,未开启权限',
+        icon: 'none'
+      })
+    })
+  } else {
+    // 用户已同意，直接执行保存海报
+    generateAndSavePoster()
+  }
+}
+
+// 生成并保存海报
+const generateAndSavePoster = () => {
+  uni.showLoading({ title: '海报生成中...' })
+
+  // 使用 canvas 合成海报
+  const ctx = uni.createCanvasContext('composite-canvas')
+
+  // 设置海报尺寸
+  const width = 300
+  const height = 450
+
+  // 绘制背景
+  ctx.setFillStyle('#fff')
+  ctx.fillRect(0, 0, width, height)
+
+  // 绘制头部渐变背景
+  const gradient = ctx.createLinearGradient(0, 0, 0, 150)
+  gradient.addColorStop(0, '#2f6bee')
+  gradient.addColorStop(1, '#1a50d9')
+  ctx.setFillStyle(gradient)
+  ctx.fillRect(0, 0, width, 150)
+
+  // 绘制标题
+  ctx.setFillStyle('#fff')
+  ctx.setFontSize(20)
+  ctx.setTextAlign('center')
+  ctx.fillText('初球裁教', width / 2, 40)
+  ctx.setFontSize(14)
+  ctx.fillText('专业台球教练服务', width / 2, 65)
+
+  // 绘制教练头像
+  if (coachProfile.value.avatar) {
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(width / 2, 115, 30, 0, 2 * Math.PI)
+    ctx.clip()
+    ctx.drawImage(coachProfile.value.avatar, width / 2 - 30, 80, 60, 60)
+    ctx.restore()
+  }
+
+  // 绘制教练姓名
+  ctx.setFillStyle('#1f2937')
+  ctx.setFontSize(18)
+  ctx.setTextAlign('center')
+  ctx.fillText(coachProfile.value.stageName || '裁教', width / 2, 180)
+
+  // 绘制二维码
+  console.log('qrcodeFilePath:', qrcodeFilePath.value)
+  if (qrcodeFilePath.value) {
+    ctx.drawImage(qrcodeFilePath.value, width / 2 - 75, 200, 150, 150)
+  } else {
+    console.error('二维码图片路径为空')
+  }
+
+  // 绘制底部提示
+  ctx.setFillStyle('#6b7280')
+  ctx.setFontSize(12)
+  ctx.setTextAlign('center')
+  ctx.fillText('扫码查看教练信息', width / 2, 370)
+
+  // 绘制平台名称
+  ctx.setFillStyle('#9ca3af')
+  ctx.setFontSize(10)
+  ctx.fillText('初球裁教平台', width / 2, 400)
+
+  // 绘制完成
+  ctx.draw(false, () => {
+    // 将 canvas 转换为图片
+    uni.canvasToTempFilePath({
+      canvasId: 'composite-canvas',
+      width: width,
+      height: height,
+      destWidth: width * 2,
+      destHeight: height * 2,
+      success: (res) => {
+        // 保存图片到相册
+        uni.saveImageToPhotosAlbum({
+          filePath: res.tempFilePath,
+          success: () => {
+            uni.hideLoading()
+            uni.showToast({
+              title: '海报已保存到相册',
+              icon: 'success'
+            })
+          },
+          fail: (err) => {
+            uni.hideLoading()
+            console.error('保存海报失败', err)
+            uni.showToast({
+              title: '保存失败',
+              icon: 'none'
+            })
+          }
+        })
+      },
+      fail: (err) => {
+        uni.hideLoading()
+        console.error('canvas 转图片失败', err)
+        uni.showToast({
+          title: '生成海报失败',
+          icon: 'none'
+        })
+      }
+    })
   })
 }
 

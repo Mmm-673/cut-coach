@@ -773,15 +773,8 @@ const goToUserReviewHistory = () => {
 
 const contactService = () => {
   const hotline = '15900560488'
-  // #ifdef APP-PLUS
-  // 只有【打包成 Android / iOS App】时，才会执行这里
-  plus.runtime.openURL(`tel:${hotline}`);
-  // #endif
-
-  // #ifndef APP-PLUS
-  // 只有【不是 App】时（微信小程序、H5、快应用）才执行这里
-  uni.makePhoneCall({ phoneNumber: hotline });
-  // #endif
+  // 使用封装好的拨打电话函数，包含权限管控
+  makePhoneCall(hotline)
 }
 
 const goEvaluate = () => {
