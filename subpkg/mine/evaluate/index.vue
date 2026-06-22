@@ -1,5 +1,14 @@
 <template>
   <view class="evaluate-page">
+    <!-- 图片查看器组件 -->
+    <image-viewer
+      :visible="imageViewerVisible"
+      :images="currentImageList"
+      :current="currentImageIndex"
+      :disable-long-press="true"
+      @close="imageViewerVisible = false"
+    ></image-viewer>
+
     <!-- 顶部评分统计 -->
     <view class="score-header">
       <view class="score-main">
@@ -167,11 +176,14 @@ const formatTime = (timestamp) => {
 }
 
 // 图片预览
-const previewImage = (urls, currentIndex) => {
-  uni.previewImage({
-    urls: urls,
-    current: currentIndex
-  })
+const imageViewerVisible = ref(false)
+const currentImageList = ref([])
+const currentImageIndex = ref(0)
+
+const previewImage = (urls, index) => {
+  currentImageList.value = urls
+  currentImageIndex.value = index
+  imageViewerVisible.value = true
 }
 
 // 获取评价列表

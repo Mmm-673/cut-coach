@@ -1,5 +1,14 @@
 <template>
   <view class="info-container">
+    <!-- 图片查看器组件 -->
+    <image-viewer
+      :visible="imageViewerVisible"
+      :images="currentImageList"
+      :current="currentImageIndex"
+      :disable-long-press="true"
+      @close="imageViewerVisible = false"
+    ></image-viewer>
+
     <!-- 头像区域 -->
     <view class="avatar-section" @click="goEditAvatar">
       <image class="avatar" :src="coachInfo.avatar || '/static/images/default-avatar.png'" mode="aspectFill"></image>
@@ -35,6 +44,11 @@ import { getCoachProfile } from '@/api/billiard/coach'
 
 const coachInfo = ref({})
 
+// 图片查看器状态
+const imageViewerVisible = ref(false)
+const currentImageList = ref([])
+const currentImageIndex = ref(0)
+
 // 等级映射
 const levelNameMap = {
   0: '初级裁教',
@@ -56,10 +70,9 @@ const previewAvatar = () => {
     return
   }
 
-  uni.previewImage({
-    urls: [coachInfo.value.avatar],
-    current: 0
-  })
+  currentImageList.value = [coachInfo.value.avatar]
+  currentImageIndex.value = 0
+  imageViewerVisible.value = true
 }
 
 // 点击头像事件

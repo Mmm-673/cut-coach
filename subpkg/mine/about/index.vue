@@ -34,6 +34,28 @@
             <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
           </view>
         </view>
+        <view class="info-item" @click="handleUserAgrement">
+          <view class="item-left">
+            <view class="icon-wrapper agreement-icon">
+              <uni-icons type="compose" size="18" color="#fff"></uni-icons>
+            </view>
+            <text class="item-label">用户协议</text>
+          </view>
+          <view class="item-right">
+            <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
+          </view>
+        </view>
+        <view class="info-item" @click="handlePrivacy">
+          <view class="item-left">
+            <view class="icon-wrapper privacy-icon">
+              <uni-icons type="locked" size="18" color="#fff"></uni-icons>
+            </view>
+            <text class="item-label">隐私政策</text>
+          </view>
+          <view class="item-right">
+            <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
+          </view>
+        </view>
       </view>
     </view>
 
@@ -63,6 +85,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useConfigStore } from '@/store'
+import config from '@/config'
 
 const version = ref(useConfigStore().config.appInfo.version || '1.2.0')
 
@@ -82,6 +105,23 @@ const copyVersion = () => {
       uni.showToast({ title: '复制成功', icon: 'success' })
     }
   })
+}
+
+function openAgreementPage(title) {
+  const agreement = config.appInfo.agreements.find(item => item.title === title)
+  if (!agreement?.url) return
+
+  uni.navigateTo({
+    url: `/subpkg/common/webview/index?url=${encodeURIComponent(agreement.url)}&title=${encodeURIComponent(title)}`
+  })
+}
+
+function handlePrivacy() {
+  openAgreementPage('隐私政策')
+}
+
+function handleUserAgrement() {
+  openAgreementPage('用户服务协议')
 }
 </script>
 
@@ -179,6 +219,14 @@ const copyVersion = () => {
 
   &.email-icon {
     background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+  }
+
+  &.agreement-icon {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  }
+
+  &.privacy-icon {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
   }
 }
 
