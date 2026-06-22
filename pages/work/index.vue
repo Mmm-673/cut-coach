@@ -318,6 +318,7 @@
 		makePhoneCall as makePhoneCallUtil,
 		calculateDistance
 	} from '@/utils/platform'
+	import { locationPermissionMessages } from '@/utils/permission-messages'
 
 	const {
 		proxy
@@ -669,8 +670,8 @@
 
 			if (err.message && err.message.includes('权限')) {
 				uni.showModal({
-					title: '位置权限',
-					content: '需要位置权限才能更新位置，是否前往设置？',
+					title: locationPermissionMessages.title,
+					content: locationPermissionMessages.updateGuide.content,
 					confirmText: '去设置',
 					cancelText: '取消',
 					success: (res) => {

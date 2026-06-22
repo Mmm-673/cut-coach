@@ -65,6 +65,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue' // 引入 nextTick
 import { getCoachProfile } from '@/api/billiard/coach'
 import constant from '@/utils/constant'
+import { mediaPermissionMessages } from '@/utils/permission-messages'
 
 // 检查用户是否已同意相机/相册权限说明
 const hasMediaPermissionAgreed = () => {
@@ -81,8 +82,8 @@ const setMediaPermissionAgreed = (agreed = true) => {
 const showMediaPermissionExplanation = () => {
   return new Promise((resolve, reject) => {
     uni.showModal({
-      title: '相机/相册权限说明',
-      content: '为了保存二维码到相册，我们需要访问您的相册。我们会严格保护您的隐私安全，只会在您明确同意的情况下访问。是否同意获取相册权限？',
+      title: mediaPermissionMessages.title,
+      content: mediaPermissionMessages.qrcode,
       confirmText: '同意',
       cancelText: '取消',
       success: (res) => {
@@ -217,7 +218,7 @@ const saveQrcode = () => {
       saveQrcodeToAlbum(instance)
     }).catch((err) => {
       uni.showToast({
-        title: '保存失败,未开启权限',
+        title: mediaPermissionMessages.saveFailed,
         icon: 'none'
       })
     })
@@ -259,7 +260,7 @@ const savePoster = () => {
       generateAndSavePoster()
     }).catch((err) => {
       uni.showToast({
-        title: '导出失败,未开启权限',
+        title: mediaPermissionMessages.exportFailed,
         icon: 'none'
       })
     })

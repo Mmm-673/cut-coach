@@ -4,6 +4,8 @@
  * 注意：定位功能已迁移至 @/utils/location.js
  */
 
+import { phonePermissionMessages } from '@/utils/permission-messages'
+
 /**
  * 获取当前平台
  * @returns {string} 'ios' | 'android' | 'harmony' | 'mp-weixin' | 'h5' | 'unknown'
@@ -185,8 +187,8 @@ export function setPhonePermissionAgreed(agreed = true) {
 export function showPhonePermissionExplanation() {
   return new Promise((resolve, reject) => {
     uni.showModal({
-      title: '拨打电话权限说明',
-      content: '为了联系客户，我们需要访问您的拨打电话权限。我们会严格保护您的隐私安全，只会在您明确同意的情况下访问。是否同意获取拨打电话权限？',
+      title: phonePermissionMessages.title,
+      content: phonePermissionMessages.explanation,
       confirmText: '同意',
       cancelText: '取消',
       success: (res) => {
@@ -229,7 +231,7 @@ export function makePhoneCall(phoneNumber) {
       doMakePhoneCall(cleanPhone)
     }).catch((err) => {
       uni.showToast({
-        title: '拨打失败,未开启权限',
+        title: phonePermissionMessages.callFailed,
         icon: 'none'
       })
     })

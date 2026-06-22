@@ -1,5 +1,6 @@
 import { regeocode } from '@/api/billiard/amap'
 import constant from '@/utils/constant'
+import { locationPermissionMessages } from '@/utils/permission-messages'
 
 /**
  * 统一的定位工具模块
@@ -32,8 +33,8 @@ export const setLocationPermissionAgreed = (agreed = true) => {
 export const showLocationPermissionExplanation = () => {
   return new Promise((resolve, reject) => {
     uni.showModal({
-      title: '定位权限说明',
-      content: '为了更好地为您提供服务，我们需要获取您的位置信息。位置信息仅用于订单服务和导航功能，我们会严格保护您的隐私安全。是否同意获取位置权限？',
+      title: locationPermissionMessages.title,
+      content: locationPermissionMessages.explanation,
       confirmText: '同意',
       cancelText: '取消',
       success: (res) => {
@@ -95,8 +96,8 @@ export const openAppSetting = () => {
  * 显示定位权限引导弹窗
  */
 export const showPermissionModal = ({
-                                      title = '定位权限未开启',
-                                      content = '您未开启定位权限，将无法获取位置信息。是否前往开启？',
+                                      title = locationPermissionMessages.guide.title,
+                                      content = locationPermissionMessages.guide.content,
                                       onSuccess
                                     } = {}) => {
   // #ifdef MP-WEIXIN

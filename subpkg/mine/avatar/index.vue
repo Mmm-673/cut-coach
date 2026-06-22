@@ -41,6 +41,7 @@
   import { useUserStore } from '@/store'
   import { uploadAvatar } from "@/api/system/user"
   import constant from '@/utils/constant'
+  import { mediaPermissionMessages } from '@/utils/permission-messages'
 
   const baseUrl = config.baseUrl
 
@@ -59,8 +60,8 @@
   const showMediaPermissionExplanation = () => {
     return new Promise((resolve, reject) => {
       uni.showModal({
-        title: '相机/相册权限说明',
-        content: '为了修改头像，我们需要访问您的相机或相册。我们会严格保护您的隐私安全，只会在您明确同意的情况下访问。是否同意获取相机/相册权限？',
+        title: mediaPermissionMessages.title,
+        content: mediaPermissionMessages.avatar,
         confirmText: '同意',
         cancelText: '取消',
         success: (res) => {
