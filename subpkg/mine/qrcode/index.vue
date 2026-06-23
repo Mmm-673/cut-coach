@@ -66,6 +66,7 @@ import { ref, computed, onMounted, nextTick } from 'vue' // 引入 nextTick
 import { getCoachProfile } from '@/api/billiard/coach'
 import constant from '@/utils/constant'
 import { mediaPermissionMessages } from '@/utils/permission-messages'
+import { requestStoragePermission } from '@/utils/platform'
 
 // 检查用户是否已同意相机/相册权限说明
 const hasMediaPermissionAgreed = () => {
@@ -214,7 +215,11 @@ const saveQrcode = () => {
   // 检查用户是否已同意相机/相册权限说明
   if (!hasMediaPermissionAgreed()) {
     showMediaPermissionExplanation().then(() => {
-      // 用户同意后，继续执行保存二维码
+      setMediaPermissionAgreed(true);
+      // 用户同意权限说明后，请求系统相册权限
+      return requestStoragePermission();
+    }).then(() => {
+      // 系统权限获取成功，保存二维码
       saveQrcodeToAlbum(instance)
     }).catch((err) => {
       uni.showToast({
@@ -223,8 +228,15 @@ const saveQrcode = () => {
       })
     })
   } else {
-    // 用户已同意，直接执行保存二维码
-    saveQrcodeToAlbum(instance)
+    // 用户已同意权限说明，请求系统相册权限
+    requestStoragePermission().then(() => {
+      saveQrcodeToAlbum(instance)
+    }).catch((err) => {
+      uni.showToast({
+        title: mediaPermissionMessages.saveFailed,
+        icon: 'none'
+      })
+    })
   }
 }
 
@@ -256,7 +268,11 @@ const savePoster = () => {
   // 检查用户是否已同意相机/相册权限说明
   if (!hasMediaPermissionAgreed()) {
     showMediaPermissionExplanation().then(() => {
-      // 用户同意后，继续执行保存海报
+      setMediaPermissionAgreed(true);
+      // 用户同意权限说明后，请求系统相册权限
+      return requestStoragePermission();
+    }).then(() => {
+      // 系统权限获取成功，生成并保存海报
       generateAndSavePoster()
     }).catch((err) => {
       uni.showToast({
@@ -265,8 +281,15 @@ const savePoster = () => {
       })
     })
   } else {
-    // 用户已同意，直接执行保存海报
-    generateAndSavePoster()
+    // 用户已同意权限说明，请求系统相册权限
+    requestStoragePermission().then(() => {
+      generateAndSavePoster()
+    }).catch((err) => {
+      uni.showToast({
+        title: mediaPermissionMessages.exportFailed,
+        icon: 'none'
+      })
+    })
   }
 }
 

@@ -6,7 +6,7 @@
 					<view class="uni-corpper-content" :style="'width:'+cropperW+'px;height:'+cropperH+'px;left:'+cropperL+'px;top:'+cropperT+'px'">
 						<image :src="imageSrc" :style="'width:'+cropperW+'px;height:'+cropperH+'px'"></image>
 						<view class="uni-corpper-crop-box" @touchstart.stop="contentStartMove" @touchmove.stop="contentMoveing" @touchend.stop="contentTouchEnd"
-						    :style="'left:'+cutL+'px;top:'+cutT+'px;right:'+cutR+'px;bottom:'+cutB+'px'">
+							:style="'left:'+cutL+'px;top:'+cutT+'px;right:'+cutR+'px;bottom:'+cutB+'px'">
 							<view class="uni-cropper-view-box">
 								<view class="uni-cropper-dashed-h"></view>
 								<view class="uni-cropper-dashed-v"></view>
@@ -28,8 +28,8 @@
 				</view>
 			</view>
 			<view class='cropper-config'>
-				<button type="primary reverse" @click="getImage" style='margin-top: 30rpx;'> 选择头像 </button>
-				<button type="warn" @click="getImageInfo" style='margin-top: 30rpx;'> 提交 </button>
+				<button type="primary reverse" @click="getImage" style='margin-top: 30rpx;'> 选择头像</button>
+				<button type="warn" @click="getImageInfo" style='margin-top: 30rpx;'> 提交</button>
 			</view>
 			<canvas canvas-id="myCanvas" :style="'position:absolute;border: 1px solid red; width:'+imageW+'px;height:'+imageH+'px;top:-9999px;left:-9999px;'"></canvas>
 		</view>
@@ -42,6 +42,7 @@
   import { uploadAvatar } from "@/api/system/user"
   import constant from '@/utils/constant'
   import { mediaPermissionMessages } from '@/utils/permission-messages'
+  import { requestCameraPermission, requestStoragePermission } from '@/utils/platform'
 
   const baseUrl = config.baseUrl
 
@@ -81,22 +82,22 @@
 	let sysInfo = uni.getSystemInfoSync()
 	let SCREEN_WIDTH = sysInfo.screenWidth
 	let PAGE_X, // 手按下的x位置
-		PAGE_Y, // 手按下y的位置 
-		PR = sysInfo.pixelRatio, // dpi
-		T_PAGE_X, // 手移动的时候x的位置
-		T_PAGE_Y, // 手移动的时候Y的位置
-		CUT_L, // 初始化拖拽元素的left值
-		CUT_T, // 初始化拖拽元素的top值
-		CUT_R, // 初始化拖拽元素的
-		CUT_B, // 初始化拖拽元素的
-		CUT_W, // 初始化拖拽元素的宽度
-		CUT_H, //  初始化拖拽元素的高度
-		IMG_RATIO, // 图片比例
-		IMG_REAL_W, // 图片实际的宽度
-		IMG_REAL_H, // 图片实际的高度
-		DRAFG_MOVE_RATIO = 1, //移动时候的比例,
-		INIT_DRAG_POSITION = 100, // 初始化屏幕宽度和裁剪区域的宽度之差，用于设置初始化裁剪的宽度
-		DRAW_IMAGE_W = sysInfo.screenWidth // 设置生成的图片宽度
+	PAGE_Y, // 手按下y的位置
+	PR = sysInfo.pixelRatio, // dpi
+	T_PAGE_X, // 手移动的时候x的位置
+	T_PAGE_Y, // 手移动的时候Y的位置
+	CUT_L, // 初始化拖拽元素的left值
+	CUT_T, // 初始化拖拽元素的top值
+	CUT_R, // 初始化拖拽元素的
+	CUT_B, // 初始化拖拽元素的
+	CUT_W, // 初始化拖拽元素的宽度
+	CUT_H, //  初始化拖拽元素的高度
+	IMG_RATIO, // 图片比例
+	IMG_REAL_W, // 图片实际的宽度
+	IMG_REAL_H, // 图片实际的高度
+	DRAFG_MOVE_RATIO = 1, //移动时候的比例
+	INIT_DRAG_POSITION = 100, // 初始化屏幕宽度和裁剪区域的宽度之差，用于设置初始化裁剪的宽度
+	DRAW_IMAGE_W = sysInfo.screenWidth // 设置生成的图片宽度
 
 	export default {
 		/**
@@ -152,15 +153,23 @@
 				// 检查用户是否已同意相机/相册权限说明
 				if (!hasMediaPermissionAgreed()) {
 					showMediaPermissionExplanation().then(() => {
-						// 用户同意后，继续执行选择图片
+						setMediaPermissionAgreed(true);
+						// 用户同意权限说明后，请求系统相机和相册权限
+						return Promise.all([requestCameraPermission(), requestStoragePermission()]);
+					}).then(() => {
+						// 系统权限获取成功，执行选择图片
 						_this.chooseImage()
 					}).catch((err) => {
 						// 用户拒绝或弹框显示失败，直接拒绝
 						console.error(err)
 					})
 				} else {
-					// 用户已同意，直接执行选择图片
-					_this.chooseImage()
+					// 用户已同意权限说明，请求系统相机和相册权限
+					Promise.all([requestCameraPermission(), requestStoragePermission()]).then(() => {
+						_this.chooseImage()
+					}).catch((err) => {
+						console.error(err)
+					})
 				}
 			},
 			chooseImage: function () {

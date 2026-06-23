@@ -207,6 +207,134 @@ export function showPhonePermissionExplanation() {
 }
 
 /**
+ * 请求拨打电话系统权限（仅 APP 端）
+ */
+function requestCallPhonePermission() {
+  return new Promise((resolve, reject) => {
+    // #ifdef APP-PLUS
+    // iOS 不需要动态申请权限
+    if (isIOS()) {
+      resolve(true);
+      return;
+    }
+
+    // Android 6.0+ 需要动态申请权限
+    if (isAndroid() || isHarmony()) {
+      plus.android.requestPermissions(
+        ['android.permission.CALL_PHONE'],
+        (e) => {
+          if (e.code === 0) {
+            // 权限申请成功
+            resolve(true);
+          } else {
+            // 权限申请失败
+            reject(new Error('权限申请失败'));
+          }
+        },
+        (e) => {
+          reject(e);
+        }
+      );
+      return;
+    }
+    // #endif
+
+    // 非 APP 端不需要权限
+    resolve(true);
+  });
+}
+
+/**
+ * 请求相机系统权限（仅 APP 端）
+ */
+function requestCameraPermission() {
+  return new Promise((resolve, reject) => {
+    // #ifdef APP-PLUS
+    if (isIOS()) {
+      // iOS 获取相机权限
+      const AVCaptureDevice = plus.ios.importClass('AVCaptureDevice');
+      const authStatus = AVCaptureDevice.authorizationStatusForMediaType('vide');
+
+      if (authStatus === 0 || authStatus === 3) { // NotDetermined 或 Authorized
+        resolve(true);
+      } else {
+        reject(new Error('权限被拒绝'));
+      }
+      return;
+    }
+
+    // Android 6.0+ 需要动态申请权限
+    if (isAndroid() || isHarmony()) {
+      plus.android.requestPermissions(
+        ['android.permission.CAMERA'],
+        (e) => {
+          if (e.code === 0) {
+            // 权限申请成功
+            resolve(true);
+          } else {
+            // 权限申请失败
+            reject(new Error('相机权限申请失败'));
+          }
+        },
+        (e) => {
+          reject(e);
+        }
+      );
+      return;
+    }
+    // #endif
+
+    // 非 APP 端不需要权限
+    resolve(true);
+  });
+}
+
+/**
+ * 请求相册系统权限（仅 APP 端）
+ */
+function requestStoragePermission() {
+  return new Promise((resolve, reject) => {
+    // #ifdef APP-PLUS
+    if (isIOS()) {
+      // iOS 获取相册权限
+      const PHPhotoLibrary = plus.ios.importClass('PHPhotoLibrary');
+      const authStatus = PHPhotoLibrary.authorizationStatus();
+
+      if (authStatus === 0 || authStatus === 3) { // NotDetermined 或 Authorized
+        resolve(true);
+      } else {
+        reject(new Error('相册权限被拒绝'));
+      }
+      return;
+    }
+
+    // Android 6.0+ 需要动态申请权限
+    if (isAndroid() || isHarmony()) {
+      plus.android.requestPermissions(
+        ['android.permission.READ_EXTERNAL_STORAGE', 'android.permission.WRITE_EXTERNAL_STORAGE'],
+        (e) => {
+          if (e.code === 0) {
+            // 权限申请成功
+            resolve(true);
+          } else {
+            // 权限申请失败
+            reject(new Error('相册权限申请失败'));
+          }
+        },
+        (e) => {
+          reject(e);
+        }
+      );
+      return;
+    }
+    // #endif
+
+    // 非 APP 端不需要权限
+    resolve(true);
+  });
+}
+
+/**
  * 拨打电话（多端兼容健壮版）
  */
 export function makePhoneCall(phoneNumber) {
@@ -227,8 +355,12 @@ export function makePhoneCall(phoneNumber) {
   // 3. 检查用户是否已同意拨打电话权限说明
   if (!hasPhonePermissionAgreed()) {
     showPhonePermissionExplanation().then(() => {
-      // 用户同意后，继续执行拨打电话
-      doMakePhoneCall(cleanPhone)
+      setPhonePermissionAgreed(true);
+      // 用户同意权限说明后，请求系统拨打电话权限
+      return requestCallPhonePermission();
+    }).then(() => {
+      // 系统权限获取成功，执行拨打电话
+      doMakePhoneCall(cleanPhone);
     }).catch((err) => {
       uni.showToast({
         title: phonePermissionMessages.callFailed,
@@ -236,8 +368,15 @@ export function makePhoneCall(phoneNumber) {
       })
     })
   } else {
-    // 用户已同意，直接执行拨打电话
-    doMakePhoneCall(cleanPhone)
+    // 用户已同意权限说明，直接请求系统拨打电话权限
+    requestCallPhonePermission().then(() => {
+      doMakePhoneCall(cleanPhone);
+    }).catch((err) => {
+      uni.showToast({
+        title: phonePermissionMessages.callFailed,
+        icon: 'none'
+      })
+    })
   }
 }
 
@@ -373,4 +512,9 @@ export default {
   openPermissionSettings,
   showLocationPermissionGuide,
   getLocation
+}
+
+export {
+  requestCameraPermission,
+  requestStoragePermission
 }
