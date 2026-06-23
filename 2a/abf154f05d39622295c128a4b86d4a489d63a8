@@ -1,0 +1,46 @@
+AGENTS.md
+  aecdad2c8057fcae 1-85
+manifest.json
+  5eea906448370369 44-45
+utils/platform.js
+  5eea906448370369 209-336,358-363,371-379,516-520
+subpkg/mine/avatar/index.vue
+  5eea906448370369 9,31-32,45,85-100,156-160,167-172
+subpkg/mine/qrcode/index.vue
+  5eea906448370369 69,218-222,231-239,271-275,284-292
+README.md
+  aecdad2c8057fcae 1-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "2aabf154f05d39622295c128a4b86d4a489d63a8",
+  "prompts": {
+    "5eea906448370369": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a79f6c92-eb6d-4506-a138-cf8fecd94c5a",
+        "model": "doubao-seed-2.0-code"
+      },
+      "human_author": "carson.ma",
+      "messages": [],
+      "total_additions": 210,
+      "total_deletions": 33,
+      "accepted_lines": 1465,
+      "overriden_lines": 0
+    },
+    "aecdad2c8057fcae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "06c0a7b2-601e-4ecd-9c27-1541cb81e5e1",
+        "model": "doubao-seed-2.0-code"
+      },
+      "human_author": "carson.ma",
+      "messages": [],
+      "total_additions": 331,
+      "total_deletions": 645,
+      "accepted_lines": 175,
+      "overriden_lines": 0
+    }
+  }
+}
