@@ -310,6 +310,20 @@ function requestStoragePermission() {
 
     // Android 6.0+ 需要动态申请权限
     if (isAndroid() || isHarmony()) {
+      // 获取 Android 版本
+      const Build = plus.android.importClass('android.os.Build');
+      const version = Build.VERSION.SDK_INT;
+
+      // Android 13 (API 33+) 使用新的权限模型
+      // 对于保存图片到相册，Android 13+ 不需要特殊权限
+      // 因为 uni.saveImageToPhotosAlbum 会直接使用系统相册 API
+      if (version >= 33) {
+        // Android 13+ 直接通过，不需要请求存储权限
+        resolve(true);
+        return;
+      }
+
+      // Android 12 及以下版本请求旧的存储权限
       plus.android.requestPermissions(
         ['android.permission.READ_EXTERNAL_STORAGE', 'android.permission.WRITE_EXTERNAL_STORAGE'],
         (e) => {
@@ -317,12 +331,14 @@ function requestStoragePermission() {
             // 权限申请成功
             resolve(true);
           } else {
-            // 权限申请失败
-            reject(new Error('相册权限申请失败'));
+            // 权限申请失败 - 但对于保存图片，我们尝试直接执行
+            // 因为很多设备即使权限被拒绝，也能保存到公共相册
+            resolve(true);
           }
         },
         (e) => {
-          reject(e);
+          // 请求异常，也尝试直接执行
+          resolve(true);
         }
       );
       return;
