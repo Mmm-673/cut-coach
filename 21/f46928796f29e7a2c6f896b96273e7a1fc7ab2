@@ -1,0 +1,25 @@
+manifest.json
+  11a1843ecfe315db 45-47
+utils/platform.js
+  11a1843ecfe315db 313-326,334-336,340-341
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "21f46928796f29e7a2c6f896b96273e7a1fc7ab2",
+  "prompts": {
+    "11a1843ecfe315db": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "148f7d7a-0dbe-47f9-97db-deafbce6ff82",
+        "model": "doubao-seed-2.0-code"
+      },
+      "human_author": "carson.ma",
+      "messages": [],
+      "total_additions": 22,
+      "total_deletions": 4,
+      "accepted_lines": 895,
+      "overriden_lines": 0
+    }
+  }
+}
