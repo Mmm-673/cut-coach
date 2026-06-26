@@ -56,6 +56,18 @@
             <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
           </view>
         </view>
+        <view class="info-item" @click="handleCallService">
+          <view class="item-left">
+            <view class="icon-wrapper phone-icon">
+              <uni-icons type="phone" size="18" color="#fff"></uni-icons>
+            </view>
+            <text class="item-label">客服电话</text>
+          </view>
+          <view class="item-right">
+            <text class="item-value">159****0488</text>
+            <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
+          </view>
+        </view>
       </view>
     </view>
 
@@ -86,6 +98,7 @@
 import { ref } from 'vue'
 import { useConfigStore } from '@/store'
 import config from '@/config'
+import { makePhoneCall } from '@/utils/platform'
 
 const version = ref(useConfigStore().config.appInfo.version || '1.2.0')
 
@@ -122,6 +135,14 @@ function handlePrivacy() {
 
 function handleUserAgrement() {
   openAgreementPage('用户服务协议')
+}
+
+// 拨打客服电话
+const handleCallService = () => {
+  const phoneNumber = '15900560488'
+
+  // 使用封装好的拨打电话工具函数（包含权限处理）
+  makePhoneCall(phoneNumber)
 }
 </script>
 
@@ -227,6 +248,10 @@ function handleUserAgrement() {
 
   &.privacy-icon {
     background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  }
+
+  &.phone-icon {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   }
 }
 

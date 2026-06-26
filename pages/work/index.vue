@@ -1055,7 +1055,7 @@
 				expireTime = new Date(order.expireAt).getTime()
 			}
 			pendingCountdown.value = Math.max(0, Math.floor((expireTime - now) / 1000))
-			startPendingCountdown()
+			// startPendingCountdown() // 上线要打开
 		}
 	}
 

@@ -182,7 +182,8 @@ const walletInfo = ref({
 const levelNameMap = {
   0: '初级裁教',
   1: '中级裁教',
-  2: '高级裁教'
+  2: '高级裁教',
+  3: "星级裁教"
 }
 
 // 计算属性：级别名称

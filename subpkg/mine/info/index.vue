@@ -53,7 +53,8 @@ const currentImageIndex = ref(0)
 const levelNameMap = {
   0: '初级裁教',
   1: '中级裁教',
-  2: '高级裁教'
+  2: '高级裁教',
+  3: "星级裁教"
 }
 
 const levelName = computed(() => {
