@@ -1,6 +1,6 @@
 // 应用全局配置
 export default {
-  baseUrl: 'http://web.qiulem.com',
+  baseUrl: 'https://www.qiulem.com',
   appInfo: {
     name: '初球裁教版',
     version: '1.0.0',
@@ -8,8 +8,8 @@ export default {
     customerServicePhone: '15900560488',
     customerServiceHours: '9:00-21:00',
     agreements: [
-      { title: '隐私政策', url: 'http://web.qiulem.com/agreement/coachPrivacy.html' },
-      { title: '用户服务协议', url: 'http://web.qiulem.com/agreement/coachAgreement.html' }
+      { title: '隐私政策', url: 'https://qiulem.com/agreement/coachPrivacy.html' },
+      { title: '用户服务协议', url: 'https://qiulem.com/agreement/coachAgreement.html' }
     ]
   }
 }
