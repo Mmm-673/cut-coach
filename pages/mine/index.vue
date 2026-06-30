@@ -13,35 +13,35 @@
       </view>
     </view>
 
-<!--    &lt;!&ndash; 钱包模块 &ndash;&gt;-->
-<!--    <view class="section-card">-->
-<!--      <view class="card-title">我的钱包</view>-->
-<!--      <view class="balance-wrap">-->
-<!--        <view class="balance-label">可提现余额</view>-->
-<!--        <view class="balance-row">-->
-<!--          <view class="balance">{{ showBalance ? `¥${(walletInfo.balance / 100).toFixed(2)}` : '¥******' }}</view>-->
-<!--          <view class="balance-eye" @click="showBalance = !showBalance">-->
-<!--            <uni-icons :type="showBalance ? 'eye' : 'eye-slash'" size="22" color="#2f6bee"></uni-icons>-->
-<!--          </view>-->
-<!--        </view>-->
-<!--      </view>-->
-<!--      <view class="pending-audit" v-if="walletInfo.freezePrice > 0">-->
-<!--        <uni-icons type="wallet" size="16" color="#F59E0b"></uni-icons>-->
-<!--        <text>冻结金额：¥{{ (walletInfo.freezePrice / 100).toFixed(2) }}</text>-->
-<!--      </view>-->
-<!--      <button class="withdraw-btn" @click="handleWithdraw">去提现</button>-->
-<!--      <view class="wallet-links">-->
-<!--        <view class="link-item" @click="navToDeduct">-->
-<!--          <text>扣款明细</text>-->
-<!--          <uni-icons type="right" size="14" color="#999"></uni-icons>-->
-<!--        </view>-->
-<!--        <view class="link-divider"></view>-->
-<!--        <view class="link-item" @click="navToWithdrawRecord">-->
-<!--          <text>提现记录</text>-->
-<!--          <uni-icons type="right" size="14" color="#999"></uni-icons>-->
-<!--        </view>-->
-<!--      </view>-->
-<!--    </view>-->
+    <!-- 钱包模块 -->
+    <view class="section-card">
+      <view class="card-title">我的钱包</view>
+      <view class="balance-wrap">
+        <view class="balance-label">可提现余额</view>
+        <view class="balance-row">
+          <view class="balance">{{ showBalance ? `¥${(walletInfo.balance / 100).toFixed(2)}` : '¥******' }}</view>
+          <view class="balance-eye" @click="showBalance = !showBalance">
+            <uni-icons :type="showBalance ? 'eye' : 'eye-slash'" size="22" color="#2f6bee"></uni-icons>
+          </view>
+        </view>
+      </view>
+      <view class="pending-audit" v-if="walletInfo.freezePrice > 0">
+        <uni-icons type="wallet" size="16" color="#F59E0b"></uni-icons>
+        <text>冻结金额：¥{{ (walletInfo.freezePrice / 100).toFixed(2) }}</text>
+      </view>
+      <button class="withdraw-btn" @click="handleWithdraw">去提现</button>
+      <view class="wallet-links">
+        <view class="link-item" @click="navToDeduct">
+          <text>扣款明细</text>
+          <uni-icons type="right" size="14" color="#999"></uni-icons>
+        </view>
+        <view class="link-divider"></view>
+        <view class="link-item" @click="navToWithdrawRecord">
+          <text>提现记录</text>
+          <uni-icons type="right" size="14" color="#999"></uni-icons>
+        </view>
+      </view>
+    </view>
 
     <!-- 功能菜单 -->
     <view class="section-card">

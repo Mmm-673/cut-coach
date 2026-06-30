@@ -54,7 +54,8 @@
                     "android.permission.WRITE_EXTERNAL_STORAGE" : "需要获取您的相册写入权限，以便您能将平台内的推广二维码、推广海报保存至手机相册。",
                     "android.permission.CALL_PHONE" : "需要获取您的拨打电话权限，以便您能直接与客户或平台客服进行电话联系与沟通协调。"
                 },
-                "targetSdkVersion" : 30
+                "targetSdkVersion" : 35,
+                "minSdkVersion" : 28
             },
             "ios" : {
                 "bundleID" : "com.aksjzt.qiuleme.coach",
