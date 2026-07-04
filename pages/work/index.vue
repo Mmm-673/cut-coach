@@ -307,7 +307,8 @@
 		getOrderPage,
 		reportException as reportExceptionApi,
 		startTimer as startTimerApi,
-		endTimer as endTimerApi
+		endTimer as endTimerApi,
+			getCountdownEnabled
 	} from '@/api/billiard/order'
 	import {
 		getLocation,
@@ -333,6 +334,9 @@
 
 	// 订单状态
 	const orderStatus = ref('idle')
+
+	// 倒计时开关状态缓存
+	const countdownEnabled = ref(false)
 
 	// 历史订单 tab
 	const historyTabs = [{
@@ -1055,7 +1059,10 @@
 				expireTime = new Date(order.expireAt).getTime()
 			}
 			pendingCountdown.value = Math.max(0, Math.floor((expireTime - now) / 1000))
-			// startPendingCountdown() // 上线要打开
+			// 根据缓存的开关状态决定是否启动倒计时
+			// if (countdownEnabled.value) {
+				startPendingCountdown()
+			// }
 		}
 	}
 
@@ -1079,10 +1086,6 @@
 					fetchOrders()
 					startDiscoveryPollingIfNeeded()
 				}
-				uni.showToast({
-					title: '订单已超时',
-					icon: 'none'
-				})
 				return
 			}
 			updatePendingCountdownText()
@@ -1203,9 +1206,9 @@
 			const targetLat = pendingOrder.value.venueLatitude
 			const targetLon = pendingOrder.value.venueLongitude
 
-			// if (targetLat && targetLon) {
-			// 	await checkLocationInRange(targetLat, targetLon, 200)
-			// }
+			if (targetLat && targetLon) {
+				await checkLocationInRange(targetLat, targetLon, 200)
+			}
 
 			uni.hideLoading()
 
@@ -1544,6 +1547,13 @@
 		} catch (err) {
 			console.error('获取教练信息失败', err)
 		}
+		// 获取倒计时开关状态
+		// try {
+		// 	const countdownRes = await getCountdownEnabled()
+		// 	countdownEnabled.value = countdownRes.data === true
+		// } catch (err) {
+		// 	console.error('获取倒计时开关状态失败', err)
+		// }
 
 		if (!isOnline.value) {
 			stopPolling()

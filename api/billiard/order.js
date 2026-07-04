@@ -133,3 +133,11 @@ export function getTimerStatus(orderId) {
     params: { orderId }
   })
 }
+
+// 查询倒计时开关状态
+export function getCountdownEnabled() {
+  return request({
+    url: '/coach-api/billiard/order/countdown-enabled',
+    method: 'get'
+  })
+}

@@ -248,9 +248,11 @@ const calculateFee = () => {
 // 选择到账方式（微信/支付宝）
 const chooseAccountType = () => {
   uni.showActionSheet({
-    itemList: ['微信', '支付宝'],
+    // itemList: ['微信', '支付宝'],
+    itemList: ['支付宝'],
     success: (res) => {
-      accountType.value = res.tapIndex + 1 // 1=微信, 2=支付宝
+      // accountType.value = res.tapIndex + 1 // 1=微信, 2=支付宝
+      accountType.value = res.tapIndex + 2 // 1=微信, 2=支付宝
       accountNo.value = ''
       realName.value = ''
     }

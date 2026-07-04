@@ -10,6 +10,74 @@
             <uni-tag :text="levelName" type="primary" size="small" :inverted="true" style="font-weight: bold"></uni-tag>
           </view>
         </view>
+        <view class="qrcode-btn" @click="navToQrcode">
+          <view class="qrcode-mini">
+            <!-- 顶部行 -->
+            <view class="qr-row">
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+            </view>
+            <view class="qr-row">
+              <view class="qr-cell"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell"></view>
+            </view>
+            <view class="qr-row">
+              <view class="qr-cell"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell"></view>
+            </view>
+            <view class="qr-row">
+              <view class="qr-cell"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell"></view>
+            </view>
+            <view class="qr-row">
+              <view class="qr-cell"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell"></view>
+            </view>
+            <view class="qr-row">
+              <view class="qr-cell"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell-empty"></view>
+              <view class="qr-cell"></view>
+            </view>
+            <view class="qr-row">
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+              <view class="qr-cell"></view>
+            </view>
+          </view>
+        </view>
       </view>
     </view>
 
@@ -75,18 +143,6 @@
             <uni-icons type="help" size="22" color="#fff"></uni-icons>
           </view>
           <view class="menu-text">常见问题</view>
-        </view>
-        <uni-icons type="right" size="18" color="#999"></uni-icons>
-      </view>
-
-      <view class="divider"></view>
-
-      <view class="menu-item" @click="navToQrcode">
-        <view class="menu-item-left">
-          <view class="icon-box icon-orange">
-            <uni-icons type="scan" size="22" color="#fff"></uni-icons>
-          </view>
-          <view class="menu-text">我的二维码</view>
         </view>
         <uni-icons type="right" size="18" color="#999"></uni-icons>
       </view>
@@ -160,7 +216,7 @@ const { proxy } = getCurrentInstance()
 const showCancelAccountPopup = ref(false)
 const cancelReason = ref('')
 const cancelSubmitting = ref(false)
-const showBalance = ref(true)
+const showBalance = ref(false)
 // 教练档案
 const coachProfile = ref({
   id: '',
@@ -349,6 +405,46 @@ page {
 .user-info {
   display: flex;
   align-items: center;
+}
+
+.qrcode-btn {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 16rpx;
+  margin-left: auto;
+}
+
+.qrcode-btn:active {
+  opacity: 0.7;
+}
+
+.qrcode-mini {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.qr-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.qr-cell {
+  width: 6rpx;
+  height: 6rpx;
+  background: #fff;
+  border-radius: 1rpx;
+}
+
+.qr-cell-empty {
+  width: 6rpx;
+  height: 6rpx;
 }
 
 .avatar {
