@@ -23,10 +23,6 @@
             @input="handleAmountInput"
         />
       </view>
-      <view class="input-tip-row">
-        <text class="min-tip">单笔最低提现金额100元</text>
-        <text class="quota-link" @click="showQuotaDesc">限额说明</text>
-      </view>
     </view>
 
     <!-- 到账方式 -->
