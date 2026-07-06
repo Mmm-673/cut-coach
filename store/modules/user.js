@@ -7,6 +7,7 @@ import { isHttp, isEmpty } from "@/utils/validate"
 import { getInfo, login, smsLogin, logout } from '@/api/login'
 import { getAccessToken, setAuthInfo, removeAuthInfo, getUserId } from '@/utils/auth'
 import { clearPushAlias } from '@/utils/jpush'
+import { resetAuthExpiredState } from '@/utils/request'
 import defAva from '@/static/images/profile.jpg'
 
 const baseUrl = config.baseUrl
@@ -119,6 +120,7 @@ export const useUserStore = defineStore('user', () => {
         SET_PERMISSIONS([])
         removeAuthInfo()
         storage.clean()
+        resetAuthExpiredState()
         resolve()
         clearPushAlias()
       }).catch(() => {
@@ -128,6 +130,7 @@ export const useUserStore = defineStore('user', () => {
         SET_PERMISSIONS([])
         removeAuthInfo()
         storage.clean()
+        resetAuthExpiredState()
         resolve()
       })
     })

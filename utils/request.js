@@ -11,6 +11,8 @@ const baseUrl = config.baseUrl
 let isRefreshing = false
 // 刷新 token 时的等待队列
 let refreshSubscribers = []
+// 是否正在显示认证过期提示（防止多个弹框同时弹出）
+let isShowingAuthExpired = false
 
 // 订阅刷新 token 回调
 function subscribeTokenRefresh(callback) {
@@ -89,8 +91,12 @@ const request = config => {
         if (code === 0 || code === 200) {
           resolve(res.data)
         } else if (code === 401) {
+          // 如果已经没有 token 了，直接拒绝，不弹框（避免退出登录后继续弹框）
+          if (!getAccessToken() && !getRefreshToken()) {
+            reject('无效的会话，或者会话已过期，请重新登录。')
+          }
           // 尝试刷新 token
-          if (getRefreshToken()) {
+          else if (getRefreshToken()) {
             try {
               await doRefreshToken()
               // 刷新成功，重新发送请求
@@ -142,12 +148,24 @@ const request = config => {
 }
 
 function handleAuthExpired() {
+  if (isShowingAuthExpired) {
+    return
+  }
+  isShowingAuthExpired = true
   showConfirm('登录状态已过期，您可以继续留在该页面，或者重新登录?').then(res => {
+    isShowingAuthExpired = false
     if (res.confirm) {
       removeAuthInfo()
       uni.reLaunch({ url: '/pages/login/index' })
     }
+  }).catch(() => {
+    isShowingAuthExpired = false
   })
+}
+
+// 重置认证过期提示状态（退出登录时调用）
+export function resetAuthExpiredState() {
+  isShowingAuthExpired = false
 }
 
 export default request
