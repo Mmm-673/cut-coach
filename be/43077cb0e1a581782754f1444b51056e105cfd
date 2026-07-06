@@ -1,0 +1,25 @@
+utils/request.js
+  c81aec290052d0d8 14-15,94-97,99,151-154,156,161-162,166-170
+store/modules/user.js
+  c81aec290052d0d8 10,123,133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "be43077cb0e1a581782754f1444b51056e105cfd",
+  "prompts": {
+    "c81aec290052d0d8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "28503557-24f5-4897-ab9b-2da0bb93581c",
+        "model": "doubao-seed-2.0-code"
+      },
+      "human_author": "carson.ma",
+      "messages": [],
+      "total_additions": 22,
+      "total_deletions": 1,
+      "accepted_lines": 323,
+      "overriden_lines": 0
+    }
+  }
+}
