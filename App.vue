@@ -23,7 +23,7 @@ onShow(() => {
   }
   retryPushSyncIfNeeded()
   // #endif
-  checkLoginAndRestore()
+  checkLoginOnShow()
 })
 
 // 初始化应用
@@ -89,6 +89,32 @@ async function checkLoginAndRestore() {
   } catch (error) {
     console.warn('恢复登录状态失败，需要重新登录:', error)
     // token 无效或过期，跳转登录页
+    proxy.$tab.reLaunch('/pages/login/index')
+  }
+}
+
+async function checkLoginOnShow() {
+  const token = getToken()
+  if (!token) {
+    proxy.$tab.reLaunch('/pages/login/index')
+    return
+  }
+
+  // #ifdef APP-PLUS
+  const userId = getUserId()
+  if (userId) {
+    syncPushForUser(userId)
+  }
+  // #endif
+
+  // 有 token 时，只在用户信息不存在时才去获取，不强制跳转页面
+  try {
+    const userStore = useUserStore()
+    if (!userStore.name || !userStore.avatar) {
+      await userStore.getInfo()
+    }
+  } catch (error) {
+    console.warn('恢复用户信息失败，需要重新登录:', error)
     proxy.$tab.reLaunch('/pages/login/index')
   }
 }

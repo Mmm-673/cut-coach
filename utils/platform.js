@@ -293,61 +293,41 @@ function requestCameraPermission() {
  * 请求相册系统权限（仅 APP 端）
  */
 function requestStoragePermission() {
-  return new Promise((resolve, reject) => {
-    // #ifdef APP-PLUS
-    if (isIOS()) {
-      // iOS 获取相册权限
-      const PHPhotoLibrary = plus.ios.importClass('PHPhotoLibrary');
-      const authStatus = PHPhotoLibrary.authorizationStatus();
+  const  title = '相册权限未开启'
+  const content = '您未开启相册权限，将无法保存。是否前往开启？'
 
-      if (authStatus === 0 || authStatus === 3) { // NotDetermined 或 Authorized
-        resolve(true);
-      } else {
-        reject(new Error('相册权限被拒绝'));
+  // #ifdef MP-WEIXIN
+  uni.showModal({
+    title,
+    content,
+    confirmText: '去开启',
+    success: (res) => {
+      if (res.confirm) {
+        uni.openSetting({
+          success: (settingRes) => {
+            if (settingRes.authSetting['scope.writePhotosAlbum'] || settingRes.authSetting['scope.album']) {
+              // onSuccess && onSuccess()
+            }
+          },
+          fail: () => uni.showToast({ title: '打开设置失败', icon: 'none' })
+        })
       }
-      return;
     }
+  })
+  // #endif
 
-    // Android 6.0+ 需要动态申请权限
-    if (isAndroid() || isHarmony()) {
-      // 获取 Android 版本
-      const Build = plus.android.importClass('android.os.Build');
-      const version = Build.VERSION.SDK_INT;
-
-      // Android 13 (API 33+) 使用新的权限模型
-      // 对于保存图片到相册，Android 13+ 不需要特殊权限
-      // 因为 uni.saveImageToPhotosAlbum 会直接使用系统相册 API
-      if (version >= 33) {
-        // Android 13+ 直接通过，不需要请求存储权限
-        resolve(true);
-        return;
+  // #ifdef APP-PLUS
+  uni.showModal({
+    title,
+    content,
+    confirmText: '前往系统设置',
+    success: (res) => {
+      if (res.confirm) {
+        openAppSetting()
       }
-
-      // Android 12 及以下版本请求旧的存储权限
-      plus.android.requestPermissions(
-        ['android.permission.READ_EXTERNAL_STORAGE', 'android.permission.WRITE_EXTERNAL_STORAGE'],
-        (e) => {
-          if (e.code === 0) {
-            // 权限申请成功
-            resolve(true);
-          } else {
-            // 权限申请失败 - 但对于保存图片，我们尝试直接执行
-            // 因为很多设备即使权限被拒绝，也能保存到公共相册
-            resolve(true);
-          }
-        },
-        (e) => {
-          // 请求异常，也尝试直接执行
-          resolve(true);
-        }
-      );
-      return;
     }
-    // #endif
-
-    // 非 APP 端不需要权限
-    resolve(true);
-  });
+  })
+  // #endif
 }
 
 /**
@@ -368,7 +348,13 @@ export function makePhoneCall(phoneNumber) {
     return
   }
 
-  // 3. 检查用户是否已同意拨打电话权限说明
+  // 3. iOS 平台直接拨打电话，不需要权限说明和系统权限请求
+  if (isIOS()) {
+    doMakePhoneCall(cleanPhone)
+    return
+  }
+
+  // 4. 非 iOS 平台检查用户是否已同意拨打电话权限说明
   if (!hasPhonePermissionAgreed()) {
     showPhonePermissionExplanation().then(() => {
       setPhonePermissionAgreed(true);
@@ -493,6 +479,46 @@ export const showLocationPermissionGuide = () => {
   })
 }
 
+
+/**
+ * 打开应用设置页面
+ */
+const openAppSetting = () => {
+  // #ifdef APP-PLUS
+  const systemInfo = uni.getSystemInfoSync()
+  const platform = systemInfo.platform
+  const osName = (systemInfo.osName || systemInfo.systemName || '').toLowerCase()
+  const isHarmony = osName.includes('harmony')
+
+  if (platform === 'ios') {
+    plus.runtime.openURL(plus.runtime.appid ? 'app-settings:' : 'prefs:root=Privacy')
+  } else if (platform === 'android' || isHarmony) {
+    const main = plus.android.runtimeMainActivity()
+    const Intent = plus.android.importClass('android.content.Intent')
+    const Settings = plus.android.importClass('android.provider.Settings')
+    const Uri = plus.android.importClass('android.net.Uri')
+    const packageName = main.getPackageName()
+
+    try {
+      const intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+      const uri = Uri.fromParts('package', packageName, null)
+      intent.setData(uri)
+      main.startActivity(intent)
+    } catch (e) {
+      try {
+        const intent = new Intent(Settings.ACTION_SETTINGS)
+        main.startActivity(intent)
+      } catch (e2) {
+        uni.showToast({ title: '打开设置失败', icon: 'none' })
+      }
+    }
+  } else {
+    uni.openSetting({ fail: () => uni.showToast({ title: '打开设置失败', icon: 'none' }) })
+  }
+  // #endif
+}
+
+
 export const getLocation = (options = {}) => {
   const { type = 'gcj02', altitude = false } = options
 
@@ -527,7 +553,8 @@ export default {
   isMockVenue,
   openPermissionSettings,
   showLocationPermissionGuide,
-  getLocation
+  getLocation,
+  openAppSetting
 }
 
 export {
