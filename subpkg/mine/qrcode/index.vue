@@ -259,7 +259,7 @@ const saveQrcodeToAlbum = (instance) => {
       console.error('保存失败', err)
 
       uni.showToast({
-        title: '保存失败',
+        title: '保存失败，请检查相册权限是否正常开启',
         icon: 'none'
       })
     },
@@ -394,7 +394,7 @@ const generateAndSavePoster = () => {
             uni.hideLoading()
             console.error('保存海报失败', err)
             uni.showToast({
-              title: '保存失败',
+              title: '保存失败，请检查相册权限是否开启',
               icon: 'none'
             })
           }

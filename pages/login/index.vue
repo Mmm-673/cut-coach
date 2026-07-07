@@ -8,7 +8,7 @@
     </view>
 
     <view class="login-form-content">
-      <view class="login-tabs">
+      <view class="login-tabs" v-if="isPwdLoginEnabled">
         <view :class="['tab-item', activeTab === 'pwd' ? 'active' : '']"
               @click="switchTab('pwd')">密码登录</view>
         <view :class="['tab-item', activeTab === 'sms' ? 'active' : '']"
@@ -17,7 +17,7 @@
 
       <view class="input-group">
         <!-- 密码登录表单 -->
-        <template v-if="activeTab === 'pwd'">
+        <template v-if="isPwdLoginEnabled && activeTab === 'pwd'">
           <view class="input-item flex align-center">
             <view class="iconfont icon-user icon"></view>
             <input v-model="pwdForm.username" class="input" type="text"
@@ -58,7 +58,7 @@
         </template>
       </view>
 
-      <view class="forget-pwd" v-if="activeTab === 'pwd'" @click="handleForgetPwd">忘记密码？</view>
+      <view class="forget-pwd" v-if="isPwdLoginEnabled && activeTab === 'pwd'" @click="handleForgetPwd">忘记密码？</view>
 
       <view class="action-btn">
         <button @click="handleLogin" :disabled="isLoggingIn" class="login-btn cu-btn block bg-blue lg round">
@@ -103,6 +103,9 @@ import {
   sendSmsCode
 } from '@/api/login'
 import {
+  getCountdownEnabled
+} from '@/api/billiard/order'
+import {
   useConfigStore,
   useUserStore
 } from '@/store'
@@ -125,8 +128,9 @@ const showPassword = ref(false)
 const focusIndex = ref(-1)
 const keyboardHeight = ref(0)
 const isLoggingIn = ref(false)
-const activeTab = ref('pwd')
+const activeTab = ref('sms')
 const privacyDialogRef = ref(null)
+const isPwdLoginEnabled = ref(false)
 
 const pwdForm = ref({
   username: "",
@@ -146,6 +150,23 @@ function switchTab(tab) {
   focusIndex.value = -1
 }
 
+/** 查询密码登录是否可用 */
+async function fetchPwdLoginEnabled() {
+  try {
+    const res = await getCountdownEnabled()
+    if (res.code === 0 || res.code === 200) {
+      isPwdLoginEnabled.value = !!res.data
+      // 如果密码登录可用，默认显示密码登录；否则只显示短信登录
+      if (isPwdLoginEnabled.value) {
+        activeTab.value = 'pwd'
+      }
+    }
+  } catch (err) {
+    // 接口调用失败时，默认不显示密码登录
+    isPwdLoginEnabled.value = false
+  }
+}
+
 /** 打开 iOS 隐私协议弹窗 */
 function openPrivacyDialogIfNeeded() {
   if (!shouldShowIosPrivacy() && !hasPrivacyRefused()) {
@@ -156,12 +177,14 @@ function openPrivacyDialogIfNeeded() {
   })
 }
 
-onMounted(() => {
+onShow(() => {
   openPrivacyDialogIfNeeded()
 })
 
-onShow(() => {
+onMounted(() => {
+  fetchPwdLoginEnabled()
   openPrivacyDialogIfNeeded()
+  keyboardHeightListener = uni.onKeyboardHeightChange(onKeyboardHeightChange)
 })
 
 async function handleGetSmsCode() {
@@ -352,10 +375,6 @@ function handleUserAgrement() {
 function onKeyboardHeightChange(e) {
   keyboardHeight.value = e.height || 0
 }
-
-onMounted(() => {
-  keyboardHeightListener = uni.onKeyboardHeightChange(onKeyboardHeightChange)
-})
 
 onUnmounted(() => {
   if (countdownTimer) {
