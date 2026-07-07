@@ -66,7 +66,7 @@ import { ref, computed, onMounted, nextTick } from 'vue' // 引入 nextTick
 import { getCoachProfile } from '@/api/billiard/coach'
 import constant from '@/utils/constant'
 import { mediaPermissionMessages } from '@/utils/permission-messages'
-import { requestStoragePermission } from '@/utils/platform'
+import { requestStoragePermission, isIOS, isAndroid, isHarmony } from '@/utils/platform'
 
 // 检查用户是否已同意相机/相册权限说明
 const hasMediaPermissionAgreed = () => {
@@ -212,8 +212,14 @@ const saveQrcode = () => {
     return
   }
 
-  // 检查用户是否已同意相机/相册权限说明
-  if (!hasMediaPermissionAgreed()) {
+  // iOS 直接保存，不需要权限说明和请求
+  if (isIOS()) {
+    saveQrcodeToAlbum(instance)
+    return
+  }
+
+  // 检查用户是否已同意相机/相册权限说明（仅 Android/鸿蒙 需要）
+  if (!hasMediaPermissionAgreed() && (isAndroid() || isHarmony())) {
     showMediaPermissionExplanation().then(() => {
       setMediaPermissionAgreed(true);
       // 用户同意权限说明后，请求系统相册权限
@@ -265,8 +271,14 @@ const saveQrcodeToAlbum = (instance) => {
 
 // 导出海报
 const savePoster = () => {
-  // 检查用户是否已同意相机/相册权限说明
-  if (!hasMediaPermissionAgreed()) {
+  // iOS 直接保存，不需要权限说明和请求
+  if (isIOS()) {
+    generateAndSavePoster()
+    return
+  }
+
+  // 检查用户是否已同意相机/相册权限说明（仅 Android/鸿蒙 需要）
+  if (!hasMediaPermissionAgreed() && (isAndroid() || isHarmony())) {
     showMediaPermissionExplanation().then(() => {
       setMediaPermissionAgreed(true);
       // 用户同意权限说明后，请求系统相册权限

@@ -153,8 +153,8 @@ export const getLocation = ({
       return
     }
 
-    // 检查是否需要显示权限说明弹框
-    if (showExplanation && !hasLocationPermissionAgreed()) {
+    // 检查是否需要显示权限说明弹框（仅 Android/鸿蒙 需要）
+    if (showExplanation && !hasLocationPermissionAgreed() && (isAndroid() || isHarmony())) {
       showLocationPermissionExplanation().then(() => {
         // 用户同意后，继续执行定位
         isLocating = true
@@ -164,7 +164,7 @@ export const getLocation = ({
         reject(err)
       })
     } else {
-      // 不需要显示弹框或用户已同意，直接执行定位
+      // iOS 或不需要显示弹框或用户已同意，直接执行定位
       isLocating = true
       _doGetLocation()
     }

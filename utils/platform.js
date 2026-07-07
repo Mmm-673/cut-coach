@@ -293,41 +293,79 @@ function requestCameraPermission() {
  * 请求相册系统权限（仅 APP 端）
  */
 function requestStoragePermission() {
-  const  title = '相册权限未开启'
-  const content = '您未开启相册权限，将无法保存。是否前往开启？'
-
-  // #ifdef MP-WEIXIN
-  uni.showModal({
-    title,
-    content,
-    confirmText: '去开启',
-    success: (res) => {
-      if (res.confirm) {
-        uni.openSetting({
-          success: (settingRes) => {
-            if (settingRes.authSetting['scope.writePhotosAlbum'] || settingRes.authSetting['scope.album']) {
-              // onSuccess && onSuccess()
+  return new Promise((resolve, reject) => {
+    // #ifdef MP-WEIXIN
+    const title = '相册权限未开启'
+    const content = '您未开启相册权限，将无法保存。是否前往开启？'
+    uni.showModal({
+      title,
+      content,
+      confirmText: '去开启',
+      success: (res) => {
+        if (res.confirm) {
+          uni.openSetting({
+            success: (settingRes) => {
+              if (settingRes.authSetting['scope.writePhotosAlbum'] || settingRes.authSetting['scope.album']) {
+                resolve(true);
+              } else {
+                reject(new Error('权限未开启'));
+              }
+            },
+            fail: () => {
+              uni.showToast({ title: '打开设置失败', icon: 'none' });
+              reject(new Error('打开设置失败'));
             }
-          },
-          fail: () => uni.showToast({ title: '打开设置失败', icon: 'none' })
-        })
+          })
+        } else {
+          reject(new Error('用户拒绝'));
+        }
       }
-    }
-  })
-  // #endif
+    })
+    // #endif
 
-  // #ifdef APP-PLUS
-  uni.showModal({
-    title,
-    content,
-    confirmText: '前往系统设置',
-    success: (res) => {
-      if (res.confirm) {
-        openAppSetting()
-      }
+    // #ifdef APP-PLUS
+    if (isIOS()) {
+      // iOS 不需要动态申请相册权限，直接 resolve
+      resolve(true);
+      return;
     }
-  })
-  // #endif
+
+    // Android 6.0+ 需要动态申请权限
+    if (isAndroid() || isHarmony()) {
+      plus.android.requestPermissions(
+        ['android.permission.WRITE_EXTERNAL_STORAGE', 'android.permission.READ_EXTERNAL_STORAGE'],
+        (e) => {
+          if (e.code === 0) {
+            // 权限申请成功
+            resolve(true);
+          } else {
+            // 权限申请失败，显示引导去设置
+            const title = '相册权限未开启'
+            const content = '您未开启相册权限，将无法保存。是否前往开启？'
+            uni.showModal({
+              title,
+              content,
+              confirmText: '前往系统设置',
+              success: (res) => {
+                if (res.confirm) {
+                  openAppSetting()
+                }
+              }
+            });
+            reject(new Error('相册权限申请失败'));
+          }
+        },
+        (e) => {
+          reject(e);
+        }
+      );
+      return;
+    }
+    // #endif
+
+    // 非 APP 端不需要权限
+    resolve(true);
+  });
 }
 
 /**

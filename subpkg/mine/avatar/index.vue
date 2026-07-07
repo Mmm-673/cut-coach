@@ -42,7 +42,7 @@
   import { uploadAvatar } from "@/api/system/user"
   import constant from '@/utils/constant'
   import { mediaPermissionMessages } from '@/utils/permission-messages'
-  import { requestCameraPermission, requestStoragePermission } from '@/utils/platform'
+  import { requestCameraPermission, requestStoragePermission, isIOS, isAndroid, isHarmony } from '@/utils/platform'
 
   const baseUrl = config.baseUrl
 
@@ -150,8 +150,14 @@
 			getImage: function () {
 				var _this = this
 
-				// 检查用户是否已同意相机/相册权限说明
-				if (!hasMediaPermissionAgreed()) {
+				// iOS 直接选择图片，不需要权限说明和请求
+				if (isIOS()) {
+					_this.chooseImage()
+					return
+				}
+
+				// 检查用户是否已同意相机/相册权限说明（仅 Android/鸿蒙 需要）
+				if (!hasMediaPermissionAgreed() && (isAndroid() || isHarmony())) {
 					showMediaPermissionExplanation().then(() => {
 						setMediaPermissionAgreed(true);
 						// 用户同意权限说明后，请求系统相机和相册权限
