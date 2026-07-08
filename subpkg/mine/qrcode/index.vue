@@ -66,7 +66,7 @@ import { ref, computed, onMounted, nextTick } from 'vue' // 引入 nextTick
 import { getCoachProfile } from '@/api/billiard/coach'
 import constant from '@/utils/constant'
 import { mediaPermissionMessages } from '@/utils/permission-messages'
-import { requestStoragePermission, isIOS, isAndroid, isHarmony } from '@/utils/platform'
+import { requestStoragePermission, isIOS, isAndroid, isHarmony, showPhotoPermissionGuide } from '@/utils/platform'
 
 // 检查用户是否已同意相机/相册权限说明
 const hasMediaPermissionAgreed = () => {
@@ -212,9 +212,26 @@ const saveQrcode = () => {
     return
   }
 
-  // iOS 直接保存，不需要权限说明和请求
+  // iOS 先请求系统相册权限（会触发系统原生弹框）
   if (isIOS()) {
-    saveQrcodeToAlbum(instance)
+    // #ifdef APP-PLUS
+    const PHPhotoLibrary = plus.ios.importClass('PHPhotoLibrary')
+    const authStatus = PHPhotoLibrary.authorizationStatus()
+
+    if (authStatus === 0) { // 未请求过，触发系统弹框
+      PHPhotoLibrary.requestAuthorization((status) => {
+        if (status === 3) { // 已授权
+          saveQrcodeToAlbum(instance)
+        } else {
+          showPhotoPermissionGuide()
+        }
+      })
+    } else if (authStatus === 3) { // 已授权
+      saveQrcodeToAlbum(instance)
+    } else { // 已拒绝
+      showPhotoPermissionGuide()
+    }
+    // #endif
     return
   }
 
@@ -257,9 +274,8 @@ const saveQrcodeToAlbum = (instance) => {
     },
     fail: (err) => {
       console.error('保存失败', err)
-
       uni.showToast({
-        title: '保存失败，请检查相册权限是否正常开启',
+        title: '保存失败',
         icon: 'none'
       })
     },
@@ -271,9 +287,26 @@ const saveQrcodeToAlbum = (instance) => {
 
 // 导出海报
 const savePoster = () => {
-  // iOS 直接保存，不需要权限说明和请求
+  // iOS 先请求系统相册权限（会触发系统原生弹框）
   if (isIOS()) {
-    generateAndSavePoster()
+    // #ifdef APP-PLUS
+    const PHPhotoLibrary = plus.ios.importClass('PHPhotoLibrary')
+    const authStatus = PHPhotoLibrary.authorizationStatus()
+
+    if (authStatus === 0) { // 未请求过，触发系统弹框
+      PHPhotoLibrary.requestAuthorization((status) => {
+        if (status === 3) { // 已授权
+          generateAndSavePoster()
+        } else {
+          showPhotoPermissionGuide()
+        }
+      })
+    } else if (authStatus === 3) { // 已授权
+      generateAndSavePoster()
+    } else { // 已拒绝
+      showPhotoPermissionGuide()
+    }
+    // #endif
     return
   }
 
@@ -394,7 +427,7 @@ const generateAndSavePoster = () => {
             uni.hideLoading()
             console.error('保存海报失败', err)
             uni.showToast({
-              title: '保存失败，请检查相册权限是否开启',
+              title: '保存失败',
               icon: 'none'
             })
           }

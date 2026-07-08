@@ -521,7 +521,7 @@ export const showLocationPermissionGuide = () => {
 /**
  * 打开应用设置页面
  */
-const openAppSetting = () => {
+export const openAppSetting = () => {
   // #ifdef APP-PLUS
   const systemInfo = uni.getSystemInfoSync()
   const platform = systemInfo.platform
@@ -554,6 +554,22 @@ const openAppSetting = () => {
     uni.openSetting({ fail: () => uni.showToast({ title: '打开设置失败', icon: 'none' }) })
   }
   // #endif
+}
+
+/**
+ * 显示相册权限未开启的提示并引导去设置
+ */
+export const showPhotoPermissionGuide = () => {
+  uni.showModal({
+    title: '相册权限未开启',
+    content: '您未开启相册权限，将无法保存海报/二维码。是否前往开启？',
+    confirmText: '前往系统设置',
+    success: (res) => {
+      if (res.confirm) {
+        openAppSetting()
+      }
+    }
+  })
 }
 
 
@@ -592,7 +608,8 @@ export default {
   openPermissionSettings,
   showLocationPermissionGuide,
   getLocation,
-  openAppSetting
+  openAppSetting,
+  showPhotoPermissionGuide
 }
 
 export {
