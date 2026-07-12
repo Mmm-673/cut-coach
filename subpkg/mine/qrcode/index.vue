@@ -18,13 +18,13 @@
 
         <view class="qrcode-wrapper" @longpress="handleLongPress">
           <uqrcode
-              v-if="isLoaded"
-              ref="uqrcodeRef"
-              canvas-id="coach-qrcode"
-              :value="qrcodeValue"
-              :size="200"
-              :options="{ margin: 10 }"
-              @complete="onQrcodeComplete"
+            v-if="isLoaded"
+            ref="uqrcodeRef"
+            canvas-id="coach-qrcode"
+            :value="qrcodeValue"
+            :size="200"
+            :options="{ margin: 10 }"
+            @complete="onQrcodeComplete"
           ></uqrcode>
 
           <!-- 二维码中心头像 -->
@@ -62,11 +62,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue' // 引入 nextTick
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { getCoachProfile } from '@/api/billiard/coach'
 import constant from '@/utils/constant'
 import { mediaPermissionMessages } from '@/utils/permission-messages'
-import { requestStoragePermission, isIOS, isAndroid, isHarmony, showPhotoPermissionGuide } from '@/utils/platform'
+import { isIOS, isAndroid, isHarmony, showPhotoPermissionGuide, isMpWeixin } from '@/utils/platform'
 
 // 检查用户是否已同意相机/相册权限说明
 const hasMediaPermissionAgreed = () => {
@@ -104,7 +104,8 @@ const showMediaPermissionExplanation = () => {
 
 const uqrcodeRef = ref(null)
 const qrcodeFilePath = ref('')
-const isLoaded = ref(false) // 👈 新增：标记数据是否加载完毕
+const isLoaded = ref(false)
+const isLoadingShowing = ref(false) // 标记 loading 是否显示
 
 // 教练档案
 const coachProfile = ref({
@@ -117,9 +118,7 @@ const coachProfile = ref({
 
 // 二维码内容
 const qrcodeValue = computed(() => {
-  // 如果连 ID 都没有，直接返回空，配合 v-if 阻断渲染
   if (!coachProfile.value.coachId) return ''
-
   return JSON.stringify({
     type: 'coach',
     coachId: coachProfile.value.coachId,
@@ -140,25 +139,13 @@ const fetchCoachProfile = async () => {
         avatar: res.data.avatar || ''
       }
 
-      // 👈 核心修改：如果拿到了有效 coachId，开启渲染开关
       if (coachProfile.value.coachId) {
         isLoaded.value = true
-        // 👇 核心修复：等待 DOM 渲染完成后，手动触发二维码绘制
         nextTick(() => {
-          console.log('====== uqrcode实例 ======')
-          console.log(uqrcodeRef.value)
-
-          if (uqrcodeRef.value) {
-            console.log('实例属性：')
-            console.log(Object.keys(uqrcodeRef.value))
-          }
-
           if (uqrcodeRef.value && typeof uqrcodeRef.value.make === 'function') {
             uqrcodeRef.value.make()
           }
         })
-      } else {
-        console.error('后台返回的教练ID为空，无法生成二维码')
       }
     }
   } catch (err) {
@@ -167,16 +154,9 @@ const fetchCoachProfile = async () => {
 }
 
 const onQrcodeComplete = (res) => {
-  console.log('====== 二维码完成回调 ======')
-  console.log('res类型：', typeof res)
-  console.log('res值：', res)
-  console.log('res对象属性：', res ? Object.keys(res) : 'undefined')
-
-  // 直接调用组件的 toTempFilePath 方法获取二维码图片路径
   if (uqrcodeRef.value) {
     uqrcodeRef.value.toTempFilePath({
       success: (res) => {
-        console.log('二维码临时路径：', res.tempFilePath)
         qrcodeFilePath.value = res.tempFilePath
       },
       fail: (err) => {
@@ -201,6 +181,19 @@ const handleLongPress = () => {
   // #endif
 }
 
+// 安全的 hideLoading
+const safeHideLoading = () => {
+  if (isLoadingShowing.value) {
+    try {
+      uni.hideLoading()
+    } catch (e) {
+      // 忽略错误
+    }
+    isLoadingShowing.value = false
+  }
+}
+
+// 保存二维码 - 简化版：直接尝试保存，失败再处理
 const saveQrcode = () => {
   const instance = uqrcodeRef.value
 
@@ -212,237 +205,166 @@ const saveQrcode = () => {
     return
   }
 
-  // iOS 先请求系统相册权限（会触发系统原生弹框）
-  if (isIOS()) {
-    // #ifdef APP-PLUS
-    const PHPhotoLibrary = plus.ios.importClass('PHPhotoLibrary')
-    const authStatus = PHPhotoLibrary.authorizationStatus()
-
-    if (authStatus === 0) { // 未请求过，触发系统弹框
-      PHPhotoLibrary.requestAuthorization((status) => {
-        if (status === 3) { // 已授权
-          saveQrcodeToAlbum(instance)
-        } else {
-          showPhotoPermissionGuide()
-        }
-      })
-    } else if (authStatus === 3) { // 已授权
-      saveQrcodeToAlbum(instance)
-    } else { // 已拒绝
-      showPhotoPermissionGuide()
-    }
-    // #endif
-    return
-  }
-
-  // 检查用户是否已同意相机/相册权限说明（仅 Android/鸿蒙 需要）
-  if (!hasMediaPermissionAgreed() && (isAndroid() || isHarmony())) {
-    showMediaPermissionExplanation().then(() => {
-      setMediaPermissionAgreed(true);
-      // 用户同意权限说明后，请求系统相册权限
-      return requestStoragePermission();
-    }).then(() => {
-      // 系统权限获取成功，保存二维码
-      saveQrcodeToAlbum(instance)
-    }).catch((err) => {
-      uni.showToast({
-        title: mediaPermissionMessages.saveFailed,
-        icon: 'none'
-      })
-    })
-  } else {
-    // 用户已同意权限说明，请求系统相册权限
-    requestStoragePermission().then(() => {
-      saveQrcodeToAlbum(instance)
-    }).catch((err) => {
-      uni.showToast({
-        title: mediaPermissionMessages.saveFailed,
-        icon: 'none'
-      })
-    })
-  }
-}
-
-// 保存二维码到相册
-const saveQrcodeToAlbum = (instance) => {
-  instance.save({
-    success: () => {
-      uni.showToast({
-        title: '已保存到相册',
-        icon: 'success'
-      })
-    },
-    fail: (err) => {
-      console.error('保存失败', err)
-      uni.showToast({
-        title: '保存失败',
-        icon: 'none'
-      })
-    },
-    complete: () => {
-      uni.hideLoading()
-    }
-  })
-}
-
-// 导出海报
-const savePoster = () => {
-  // iOS 先请求系统相册权限（会触发系统原生弹框）
-  if (isIOS()) {
-    // #ifdef APP-PLUS
-    const PHPhotoLibrary = plus.ios.importClass('PHPhotoLibrary')
-    const authStatus = PHPhotoLibrary.authorizationStatus()
-
-    if (authStatus === 0) { // 未请求过，触发系统弹框
-      PHPhotoLibrary.requestAuthorization((status) => {
-        if (status === 3) { // 已授权
-          generateAndSavePoster()
-        } else {
-          showPhotoPermissionGuide()
-        }
-      })
-    } else if (authStatus === 3) { // 已授权
-      generateAndSavePoster()
-    } else { // 已拒绝
-      showPhotoPermissionGuide()
-    }
-    // #endif
-    return
-  }
-
-  // 检查用户是否已同意相机/相册权限说明（仅 Android/鸿蒙 需要）
-  if (!hasMediaPermissionAgreed() && (isAndroid() || isHarmony())) {
-    showMediaPermissionExplanation().then(() => {
-      setMediaPermissionAgreed(true);
-      // 用户同意权限说明后，请求系统相册权限
-      return requestStoragePermission();
-    }).then(() => {
-      // 系统权限获取成功，生成并保存海报
-      generateAndSavePoster()
-    }).catch((err) => {
-      uni.showToast({
-        title: mediaPermissionMessages.exportFailed,
-        icon: 'none'
-      })
-    })
-  } else {
-    // 用户已同意权限说明，请求系统相册权限
-    requestStoragePermission().then(() => {
-      generateAndSavePoster()
-    }).catch((err) => {
-      uni.showToast({
-        title: mediaPermissionMessages.exportFailed,
-        icon: 'none'
-      })
-    })
-  }
-}
-
-// 生成并保存海报
-const generateAndSavePoster = () => {
-  uni.showLoading({ title: '海报生成中...' })
-
-  // 使用 canvas 合成海报
-  const ctx = uni.createCanvasContext('composite-canvas')
-
-  // 设置海报尺寸
-  const width = 300
-  const height = 450
-
-  // 绘制背景
-  ctx.setFillStyle('#fff')
-  ctx.fillRect(0, 0, width, height)
-
-  // 绘制头部渐变背景
-  const gradient = ctx.createLinearGradient(0, 0, 0, 150)
-  gradient.addColorStop(0, '#2f6bee')
-  gradient.addColorStop(1, '#1a50d9')
-  ctx.setFillStyle(gradient)
-  ctx.fillRect(0, 0, width, 150)
-
-  // 绘制标题
-  ctx.setFillStyle('#fff')
-  ctx.setFontSize(20)
-  ctx.setTextAlign('center')
-  ctx.fillText('初球裁教', width / 2, 40)
-  ctx.setFontSize(14)
-  ctx.fillText('专业台球教练服务', width / 2, 65)
-
-  // 绘制教练头像
-  if (coachProfile.value.avatar) {
-    ctx.save()
-    ctx.beginPath()
-    ctx.arc(width / 2, 115, 30, 0, 2 * Math.PI)
-    ctx.clip()
-    ctx.drawImage(coachProfile.value.avatar, width / 2 - 30, 80, 60, 60)
-    ctx.restore()
-  }
-
-  // 绘制教练姓名
-  ctx.setFillStyle('#1f2937')
-  ctx.setFontSize(18)
-  ctx.setTextAlign('center')
-  ctx.fillText(coachProfile.value.stageName || '裁教', width / 2, 180)
-
-  // 绘制二维码
-  console.log('qrcodeFilePath:', qrcodeFilePath.value)
-  if (qrcodeFilePath.value) {
-    ctx.drawImage(qrcodeFilePath.value, width / 2 - 75, 200, 150, 150)
-  } else {
-    console.error('二维码图片路径为空')
-  }
-
-  // 绘制底部提示
-  ctx.setFillStyle('#6b7280')
-  ctx.setFontSize(12)
-  ctx.setTextAlign('center')
-  ctx.fillText('扫码查看教练信息', width / 2, 370)
-
-  // 绘制平台名称
-  ctx.setFillStyle('#9ca3af')
-  ctx.setFontSize(10)
-  ctx.fillText('初球裁教平台', width / 2, 400)
-
-  // 绘制完成
-  ctx.draw(false, () => {
-    // 将 canvas 转换为图片
-    uni.canvasToTempFilePath({
-      canvasId: 'composite-canvas',
-      width: width,
-      height: height,
-      destWidth: width * 2,
-      destHeight: height * 2,
-      success: (res) => {
-        // 保存图片到相册
-        uni.saveImageToPhotosAlbum({
-          filePath: res.tempFilePath,
-          success: () => {
-            uni.hideLoading()
-            uni.showToast({
-              title: '海报已保存到相册',
-              icon: 'success'
-            })
-          },
-          fail: (err) => {
-            uni.hideLoading()
-            console.error('保存海报失败', err)
-            uni.showToast({
-              title: '保存失败',
-              icon: 'none'
-            })
-          }
+  // Android/鸿蒙 先弹自定义权限说明
+  const doSave = () => {
+    instance.save({
+      success: () => {
+        uni.showToast({
+          title: '已保存到相册',
+          icon: 'success'
         })
       },
       fail: (err) => {
-        uni.hideLoading()
-        console.error('canvas 转图片失败', err)
-        uni.showToast({
-          title: '生成海报失败',
-          icon: 'none'
-        })
+        console.error('保存失败', err)
+        handleSaveFail(err)
       }
     })
+  }
+
+  if (!hasMediaPermissionAgreed() && (isAndroid() || isHarmony())) {
+    showMediaPermissionExplanation().then(() => {
+      setMediaPermissionAgreed(true)
+      doSave()
+    }).catch(() => {
+      // 用户拒绝
+    })
+  } else {
+    doSave()
+  }
+}
+
+// 处理保存失败
+const handleSaveFail = (err) => {
+  console.error('保存失败详情:', err)
+
+  // #ifdef MP-WEIXIN
+  // 微信小程序特殊处理
+  if (err.errMsg && err.errMsg.includes('privacy')) {
+    uni.showModal({
+      title: '提示',
+      content: '请先在小程序后台配置隐私协议，添加"保存到相册"功能',
+      showCancel: false
+    })
+    return
+  }
+  // #endif
+
+  // #ifdef APP-PLUS
+  // APP 端：显示引导去设置
+  showPhotoPermissionGuide()
+  // #endif
+
+  // #ifndef APP-PLUS
+  // 小程序/H5 端：普通提示
+  uni.showToast({
+    title: '保存失败',
+    icon: 'none',
+    duration: 2000
   })
+  // #endif
+}
+
+// 导出海报 - 简化版
+const savePoster = () => {
+  // Android/鸿蒙 先弹自定义权限说明
+  const doSave = () => {
+    isLoadingShowing.value = true
+    uni.showLoading({ title: '海报生成中...' })
+
+    // 使用 canvas 合成海报
+    const ctx = uni.createCanvasContext('composite-canvas')
+    const width = 300
+    const height = 450
+
+    ctx.setFillStyle('#fff')
+    ctx.fillRect(0, 0, width, height)
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, 150)
+    gradient.addColorStop(0, '#2f6bee')
+    gradient.addColorStop(1, '#1a50d9')
+    ctx.setFillStyle(gradient)
+    ctx.fillRect(0, 0, width, 150)
+
+    ctx.setFillStyle('#fff')
+    ctx.setFontSize(20)
+    ctx.setTextAlign('center')
+    ctx.fillText('初球裁教', width / 2, 40)
+    ctx.setFontSize(14)
+    ctx.fillText('专业台球教练服务', width / 2, 65)
+
+    if (coachProfile.value.avatar) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(width / 2, 115, 30, 0, 2 * Math.PI)
+      ctx.clip()
+      ctx.drawImage(coachProfile.value.avatar, width / 2 - 30, 80, 60, 60)
+      ctx.restore()
+    }
+
+    ctx.setFillStyle('#1f2937')
+    ctx.setFontSize(18)
+    ctx.setTextAlign('center')
+    ctx.fillText(coachProfile.value.stageName || '裁教', width / 2, 180)
+
+    if (qrcodeFilePath.value) {
+      ctx.drawImage(qrcodeFilePath.value, width / 2 - 75, 200, 150, 150)
+    }
+
+    ctx.setFillStyle('#6b7280')
+    ctx.setFontSize(12)
+    ctx.setTextAlign('center')
+    ctx.fillText('扫码查看教练信息', width / 2, 370)
+
+    ctx.setFillStyle('#9ca3af')
+    ctx.setFontSize(10)
+    ctx.fillText('初球裁教平台', width / 2, 400)
+
+    ctx.draw(false, () => {
+      uni.canvasToTempFilePath({
+        canvasId: 'composite-canvas',
+        width: width,
+        height: height,
+        destWidth: width * 2,
+        destHeight: height * 2,
+        success: (res) => {
+          uni.saveImageToPhotosAlbum({
+            filePath: res.tempFilePath,
+            success: () => {
+              safeHideLoading()
+              uni.showToast({
+                title: '海报已保存到相册',
+                icon: 'success'
+              })
+            },
+            fail: (err) => {
+              safeHideLoading()
+              console.error('保存海报失败', err)
+              handleSaveFail(err)
+            }
+          })
+        },
+        fail: (err) => {
+          safeHideLoading()
+          console.error('canvas 转图片失败', err)
+          uni.showToast({
+            title: '生成海报失败',
+            icon: 'none'
+          })
+        }
+      })
+    })
+  }
+
+  if (!hasMediaPermissionAgreed() && (isAndroid() || isHarmony())) {
+    showMediaPermissionExplanation().then(() => {
+      setMediaPermissionAgreed(true)
+      doSave()
+    }).catch(() => {
+      // 用户拒绝
+    })
+  } else {
+    doSave()
+  }
 }
 
 onMounted(() => {
@@ -455,7 +377,7 @@ onMounted(() => {
   min-height: 100vh;
   background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
   padding: 40rpx 32rpx 80rpx;
-  box-sizing: border-box; /* 防止 padding 撑开宽度 */
+  box-sizing: border-box;
 }
 
 /* 头部信息 */
@@ -497,11 +419,6 @@ onMounted(() => {
   font-size: 36rpx;
   font-weight: 700;
   color: #fff;
-}
-
-.user-id {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.8);
 }
 
 /* 二维码区域 */
@@ -594,7 +511,7 @@ onMounted(() => {
 }
 
 .save-btn::after {
-  border: none; /* 移除 uni 按钮自带的黑边框 */
+  border: none;
 }
 
 .save-btn:active {

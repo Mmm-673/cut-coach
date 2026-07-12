@@ -207,44 +207,6 @@ export function showPhonePermissionExplanation() {
 }
 
 /**
- * 请求拨打电话系统权限（仅 APP 端）
- */
-function requestCallPhonePermission() {
-  return new Promise((resolve, reject) => {
-    // #ifdef APP-PLUS
-    // iOS 不需要动态申请权限
-    if (isIOS()) {
-      resolve(true);
-      return;
-    }
-
-    // Android 6.0+ 需要动态申请权限
-    if (isAndroid() || isHarmony()) {
-      plus.android.requestPermissions(
-        ['android.permission.CALL_PHONE'],
-        (e) => {
-          if (e.code === 0) {
-            // 权限申请成功
-            resolve(true);
-          } else {
-            // 权限申请失败
-            reject(new Error('权限申请失败'));
-          }
-        },
-        (e) => {
-          reject(e);
-        }
-      );
-      return;
-    }
-    // #endif
-
-    // 非 APP 端不需要权限
-    resolve(true);
-  });
-}
-
-/**
  * 请求相机系统权限（仅 APP 端）
  */
 function requestCameraPermission() {
@@ -263,7 +225,7 @@ function requestCameraPermission() {
       return;
     }
 
-    // Android 6.0+ 需要动态申请权限
+    // Android 6.0+ 需要动态申请相机权限
     if (isAndroid() || isHarmony()) {
       plus.android.requestPermissions(
         ['android.permission.CAMERA'],
@@ -324,42 +286,11 @@ function requestStoragePermission() {
     // #endif
 
     // #ifdef APP-PLUS
-    if (isIOS()) {
-      // iOS 不需要动态申请相册权限，直接 resolve
-      resolve(true);
-      return;
-    }
-
-    // Android 6.0+ 需要动态申请权限
-    if (isAndroid() || isHarmony()) {
-      plus.android.requestPermissions(
-        ['android.permission.WRITE_EXTERNAL_STORAGE', 'android.permission.READ_EXTERNAL_STORAGE'],
-        (e) => {
-          if (e.code === 0) {
-            // 权限申请成功
-            resolve(true);
-          } else {
-            // 权限申请失败，显示引导去设置
-            const title = '相册权限未开启'
-            const content = '您未开启相册权限，将无法保存。是否前往开启？'
-            uni.showModal({
-              title,
-              content,
-              confirmText: '前往系统设置',
-              success: (res) => {
-                if (res.confirm) {
-                  openAppSetting()
-                }
-              }
-            });
-            reject(new Error('相册权限申请失败'));
-          }
-        },
-        (e) => {
-          reject(e);
-        }
-      );
-      return;
+    // iOS/Android 都不需要提前申请权限
+    // uni.saveImageToPhotosAlbum 会自动处理权限弹框
+    if (isIOS() || isAndroid() || isHarmony()) {
+      resolve(true)
+      return
     }
     // #endif
 
@@ -386,7 +317,7 @@ export function makePhoneCall(phoneNumber) {
     return
   }
 
-  // 3. iOS 平台直接拨打电话，不需要权限说明和系统权限请求
+  // 3. iOS 平台直接拨打电话，不需要权限说明
   if (isIOS()) {
     doMakePhoneCall(cleanPhone)
     return
@@ -395,28 +326,14 @@ export function makePhoneCall(phoneNumber) {
   // 4. 非 iOS 平台检查用户是否已同意拨打电话权限说明
   if (!hasPhonePermissionAgreed()) {
     showPhonePermissionExplanation().then(() => {
-      setPhonePermissionAgreed(true);
-      // 用户同意权限说明后，请求系统拨打电话权限
-      return requestCallPhonePermission();
-    }).then(() => {
-      // 系统权限获取成功，执行拨打电话
-      doMakePhoneCall(cleanPhone);
-    }).catch((err) => {
-      uni.showToast({
-        title: phonePermissionMessages.callFailed,
-        icon: 'none'
-      })
+      setPhonePermissionAgreed(true)
+      doMakePhoneCall(cleanPhone)
+    }).catch(() => {
+      // 用户拒绝，不执行拨打电话
     })
   } else {
-    // 用户已同意权限说明，直接请求系统拨打电话权限
-    requestCallPhonePermission().then(() => {
-      doMakePhoneCall(cleanPhone);
-    }).catch((err) => {
-      uni.showToast({
-        title: phonePermissionMessages.callFailed,
-        icon: 'none'
-      })
-    })
+    // 用户已同意权限说明，直接拨打电话
+    doMakePhoneCall(cleanPhone)
   }
 }
 
@@ -424,15 +341,35 @@ export function makePhoneCall(phoneNumber) {
  * 实际拨打电话的函数
  */
 function doMakePhoneCall(phoneNumber) {
-  // #ifdef APP-PLUS
-  // 只有【打包成 Android / iOS App】时，才会执行这里
-  plus.runtime.openURL(`tel:${phoneNumber}`);
-  // #endif
+  // 使用 uni.makePhoneCall，这个 API 在各端都支持
+  uni.makePhoneCall({
+    phoneNumber: phoneNumber,
+    success: () => {
+      console.log('拨打电话成功')
+    },
+    fail: (err) => {
+      console.error('拨打电话失败:', err)
+      // 如果 uni.makePhoneCall 失败，APP 端降级使用 plus.device.dial
+      // #ifdef APP-PLUS
+      try {
+        plus.device.dial(phoneNumber, false)
+      } catch (e) {
+        console.error('降级拨打电话也失败:', e)
+        uni.showToast({
+          title: phonePermissionMessages.callFailed,
+          icon: 'none'
+        })
+      }
+      // #endif
 
-  // #ifndef APP-PLUS
-  // 只有【不是 App】时（微信小程序、H5、快应用）才执行这里
-  uni.makePhoneCall({ phoneNumber: phoneNumber });
-  // #endif
+      // #ifndef APP-PLUS
+      uni.showToast({
+        title: phonePermissionMessages.callFailed,
+        icon: 'none'
+      })
+      // #endif
+    }
+  })
 }
 
 /**
@@ -593,25 +530,7 @@ export const getLocation = (options = {}) => {
   })
 }
 
-export default {
-  getPlatform,
-  isIOS,
-  isAndroid,
-  isHarmony,
-  isMpWeixin,
-  isH5,
-  openMapNavigation,
-  makePhoneCall,
-  gcj02ToBd09,
-  calculateDistance,
-  isMockVenue,
-  openPermissionSettings,
-  showLocationPermissionGuide,
-  getLocation,
-  openAppSetting,
-  showPhotoPermissionGuide
-}
-
+// 这两个函数没有在顶部单独导出，在这里导出
 export {
   requestCameraPermission,
   requestStoragePermission
