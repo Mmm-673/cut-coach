@@ -23,6 +23,7 @@
             canvas-id="coach-qrcode"
             :value="qrcodeValue"
             :size="200"
+            type="normal"
             :options="{ margin: 10 }"
             @complete="onQrcodeComplete"
           ></uqrcode>
@@ -264,95 +265,185 @@ const handleSaveFail = (err) => {
   // #endif
 }
 
+// 下载网络图片到本地（小程序中 canvas 只能绘制本地图片）
+const downloadImage = (url) => {
+  return new Promise((resolve, reject) => {
+    // 如果不是网络图片，直接返回
+    if (!url || !url.startsWith('http')) {
+      resolve(url)
+      return
+    }
+    uni.getImageInfo({
+      src: url,
+      success: (res) => {
+        resolve(res.path)
+      },
+      fail: (err) => {
+        console.error('下载图片失败:', err)
+        // 下载失败时返回原图地址，至少尝试一下
+        resolve(url)
+      }
+    })
+  })
+}
+
 // 导出海报 - 简化版
 const savePoster = () => {
+  console.log('savePoster', '=======savePoster')
   // Android/鸿蒙 先弹自定义权限说明
-  const doSave = () => {
+  const doSave = async () => {
     isLoadingShowing.value = true
     uni.showLoading({ title: '海报生成中...' })
 
-    // 使用 canvas 合成海报
-    const ctx = uni.createCanvasContext('composite-canvas')
-    const width = 300
-    const height = 450
+    try {
+      // 先下载需要的图片
+      const topAvatarPath = coachProfile.value.avatar ? await downloadImage(coachProfile.value.avatar) : ''
+      let qrImagePath = qrcodeFilePath.value
 
-    ctx.setFillStyle('#fff')
-    ctx.fillRect(0, 0, width, height)
+      // #ifdef MP-WEIXIN
+      // 微信小程序处理：如果是base64，先转换为临时文件
+      if (qrImagePath && qrImagePath.startsWith('data:')) {
+        const reg = new RegExp('^data:image/png;base64,', 'g')
+        const dataURL = qrImagePath.replace(reg, '')
+        const fs = wx.getFileSystemManager()
+        const tempFilePath = `${wx.env.USER_DATA_PATH}/qr_${new Date().getTime()}.png`
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, 150)
-    gradient.addColorStop(0, '#2f6bee')
-    gradient.addColorStop(1, '#1a50d9')
-    ctx.setFillStyle(gradient)
-    ctx.fillRect(0, 0, width, 150)
-
-    ctx.setFillStyle('#fff')
-    ctx.setFontSize(20)
-    ctx.setTextAlign('center')
-    ctx.fillText('初球裁教', width / 2, 40)
-    ctx.setFontSize(14)
-    ctx.fillText('专业台球教练服务', width / 2, 65)
-
-    if (coachProfile.value.avatar) {
-      ctx.save()
-      ctx.beginPath()
-      ctx.arc(width / 2, 115, 30, 0, 2 * Math.PI)
-      ctx.clip()
-      ctx.drawImage(coachProfile.value.avatar, width / 2 - 30, 80, 60, 60)
-      ctx.restore()
-    }
-
-    ctx.setFillStyle('#1f2937')
-    ctx.setFontSize(18)
-    ctx.setTextAlign('center')
-    ctx.fillText(coachProfile.value.stageName || '裁教', width / 2, 180)
-
-    if (qrcodeFilePath.value) {
-      ctx.drawImage(qrcodeFilePath.value, width / 2 - 75, 200, 150, 150)
-    }
-
-    ctx.setFillStyle('#6b7280')
-    ctx.setFontSize(12)
-    ctx.setTextAlign('center')
-    ctx.fillText('扫码查看教练信息', width / 2, 370)
-
-    ctx.setFillStyle('#9ca3af')
-    ctx.setFontSize(10)
-    ctx.fillText('初球裁教平台', width / 2, 400)
-
-    ctx.draw(false, () => {
-      uni.canvasToTempFilePath({
-        canvasId: 'composite-canvas',
-        width: width,
-        height: height,
-        destWidth: width * 2,
-        destHeight: height * 2,
-        success: (res) => {
-          uni.saveImageToPhotosAlbum({
-            filePath: res.tempFilePath,
+        await new Promise((resolve, reject) => {
+          fs.writeFile({
+            filePath: tempFilePath,
+            data: dataURL,
+            encoding: 'base64',
             success: () => {
-              safeHideLoading()
-              uni.showToast({
-                title: '海报已保存到相册',
-                icon: 'success'
-              })
+              qrImagePath = tempFilePath
+              resolve()
             },
             fail: (err) => {
-              safeHideLoading()
-              console.error('保存海报失败', err)
-              handleSaveFail(err)
+              console.error('base64转临时文件失败', err)
+              reject(err)
             }
           })
-        },
-        fail: (err) => {
-          safeHideLoading()
-          console.error('canvas 转图片失败', err)
-          uni.showToast({
-            title: '生成海报失败',
-            icon: 'none'
-          })
+        })
+      }
+      // #endif
+
+      // 使用 canvas 合成海报
+      const ctx = uni.createCanvasContext('composite-canvas')
+      const width = 300
+      const height = 450
+
+      ctx.setFillStyle('#fff')
+      ctx.fillRect(0, 0, width, height)
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, 150)
+      gradient.addColorStop(0, '#2f6bee')
+      gradient.addColorStop(1, '#1a50d9')
+      ctx.setFillStyle(gradient)
+      ctx.fillRect(0, 0, width, 150)
+
+      ctx.setFillStyle('#fff')
+      ctx.setFontSize(20)
+      ctx.setTextAlign('center')
+      ctx.fillText('初球裁教', width / 2, 40)
+      ctx.setFontSize(14)
+      ctx.fillText('专业台球教练服务', width / 2, 65)
+
+      if (topAvatarPath) {
+        ctx.save()
+        ctx.beginPath()
+        ctx.arc(width / 2, 115, 30, 0, 2 * Math.PI)
+        ctx.clip()
+        ctx.drawImage(topAvatarPath, width / 2 - 30, 80, 60, 60)
+        ctx.restore()
+      }
+
+      ctx.setFillStyle('#1f2937')
+      ctx.setFontSize(18)
+      ctx.setTextAlign('center')
+      ctx.fillText(coachProfile.value.stageName || '裁教', width / 2, 180)
+
+      if (qrImagePath) {
+        ctx.drawImage(qrImagePath, width / 2 - 75, 200, 150, 150)
+
+        // 在二维码中心绘制头像
+        if (topAvatarPath) {
+          const qrCenterX = width / 2
+          const qrCenterY = 200 + 75 // 二维码顶部 + 一半高度
+          const avatarSize = 28 // 头像大小（小一点）
+          const avatarHalf = avatarSize / 2
+
+          ctx.save()
+          // 绘制白色正方形背景
+          ctx.setFillStyle('#ffffff')
+          ctx.fillRect(
+            qrCenterX - avatarHalf - 2,
+            qrCenterY - avatarHalf - 2,
+            avatarSize + 4,
+            avatarSize + 4
+          )
+
+          // 绘制正方形头像
+          ctx.drawImage(
+            topAvatarPath,
+            qrCenterX - avatarHalf,
+            qrCenterY - avatarHalf,
+            avatarSize,
+            avatarSize
+          )
+          ctx.restore()
         }
+      }
+
+      ctx.setFillStyle('#6b7280')
+      ctx.setFontSize(12)
+      ctx.setTextAlign('center')
+      ctx.fillText('扫码查看教练信息', width / 2, 370)
+
+      ctx.setFillStyle('#9ca3af')
+      ctx.setFontSize(10)
+      ctx.fillText('初球裁教平台', width / 2, 400)
+
+      ctx.draw(false, () => {
+        uni.canvasToTempFilePath({
+          canvasId: 'composite-canvas',
+          width: width,
+          height: height,
+          destWidth: width * 2,
+          destHeight: height * 2,
+          success: (res) => {
+            uni.saveImageToPhotosAlbum({
+              filePath: res.tempFilePath,
+              success: () => {
+                safeHideLoading()
+                uni.showToast({
+                  title: '海报已保存到相册',
+                  icon: 'success'
+                })
+              },
+              fail: (err) => {
+                safeHideLoading()
+                console.error('保存海报失败', err)
+                handleSaveFail(err)
+              }
+            })
+          },
+          fail: (err) => {
+            safeHideLoading()
+            console.error('canvas 转图片失败', err)
+            uni.showToast({
+              title: '生成海报失败',
+              icon: 'none'
+            })
+          }
+        })
       })
-    })
+    } catch (error) {
+      safeHideLoading()
+      console.error('生成海报出错:', error)
+      uni.showToast({
+        title: '生成海报失败',
+        icon: 'none'
+      })
+    }
   }
 
   if (!hasMediaPermissionAgreed() && (isAndroid() || isHarmony())) {
