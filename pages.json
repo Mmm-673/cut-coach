@@ -55,13 +55,6 @@
       }
     },
     {
-      "path": "pages/index",
-      "style": {
-        "navigationBarTitleText": "台球裁教端",
-        "navigationStyle": "custom"
-      }
-    },
-    {
       "path": "pages/mine/index",
       "style": {
         "navigationBarTitleText": "我的"

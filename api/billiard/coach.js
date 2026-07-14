@@ -51,6 +51,14 @@ export function getWorkStatus() {
   })
 }
 
+// 是否账号密码登录
+export function getPwdSwitch() {
+  return request({
+    url: '/coach-api/billiard/coach/pwd-login-switch',
+    method: 'get'
+  })
+}
+
 // 注销账号
 export function cancelAccount(data) {
   return request({
@@ -86,3 +94,14 @@ export function getUserReviewHistoryPage(params) {
     params: params
   })
 }
+
+// 查询账号密码登录字典
+export function getCountdownEnabled() {
+  return request({
+    url: '/coach-api/billiard/order/countdown-enabled',
+    method: 'get'
+  })
+}
+
+
+

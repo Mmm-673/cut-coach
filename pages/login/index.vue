@@ -103,8 +103,8 @@ import {
   sendSmsCode
 } from '@/api/login'
 import {
-  getCountdownEnabled
-} from '@/api/billiard/order'
+  getPwdSwitch
+} from '@/api/billiard/coach'
 import {
   useConfigStore,
   useUserStore
@@ -130,7 +130,7 @@ const keyboardHeight = ref(0)
 const isLoggingIn = ref(false)
 const activeTab = ref('sms')
 const privacyDialogRef = ref(null)
-const isPwdLoginEnabled = ref(false)
+const isPwdLoginEnabled = ref(true)
 
 const pwdForm = ref({
   username: "",
@@ -153,14 +153,14 @@ function switchTab(tab) {
 /** 查询密码登录是否可用 */
 async function fetchPwdLoginEnabled() {
   try {
-    const res = await getCountdownEnabled()
-    if (res.code === 0 || res.code === 200) {
-      isPwdLoginEnabled.value = !!res.data
-      // 如果密码登录可用，默认显示密码登录；否则只显示短信登录
-      if (isPwdLoginEnabled.value) {
-        activeTab.value = 'pwd'
-      }
-    }
+    // const res = await getPwdSwitch()
+    // if (res.code === 0 || res.code === 200) {
+    //   isPwdLoginEnabled.value = !!res.data
+    //   // 如果密码登录可用，默认显示密码登录；否则只显示短信登录
+    //   if (isPwdLoginEnabled.value) {
+    //     activeTab.value = 'pwd'
+    //   }
+    // }
   } catch (err) {
     // 接口调用失败时，默认不显示密码登录
     isPwdLoginEnabled.value = false
@@ -320,11 +320,16 @@ async function handleSmsLogin() {
 }
 
 function loginSuccess() {
+  // 先绑定推送
+  bindPushAfterLogin()
+
+  // 尝试获取用户信息
   userStore.getInfo().then(() => {
-    bindPushAfterLogin()
+    // 获取成功，跳转首页
     proxy.$tab.reLaunch('/pages/work/index')
-  }).catch(() => {
-    bindPushAfterLogin()
+  }).catch((err) => {
+    console.warn('获取用户信息失败，但继续进入首页:', err)
+    // 即使获取用户信息失败，也继续进入首页
     proxy.$tab.reLaunch('/pages/work/index')
   })
 }

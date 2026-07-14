@@ -1,40 +1,24 @@
 <script setup>
 import config from './config'
-import { getToken, getUserId } from '@/utils/auth'
+import { getAccessToken, getRefreshToken, getUserId } from '@/utils/auth'
 import { useConfigStore, useUserStore } from '@/store'
-import { getCurrentInstance } from 'vue'
-import { onLaunch, onShow } from '@dcloudio/uni-app'
-import { initPushService, syncPushForUser, retryPushSyncIfNeeded } from '@/utils/jpush'
+import { onLaunch } from '@dcloudio/uni-app'
+import { initPushService, syncPushForUser } from '@/utils/jpush'
 import { shouldShowIosPrivacy, setPrivacyAgreedCallback } from '@/utils/privacy'
 
-
-const { proxy } = getCurrentInstance()
-
 onLaunch(() => {
+  console.log('App Launch')
   setPrivacyAgreedCallback(continueAppInit)
   initApp()
 })
 
-
-onShow(() => {
-  // #ifdef APP-PLUS
-  if (shouldShowIosPrivacy()) {
-    return
-  }
-  retryPushSyncIfNeeded()
-  // #endif
-  checkLoginOnShow()
-})
-
 // 初始化应用
 function initApp() {
-  // 本地配置不涉隐私，需尽早初始化，避免登录页渲染时报错
-  initConfig()
+  // 初始化配置
+  useConfigStore().setConfig(config)
 
   // #ifdef APP-PLUS
-  setStatusBarHeight()
-
-  // iOS 需先同意隐私协议，弹窗挂载在登录页，此处仅阻断后续初始化
+  // iOS 隐私协议
   if (shouldShowIosPrivacy()) {
     return
   }
@@ -45,81 +29,55 @@ function initApp() {
 
 /** 应用核心初始化流程 */
 function continueAppInit() {
+  console.log('继续应用初始化')
+
   // #ifdef APP-PLUS
   initPushService()
   // #endif
 
-  checkLoginAndRestore()
+  checkLogin()
 }
 
-function initConfig() {
-  useConfigStore().setConfig(config)
-}
+// 检查登录状态并跳转
+function checkLogin() {
+  const accessToken = getAccessToken()
+  const refreshToken = getRefreshToken()
 
-async function checkLoginAndRestore() {
-  const token = getToken()
-  if (!token) {
-    proxy.$tab.reLaunch('/pages/login/index')
-    return
-  }
+  console.log('检查登录状态:', {
+    hasAccessToken: !!accessToken,
+    hasRefreshToken: !!refreshToken
+  })
 
-  // #ifdef APP-PLUS
-  const userId = getUserId()
-  if (userId) {
-    syncPushForUser(userId)
-  }
-  // #endif
+  if (accessToken || refreshToken) {
+    console.log('已登录，直接进入首页')
 
-  // 有 token，尝试恢复用户信息
-  try {
+    // #ifdef APP-PLUS
+    const userId = getUserId()
+    if (userId) {
+      syncPushForUser(userId)
+    }
+    // #endif
+
+    // 初始化 store
     const userStore = useUserStore()
 
-    // 检查本地存储中是否有用户信息
-    const hasLocalUserInfo = userStore.name && userStore.avatar
-
-    if (hasLocalUserInfo) {
-      // 本地存储中有用户信息，直接进入首页
-      proxy.$tab.reLaunch('/pages/work/index')
-    } else {
-      // 本地存储中没有用户信息，从服务端获取
-      await userStore.getInfo()
-      // 验证成功，进入首页
-      proxy.$tab.reLaunch('/pages/work/index')
-    }
-  } catch (error) {
-    console.warn('恢复登录状态失败，需要重新登录:', error)
-    // token 无效或过期，跳转登录页
-    proxy.$tab.reLaunch('/pages/login/index')
-  }
-}
-
-async function checkLoginOnShow() {
-  const token = getToken()
-  if (!token) {
-    proxy.$tab.reLaunch('/pages/login/index')
-    return
-  }
-
-  // #ifdef APP-PLUS
-  const userId = getUserId()
-  if (userId) {
-    syncPushForUser(userId)
-  }
-  // #endif
-
-  // 有 token 时，只在用户信息不存在时才去获取，不强制跳转页面
-  try {
-    const userStore = useUserStore()
-    if (!userStore.name || !userStore.avatar) {
-      await userStore.getInfo()
-    }
-  } catch (error) {
-    console.warn('恢复用户信息失败，需要重新登录:', error)
-    proxy.$tab.reLaunch('/pages/login/index')
+    // 直接跳首页
+    uni.reLaunch({
+      url: '/pages/work/index',
+      success: () => {
+        // 后台获取用户信息
+        userStore.getInfo().catch(err => {
+          console.log('后台获取用户信息失败:', err)
+        })
+      }
+    })
+  } else {
+    console.log('未登录，停留在登录页')
+    // 已经在登录页了，不需要做什么
   }
 }
 </script>
 
 <style lang="scss">
-@import '@/static/scss/index.scss'
+@import '@/static/scss/index.scss';
 </style>

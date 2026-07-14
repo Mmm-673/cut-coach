@@ -103,8 +103,15 @@ const request = config => {
               config.header['Authorization'] = 'Bearer ' + getAccessToken()
               doRequest()
             } catch (e) {
-              // 刷新失败，跳转登录
-              handleAuthExpired()
+              // 刷新失败，先检查是否是刷新 token 接口
+              const isRefreshTokenApi = config.url && config.url.includes('/refresh-token')
+              if (isRefreshTokenApi) {
+                // 如果是刷新 token 接口本身失败，可能是 refreshToken 也无效了
+                handleAuthExpired()
+              } else {
+                // 其他接口的 401，静默处理，让用户可以继续使用本地数据
+                handleAuthExpiredSilent()
+              }
               reject('无效的会话，或者会话已过期，请重新登录。')
             }
           } else {
@@ -161,6 +168,12 @@ function handleAuthExpired() {
   }).catch(() => {
     isShowingAuthExpired = false
   })
+}
+
+// 静默处理认证过期（不弹框）
+function handleAuthExpiredSilent() {
+  console.warn('认证已过期，等待用户操作')
+  // 可以在这里添加一些标记，让后续操作触发重新登录
 }
 
 // 重置认证过期提示状态（退出登录时调用）

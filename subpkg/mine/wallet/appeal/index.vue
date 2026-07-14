@@ -113,10 +113,20 @@ const handleSubmit = async () => {
     return
   }
 
+  // 校验扣款记录ID
+  const deductionId = parseInt(recordId.value)
+  if (!recordId.value || isNaN(deductionId)) {
+    uni.showToast({
+      title: '扣款记录ID无效',
+      icon: 'none'
+    })
+    return
+  }
+
   submitting.value = true
   try {
     await postDeductionAppeal({
-      deductionId: parseInt(recordId.value),
+      deductionId,
       appealContent: form.value.content.trim()
     })
     uni.showModal({

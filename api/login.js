@@ -62,13 +62,9 @@ export function register(data) {
 }
 
 export function getInfo() {
-  return Promise.resolve({
-    user: {
-      userId: uni.getStorageSync('Coach-User-Id'),
-      userName: '裁教'
-    },
-    roles: ['ROLE_COACH'],
-    permissions: ['*']
+  return request({
+    url: '/coach-api/billiard/coach/profile',
+    method: 'get'
   })
 }
 

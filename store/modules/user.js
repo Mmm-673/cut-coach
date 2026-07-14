@@ -12,13 +12,68 @@ import defAva from '@/static/images/profile.jpg'
 
 const baseUrl = config.baseUrl
 
+// 简单安全的从存储获取值
+function safeGetStorage(key, defaultValue = '') {
+  try {
+    const value = storage.get(key)
+    if (value === undefined || value === null || value === '') {
+      return defaultValue
+    }
+    return value
+  } catch (e) {
+    console.error('获取存储失败:', key, e)
+    return defaultValue
+  }
+}
+
+// 安全的解析数组
+function safeParseArray(value, defaultValue) {
+  if (Array.isArray(value) && value.length > 0) {
+    return value
+  }
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed
+      }
+    } catch (e) {
+      // 忽略
+    }
+  }
+  return defaultValue
+}
+
+// 从本地存储恢复用户信息
+function restoreFromStorage() {
+  console.log('从本地存储恢复用户信息')
+
+  const savedName = safeGetStorage(constant.name, '裁教')
+  const savedAvatar = safeGetStorage(constant.avatar, defAva)
+  const savedRoles = safeParseArray(storage.get(constant.roles), ['ROLE_COACH'])
+  const savedPermissions = safeParseArray(storage.get(constant.permissions), ['*'])
+  const savedId = getUserId() || safeGetStorage(constant.id, '')
+
+  console.log('恢复的用户信息:', { savedName, savedAvatar, savedId })
+
+  return {
+    name: savedName,
+    avatar: savedAvatar,
+    roles: savedRoles,
+    permissions: savedPermissions,
+    id: savedId
+  }
+}
+
 export const useUserStore = defineStore('user', () => {
-  const token = ref(getAccessToken())
-  const id = ref(getUserId())
-  const name = ref(storage.get(constant.name) || '裁教')
-  const avatar = ref(storage.get(constant.avatar) || defAva)
-  const roles = ref(storage.get(constant.roles) || ['ROLE_COACH'])
-  const permissions = ref(storage.get(constant.permissions) || ['*'])
+  const restored = restoreFromStorage()
+
+  const token = ref(getAccessToken() || '')
+  const id = ref(restored.id)
+  const name = ref(restored.name)
+  const avatar = ref(restored.avatar)
+  const roles = ref(restored.roles)
+  const permissions = ref(restored.permissions)
 
   const SET_TOKEN = (val) => {
     token.value = val
@@ -46,10 +101,12 @@ export const useUserStore = defineStore('user', () => {
 
   // 处理登录响应
   const handleLoginResponse = (res) => {
-    if (res.code === 0) {
+    if (res.code === 0 || res.code === 200) {
       setAuthInfo(res.data)
       SET_TOKEN(res.data.accessToken)
-      SET_ID(res.data.userId)
+      if (res.data.userId) {
+        SET_ID(res.data.userId)
+      }
       return Promise.resolve()
     } else {
       return Promise.reject(res.msg || '登录失败')
@@ -87,25 +144,49 @@ export const useUserStore = defineStore('user', () => {
   // 获取用户信息
   const getInfoAction = () => {
     return new Promise((resolve, reject) => {
+      console.log('开始获取用户信息')
       getInfo().then(res => {
-        const user = res.user
-        let userAvatar = user.avatar || ""
+        console.log('获取用户信息响应:', res)
+
+        // 处理响应数据，兼容不同格式
+        let data = res
+        if (res.code === 0 || res.code === 200) {
+          data = res.data || res
+        }
+
+        // 从 data 中提取用户信息
+        const user = data.user || data
+        let userAvatar = user.avatar || user.avatarUrl || ''
         if (!isHttp(userAvatar)) {
-          userAvatar = (isEmpty(userAvatar)) ? defAva : baseUrl + userAvatar
+          userAvatar = (isEmpty(userAvatar)) ? defAva : (userAvatar.startsWith('http') ? userAvatar : baseUrl + userAvatar)
         }
-        const userid = (isEmpty(user) || isEmpty(user.userId)) ? getUserId() : user.userId
-        const username = (isEmpty(user) || isEmpty(user.userName)) ? '裁教' : user.userName
-        if (res.roles && res.roles.length > 0) {
-          SET_ROLES(res.roles)
-          SET_PERMISSIONS(res.permissions)
-        } else {
-          SET_ROLES(['ROLE_COACH'])
-        }
-        SET_ID(userid)
-        SET_NAME(username)
+
+        // 获取用户ID
+        let userId = user.userId || user.id || getUserId()
+
+        // 获取用户名
+        let userName = user.userName || user.nickname || user.name || '裁教'
+
+        // 处理角色和权限
+        let userRoles = data.roles || user.roles || ['ROLE_COACH']
+        let userPermissions = data.permissions || user.permissions || ['*']
+
+        // 确保是数组格式
+        if (!Array.isArray(userRoles)) userRoles = ['ROLE_COACH']
+        if (!Array.isArray(userPermissions)) userPermissions = ['*']
+
+        console.log('处理后的用户信息:', { userName, userAvatar, userId, userRoles })
+
+        // 设置到 store
+        SET_ID(userId)
+        SET_NAME(userName)
         SET_AVATAR(userAvatar)
-        resolve(res)
+        SET_ROLES(userRoles)
+        SET_PERMISSIONS(userPermissions)
+
+        resolve(data)
       }).catch(error => {
+        console.error('获取用户信息失败:', error)
         reject(error)
       })
     })

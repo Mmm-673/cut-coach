@@ -43,6 +43,13 @@ export function isTokenExpiring() {
   return now > expiresTime - 5 * 60 * 1000
 }
 
+// 检查是否有有效的认证信息（包括 refreshToken）
+export function hasValidAuth() {
+  const accessToken = getAccessToken()
+  const refreshToken = getRefreshToken()
+  return !!(accessToken || refreshToken)
+}
+
 export function setAuthInfo(data) {
   setAccessToken(data.accessToken)
   setRefreshToken(data.refreshToken)
