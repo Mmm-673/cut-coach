@@ -705,7 +705,7 @@
 	}
 
 	// 校验是否在允许范围内（默认200米）
-	const checkLocationInRange = (targetLat, targetLon, maxDistance = 200) => {
+	const checkLocationInRange = (targetLat, targetLon, maxDistance = 1000) => {
 		return new Promise(async (resolve, reject) => {
 			try {
 				// 校验目标坐标是否有效
@@ -1207,7 +1207,7 @@
 			const targetLon = pendingOrder.value.venueLongitude
 
 			if (targetLat && targetLon) {
-				await checkLocationInRange(targetLat, targetLon, 200)
+				await checkLocationInRange(targetLat, targetLon, 1000)
 			}
 
 			uni.hideLoading()

@@ -153,14 +153,14 @@ function switchTab(tab) {
 /** 查询密码登录是否可用 */
 async function fetchPwdLoginEnabled() {
   try {
-    // const res = await getPwdSwitch()
-    // if (res.code === 0 || res.code === 200) {
-    //   isPwdLoginEnabled.value = !!res.data
-    //   // 如果密码登录可用，默认显示密码登录；否则只显示短信登录
-    //   if (isPwdLoginEnabled.value) {
-    //     activeTab.value = 'pwd'
-    //   }
-    // }
+    const res = await getPwdSwitch()
+    if (res.code === 0 || res.code === 200) {
+      isPwdLoginEnabled.value = !!res.data
+      // 如果密码登录可用，默认显示密码登录；否则只显示短信登录
+      if (isPwdLoginEnabled.value) {
+        activeTab.value = 'pwd'
+      }
+    }
   } catch (err) {
     // 接口调用失败时，默认不显示密码登录
     isPwdLoginEnabled.value = false

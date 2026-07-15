@@ -160,7 +160,7 @@ const fetchDeductionRecords = async (reset = false) => {
       if (reset) {
         recordList.value = list
         pageNo.value = 1
-        totalDeduction.value = res.data.totalDeduction || 0
+        totalDeduction.value = res.data.totalDeductAmount || 0
       } else {
         recordList.value = [...recordList.value, ...list]
         pageNo.value++
