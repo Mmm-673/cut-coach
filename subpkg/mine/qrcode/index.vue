@@ -14,7 +14,7 @@
     <view class="qrcode-section">
       <view class="qrcode-card">
         <view class="qrcode-title">我的二维码</view>
-        <view class="qrcode-desc">扫码查看教练信息</view>
+        <view class="qrcode-desc">微信扫码进入小程序</view>
 
         <view class="qrcode-wrapper" @longpress="handleLongPress">
           <uqrcode
@@ -120,11 +120,16 @@ const coachProfile = ref({
 // 二维码内容
 const qrcodeValue = computed(() => {
   if (!coachProfile.value.coachId) return ''
-  return JSON.stringify({
-    type: 'coach',
-    coachId: coachProfile.value.coachId,
-    name: coachProfile.value.stageName
-  })
+  // 生成普通链接格式
+  const baseUrl = 'https://qiulem.com/scan'
+  const params = {
+    id: coachProfile.value.coachId,
+    name: coachProfile.value.stageName || '教练'
+  }
+  const queryString = Object.keys(params)
+    .map(key => `${key}=${encodeURIComponent(params[key])}`)
+    .join('&')
+  return `${baseUrl}?${queryString}`
 })
 
 // 获取教练档案
@@ -396,7 +401,7 @@ const savePoster = () => {
       ctx.setFillStyle('#6b7280')
       ctx.setFontSize(12)
       ctx.setTextAlign('center')
-      ctx.fillText('扫码查看教练信息', width / 2, 370)
+      ctx.fillText('微信扫码进入小程序', width / 2, 370)
 
       ctx.setFillStyle('#9ca3af')
       ctx.setFontSize(10)
