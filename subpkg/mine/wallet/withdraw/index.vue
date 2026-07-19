@@ -109,15 +109,19 @@
     <!-- 提现须知 -->
     <view class="notice-section">
       <text class="section-title">提现须知</text>
-      <view class="notice-content">
-        <text class="notice-item">· 提现余额要求：账户可提现余额≥100元方可发起提现，单笔提现限额100元-50000元</text>
-        <text class="notice-item">· 提现次数限制：每位用户每日最多可提交3笔提现申请，当日次数用尽需次日再操作</text>
-        <text class="notice-item">· 到账时效说明：提现申请审核通过后，资金预计1-3个工作日到账；法定节假日、周末顺延处理，不计算在时效内</text>
-        <text class="notice-item">· 手续费规则：每月前2笔提现免收手续费；当月第3笔及以后提现，按提现金额0.3%收取手续费，单笔手续费最低扣除2元</text>
-        <text class="notice-item">· 可提现余额说明：账户冻结金额、待结算收益不可用于提现，仅可提现余额支持发起提现操作</text>
-        <text class="notice-item">· 提现失败情形：余额不足最低提现门槛、银行卡信息错误、账户异常、当日提现次数超限均会导致提现申请驳回，需修正后重新提交</text>
-        <text class="notice-item">· 账户规范要求：仅本人实名账户可提现至本人名下银行卡，不支持他人收款账户，违规将限制提现功能</text>
-        <text class="notice-item">· 平台审核说明：所有提现申请均需平台人工+系统双重审核，存在风险订单会延迟打款或驳回提现</text>
+      <!-- 提现须知 -->
+      <view class="notice-section">
+        <text class="section-title">提现须知</text>
+        <view class="notice-content">
+          <text class="notice-item">· 提现门槛说明：平台设置最低提现门槛100元，账户可提现余额需满100元才可发起提现，余额不足100元将无法提交提现申请；单笔提现金额区间为100元-50000元</text>
+          <text class="notice-item">· 提现到账时效：平台无即时提现功能，不支持实时到账；所有提现申请均需经过平台系统+人工审核，审核通过后资金预计1-3个工作日到账，法定节假日、周末顺延处理，不计入常规时效</text>
+          <text class="notice-item">· 提现次数限制：每位实名用户每日最多可发起3笔提现申请，当日提现次数达上限需次日再操作</text>
+          <text class="notice-item">· 手续费收取规则：自然月内前2笔提现免收手续费；当月第3笔及超出笔数，按提现金额0.3%扣除手续费，单笔手续费最低扣除2元</text>
+          <text class="notice-item">· 可提现余额释义：账户待结算收益、冻结资金、锁定金额不可用于提现，仅页面展示的可提现余额支持提现操作</text>
+          <text class="notice-item">· 提现失败场景：可提现余额不足100元、当日提现次数超限、银行卡信息有误、账户存在风控异常均会驳回提现申请，请核对信息后重新提交</text>
+          <text class="notice-item">· 实名收款规范：仅支持提现至当前实名认证本人名下银行卡，不支持转账至他人账户，违规操作将暂停提现权限</text>
+          <text class="notice-item">· 提现审核规则：所有提现申请均会进行系统+人工复核，若订单存在交易风险，平台有权延迟打款或直接驳回提现</text>
+        </view>
       </view>
     </view>
 
