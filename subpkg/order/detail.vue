@@ -33,7 +33,7 @@
       </view>
       <view class="info-row">
         <text class="label">教学类型</text>
-        <text class="value">{{ orderInfo.serviceType === 1 ? '台球陪练' : '达人带路' }}</text>
+        <text class="value">{{ getServiceTypeName(orderInfo.serviceType) }}</text>
       </view>
       <view class="info-row">
         <text class="label">教学时长</text>
@@ -55,7 +55,7 @@
 
     <!-- 教学地点卡片 -->
     <view class="card" v-if="!isMockVenue(orderInfo.venueName, orderInfo.venueAddress)">
-      <view class="card-title">教学地点</view>
+      <view class="card-title">服务地点</view>
       <image class="shop-img" :src="orderInfo.venuePhotoUrl || orderInfo.venueImg || '/static/images/banner/billiards_2.jpg'" mode="aspectFill"></image>
       <view class="shop-info">
         <view class="shop-left">
@@ -121,7 +121,7 @@
       </template>
       <!-- 已接单状态（待出发/已出发/已到达） -->
       <template v-else-if="orderStatus === ORDER_STATUS.ACCEPTED">
-        <!-- 陪练完整流程 -->
+        <!-- 台球服务完整流程 -->
         <template v-if="orderInfo.serviceType === 1">
           <!-- 未确认出发 -->
           <template v-if="!departureConfirmTime">
@@ -143,30 +143,40 @@
           <template v-else-if="arriveTime && !startTime">
             <view class="status-hint">
               <uni-icons type="checkmarkempty" size="20" color="#10b981"></uni-icons>
-              <text class="hint-text">已到达约定地点，开始教学</text>
+              <text class="hint-text">已到达约定地点，开始服务</text>
             </view>
             <view class="btn-row">
               <button class="btn-warning" @click="showReportException">报告异常</button>
-              <button class="btn-primary" @click="startService">开始教学</button>
+              <button class="btn-primary" @click="startService">开始服务</button>
             </view>
           </template>
         </template>
 
-        <!-- 达人带路简化流程：接单后直接可以开始 -->
+        <!-- 其他服务简化流程 -->
         <template v-else>
-          <view class="status-hint">
-            <uni-icons type="info" size="20" color="#007AFF"></uni-icons>
-            <text class="hint-text">准备就绪，请开始服务</text>
-          </view>
-          <view class="btn-row" v-if="!startTime">
-            <button class="btn-primary" @click="startService">开始服务</button>
-          </view>
+          <!-- 未到达 -->
+          <template v-if="!arriveTime">
+            <view class="btn-single">
+              <button class="btn-success" @click="arrive">确认到达</button>
+            </view>
+          </template>
+          <!-- 已到达，未开始教学 -->
+          <template v-else-if="arriveTime && !startTime">
+            <view class="status-hint">
+              <uni-icons type="checkmarkempty" size="20" color="#10b981"></uni-icons>
+              <text class="hint-text">已到达约定地点，开始服务</text>
+            </view>
+            <view class="btn-row">
+              <button class="btn-warning" @click="showReportException">报告异常</button>
+              <button class="btn-primary" @click="startService">开始服务</button>
+            </view>
+          </template>
         </template>
       </template>
       <!-- 进行中状态显示结束教学按钮 -->
       <template v-else-if="orderStatus === ORDER_STATUS.PROCESSING">
         <view class="btn-single">
-          <button class="btn-end" @click="endService">结束教学</button>
+          <button class="btn-end" @click="endService">结束订单</button>
         </view>
       </template>
       <!-- 待评价状态且裁教未评价时显示去评价按钮 -->
@@ -194,6 +204,22 @@ import { nextTick, watch, getCurrentInstance } from 'vue'
 import { openMapNavigation, isMockVenue, calculateDistance, makePhoneCall } from '@/utils/platform'
 import { getOrderDetail, finishService, acceptOrder as acceptOrderApi, rejectOrder as rejectOrderApi, confirmDeparture as confirmDepartureApi, arrive as arriveApi, startService as startServiceApi, reportException as reportExceptionApi, startTimer as startTimerApi, endTimer as endTimerApi, getInProgressOrder } from '@/api/billiard/order'
 import { getLocation } from '@/utils/location'
+
+	// 服务类型映射
+	const getServiceTypeName = (serviceType) => {
+		const serviceTypeMap = {
+			1: '台球指导',
+			2: '潮玩领航',
+			3: '酒艺品鉴',
+			4: '影视赏析'
+		}
+		return serviceTypeMap[serviceType] || '未知服务'
+	}
+
+	// 所有服务类型都需要位置校验
+	const needLocationCheck = (serviceType) => {
+		return true // 所有服务都需要位置校验
+	}
 
 // 订单状态枚举
 const ORDER_STATUS = {
@@ -604,48 +630,33 @@ const checkLocationInRange = (targetLat, targetLon, maxDistance = 1000) => {
 }
 
 const arrive = async () => {
-  // 陪练需要位置校验，达人带路不需要
-  if (orderInfo.value.serviceType === 1) {
-    uni.showLoading({ title: '校验位置...' })
+  // 所有服务都需要位置校验
+  uni.showLoading({ title: '校验位置...' })
 
-    try {
-      // 先校验位置
-      const targetLat = orderInfo.value.venueLatitude
-      const targetLon = orderInfo.value.venueLongitude
+  try {
+    // 先校验位置
+    const targetLat = orderInfo.value.venueLatitude
+    const targetLon = orderInfo.value.venueLongitude
 
-      if (targetLat && targetLon) {
-        await checkLocationInRange(targetLat, targetLon, 1000)
-      }
-
-      uni.hideLoading()
-
-      await arriveApi({
-        orderId: orderId.value
-      })
-      arriveTime.value = new Date().toISOString()
-      uni.showToast({ title: '已到达', icon: 'success' })
-      await fetchOrderDetail()
-    } catch (err) {
-      uni.hideLoading()
-      console.error('确认到达失败', err)
-      // 如果是位置校验失败，显示具体错误
-      if (err.message && err.message.includes('距离')) {
-        uni.showToast({ title: err.message, icon: 'none', duration: 3000 })
-      } else {
-        uni.showToast({ title: err?.msg || '操作失败', icon: 'none' })
-      }
+    if (targetLat && targetLon) {
+      await checkLocationInRange(targetLat, targetLon, 1000)
     }
-  } else {
-    // 达人带路直接到达
-    try {
-      await arriveApi({
-        orderId: orderId.value
-      })
-      arriveTime.value = new Date().toISOString()
-      uni.showToast({ title: '已到达', icon: 'success' })
-      await fetchOrderDetail()
-    } catch (err) {
-      console.error('确认到达失败', err)
+
+    uni.hideLoading()
+
+    await arriveApi({
+      orderId: orderId.value
+    })
+    arriveTime.value = new Date().toISOString()
+    uni.showToast({ title: '已到达', icon: 'success' })
+    await fetchOrderDetail()
+  } catch (err) {
+    uni.hideLoading()
+    console.error('确认到达失败', err)
+    // 如果是位置校验失败，显示具体错误
+    if (err.message && err.message.includes('距离')) {
+      uni.showToast({ title: err.message, icon: 'none', duration: 3000 })
+    } else {
       uni.showToast({ title: err?.msg || '操作失败', icon: 'none' })
     }
   }

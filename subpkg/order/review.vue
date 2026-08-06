@@ -21,7 +21,7 @@
       </view>
       <view class="info-row">
         <text class="label">服务类型</text>
-        <text class="value">{{ orderInfo.serviceType === 1 ? '台球陪练' : '达人带路' }}</text>
+        <text class="value">{{ getServiceTypeName(orderInfo.serviceType) }}</text>
       </view>
       <view class="info-row">
         <text class="label">教学时长</text>
@@ -89,6 +89,17 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getOrderDetail } from '@/api/billiard/order'
 import { createUserReview } from '@/api/billiard/coach'
+
+	// 服务类型映射
+	const getServiceTypeName = (serviceType) => {
+		const serviceTypeMap = {
+			1: '台球指导',
+			2: '潮玩领航',
+			3: '酒艺品鉴',
+			4: '影视赏析'
+		}
+		return serviceTypeMap[serviceType] || '未知服务'
+	}
 
 
 // 订单信息

@@ -43,7 +43,7 @@
           <view class="order-body">
             <view class="order-info-row">
               <text class="label">服务类型</text>
-              <text class="value">{{order.serviceType === 1 ? '台球陪练' : '达人带路'}}</text>
+              <text class="value">{{getServiceTypeName(order.serviceType)}}</text>
             </view>
             <view class="order-info-row">
               <text class="label">预约时间</text>
@@ -78,6 +78,17 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getOrderPage } from '@/api/billiard/order'
+
+	// 服务类型映射
+	const getServiceTypeName = (serviceType) => {
+		const serviceTypeMap = {
+			1: '台球指导',
+			2: '潮玩领航',
+			3: '酒艺品鉴',
+			4: '影视赏析'
+		}
+		return serviceTypeMap[serviceType] || '未知服务'
+	}
 
 const tabs = [
   { label: '全部', value: 0 },

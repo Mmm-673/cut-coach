@@ -52,7 +52,7 @@
 			<view class="pending-order">
 				<view class="pending-header">
 					<view class="location">
-						<uni-icons  v-if="pendingOrder.serviceType === 1 " type="location" size="18" color="#2F6BEE" ></uni-icons>
+						<uni-icons type="location" size="18" color="#2F6BEE" ></uni-icons>
 						<text class="location-text">{{ pendingOrder.venueName }}</text>
 					</view>
 					<view class="countdown" v-if="pendingOrder.expireAt">
@@ -62,7 +62,7 @@
 				</view>
 
 				<view class="order-info">
-					<text class="order-name">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '达人带路' }}
+					<text class="order-name">{{ getServiceTypeName(pendingOrder.serviceType) }}
 						{{ Math.round(pendingOrder.serviceDuration) }}分钟</text>
 					<text class="order-price">¥{{ (pendingOrder.totalAmount / 100).toFixed(2) }}</text>
 				</view>
@@ -96,8 +96,8 @@
 					<text class="detail-label">预约时间：</text>
 					<text class="detail-value">{{ formatTime(pendingOrder.bookingTime) }}</text>
 				</view>
-				<view class="order-detail-row" v-if="pendingOrder.serviceType === 1">
-					<text class="detail-label">球厅地址：</text>
+				<view class="order-detail-row">
+					<text class="detail-label">服务地址：</text>
 					<text class="detail-value">{{ pendingOrder.venueAddress }}</text>
 				</view>
 				<view class="order-detail-row">
@@ -116,7 +116,7 @@
 		<uni-card v-else-if="orderStatus === 'accepted'" title="已接单" :is-shadow="true" :border="false">
 			<view class="accepted-order">
 				<view class="order-info-header">
-					<text class="order-title">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '达人带路' }}</text>
+					<text class="order-title">{{ getServiceTypeName(pendingOrder.serviceType) }}</text>
 					<uni-tag :text="acceptedStageText" type="warning" size="small" style="font-weight: bold" />
 				</view>
 
@@ -124,16 +124,16 @@
 					<text class="detail-label">预约时间：</text>
 					<text class="detail-value">{{ formatTime(pendingOrder.bookingTime) }}</text>
 				</view>
-				<view class="order-detail-row" v-if="pendingOrder.serviceType === 1">
+				<view class="order-detail-row">
 					<text class="detail-label">球厅：</text>
 					<text class="detail-value">{{ pendingOrder.venueName }}</text>
 				</view>
-				<view class="order-detail-row" v-if="pendingOrder.serviceType === 1">
+				<view class="order-detail-row">
 					<text class="detail-label">地址：</text>
 					<text class="detail-value">{{ pendingOrder.venueAddress }}</text>
 				</view>
 
-				<!-- 陪练完整流程 -->
+				<!-- 台球服务完整流程 -->
 				<template v-if="pendingOrder.serviceType === 1">
 					<view class="btn-group" v-if="!pendingOrder.departureConfirmTime">
 						<button class="btn btn-confirm-depart" @click="confirmDeparture">确认出发</button>
@@ -154,37 +154,33 @@
 					</view>
 				</template>
 
-				<!-- 达人带路简化流程：接单后直接可以开始 -->
+				<!-- 其他服务简化流程 -->
 				<template v-else>
-					<view class="status-hint" v-if="!pendingOrder.startTime">
-						<uni-icons type="info" size="20" color="#007AFF"></uni-icons>
-						<text class="hint-text">准备就绪，请开始服务</text>
+					<view class="btn-group" v-if="!pendingOrder.arriveTime">
+						<button class="btn btn-arrive" @click="arrive">确认到达</button>
+					</view>
+
+					<view class="status-hint" v-if="pendingOrder.arriveTime">
+						<uni-icons type="checkmarkempty" size="20" color="#10B981"></uni-icons>
+						<text class="hint-text">已到达约定地点，开始服务</text>
 					</view>
 				</template>
 
-				<!-- 开始服务按钮 - 陪练需要到达后才显示，达人带路接单后就显示 -->
+
+				<!-- 开始服务按钮 - 所有服务都需要到达后才显示 -->
 				<view class="btn-group" v-if="canStartService">
-					<button class="btn btn-exception" v-if="pendingOrder.serviceType === 1"
-						@click="showReportException">报告异常</button>
+					<button class="btn btn-exception" @click="showReportException">报告异常</button>
 					<button class="btn btn-accept" @click="startService">开始服务</button>
 				</view>
 
-				<!-- 导航和联系客户 - 陪练显示 -->
-				<view class="nav-row" v-if="pendingOrder.serviceType === 1">
+				<!-- 导航和联系客户 - 所有服务都显示 -->
+				<view class="nav-row">
 					<button class="nav-btn" @click="navigate">
 						<uni-icons type="location" size="16" color="#fff"></uni-icons>
 						<text>导航</text>
 					</button>
 					<button class="call-btn" @click="makeCall">
 						<uni-icons type="phone" size="16" color="#10B981"></uni-icons>
-						<text>联系客户</text>
-					</button>
-				</view>
-
-				<!-- 仅联系客户 - 达人带路显示 -->
-				<view class="nav-row" v-else>
-					<button class="call-btn nav-btn" @click="makeCall">
-						<uni-icons type="phone" size="16" color="#fff"></uni-icons>
 						<text>联系客户</text>
 					</button>
 				</view>
@@ -207,10 +203,8 @@
 
 				<uni-section title="订单详情" type="line" margin-top="20rpx">
 					<view class="detail-box" @click="goToDetail">
-						<image class="shop-img" v-if="pendingOrder.serviceType === 1"  :src="pendingOrder.shopImg || 'https://picsum.photos/120/120'"
+						<image class="shop-img" :src="pendingOrder.shopImg || 'https://picsum.photos/120/120'"
 							mode="aspectFill"></image>
-            <image class="shop-img" v-else :src="pendingOrder.userAvatar"
-                   mode="aspectFill"></image>
 						<view class="info">
 							<text class="shop-name">{{ pendingOrder.venueName }}</text>
 							<view class="contact-row">
@@ -219,14 +213,14 @@
 									<uni-icons type="phone" size="16" color="#10B981"></uni-icons>
 								</button>
 							</view>
-							<text class="service-name">{{ pendingOrder.serviceType === 1 ? '台球陪练' : '达人带路' }}</text>
+							<text class="service-name">{{ getServiceTypeName(pendingOrder.serviceType) }}</text>
 							<text class="service-price">¥{{ (pendingOrder.totalAmount / 100).toFixed(2) }}</text>
 							<view class="tip-box">
 								<uni-icons type="info" size="14" color="#F59E0B"></uni-icons>
 								<text>支持客户加钟，时长自动更新</text>
 							</view>
 						</view>
-						<button class="nav-btn" @click.stop="navigate" v-if="pendingOrder.serviceType === 1">导航</button>
+						<button class="nav-btn" @click.stop="navigate">导航</button>
 					</view>
 				</uni-section>
 			</view>
@@ -258,7 +252,7 @@
 				<view class="history-order-item" v-for="item in displayHistoryOrders" :key="item.orderId"
 					@click="goToOrderDetail(item)">
 					<view class="order-top">
-						<text class="order-title">{{ item.serviceType === 1 ? '台球陪练' : '达人带路' }}</text>
+						<text class="order-title">{{ getServiceTypeName(item.serviceType) }}</text>
 						<text class="order-price">¥{{ (item.totalAmount / 100).toFixed(2) }}</text>
 					</view>
 					<view class="order-bottom">
@@ -388,18 +382,29 @@
 		return historyOrders.value
 	})
 
+	// 服务类型映射
+	const getServiceTypeName = (serviceType) => {
+		const serviceTypeMap = {
+			1: '台球指导',
+			2: '潮玩领航',
+			3: '酒艺品鉴',
+			4: '影视赏析'
+		}
+		return serviceTypeMap[serviceType] || '未知服务'
+	}
+
+	// 所有服务类型都需要位置校验
+	const needLocationCheck = (serviceType) => {
+		return true // 所有服务都需要位置校验（打卡）
+	}
+
 	// 判断是否可以开始服务
 	const canStartService = computed(() => {
 		if (!pendingOrder.value || !pendingOrder.value.serviceType) return false
 		if (pendingOrder.value.startTime) return false // 已经开始了就不显示
 
-		if (pendingOrder.value.serviceType === 1) {
-			// 陪练：必须到达后才能开始
-			return !!pendingOrder.value.arriveTime
-		} else {
-			// 达人带路：接单后就可以开始
-			return true
-		}
+		// 所有服务都需要到达后才能开始
+		return !!pendingOrder.value.arriveTime
 	})
 
 	const acceptedStageText = computed(() => {
@@ -409,19 +414,25 @@
 			return '服务中'
 		}
 
-		if (pendingOrder.value.serviceType !== 1) {
-			return '待开始'
-		}
+		// 台球服务显示完整阶段
+		if (pendingOrder.value.serviceType === 1) {
+			if (!pendingOrder.value.departureConfirmTime) {
+				return '未出发'
+			}
 
-		if (!pendingOrder.value.departureConfirmTime) {
-			return '未出发'
-		}
+			if (!pendingOrder.value.arriveTime) {
+				return '已出发未到达'
+			}
 
-		if (!pendingOrder.value.arriveTime) {
-			return '已出发未到达'
-		}
+			return '已到达待开始'
+		} else {
+			// 其他服务简化阶段
+			if (!pendingOrder.value.arriveTime) {
+				return '待到达'
+			}
 
-		return '已到达待开始'
+			return '已到达待开始'
+		}
 	})
 
 

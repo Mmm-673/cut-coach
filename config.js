@@ -1,6 +1,6 @@
 // 应用全局配置
 export default {
-  baseUrl: 'https://qiulem.com',
+  baseUrl: 'https://qiulem.com/test',
   appInfo: {
     name: '初球裁教版',
     version: '1.0.0',
