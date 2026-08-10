@@ -1,11 +1,13 @@
 import config from '@/config'
 import { getAccessToken, getRefreshToken, isTokenExpiring, setAuthInfo, removeAuthInfo } from '@/utils/auth'
+import { getPlatform } from '@/utils/platform'
 import errorCode from '@/utils/errorCode'
 import { toast, showConfirm, tansParams } from '@/utils/common'
 import { refreshToken } from '@/api/login'
 
 let timeout = 10000
 const baseUrl = config.baseUrl
+const clientVersion = config.appInfo?.version || '1.0.0'
 
 // 是否正在刷新 token
 let isRefreshing = false
@@ -62,6 +64,10 @@ const request = config => {
 
   // 添加 tenant-id
   config.header['tenant-id'] = '122'
+
+  // 添加客户端版本号和平台标识（现场开单等新功能需要）
+  config.header['client-version'] = clientVersion
+  config.header['client-platform'] = getPlatform()
 
   if (getAccessToken() && !isToken) {
     config.header['Authorization'] = 'Bearer ' + getAccessToken()

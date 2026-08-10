@@ -794,7 +794,7 @@ tenant-id: 122
   }
 }
 ```
-
+ 
 ---
 
 ### 4.3 POST /coach-api/billiard/wallet/withdrawal/create — 发起提现申请

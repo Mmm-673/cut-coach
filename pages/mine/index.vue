@@ -113,6 +113,18 @@
 
     <!-- 功能菜单 -->
     <view class="section-card">
+      <view class="menu-item" @click="navToOnsiteOrder">
+        <view class="menu-item-left">
+          <view class="icon-box icon-blue">
+            <uni-icons type="compose" size="22" color="#fff"></uni-icons>
+          </view>
+          <view class="menu-text">现场开单</view>
+        </view>
+        <uni-icons type="right" size="18" color="#999"></uni-icons>
+      </view>
+
+      <view class="divider"></view>
+
       <view class="menu-item" @click="navToInfo">
         <view class="menu-item-left">
           <view class="icon-box icon-orange">
@@ -323,6 +335,10 @@ const navToEvaluate = () => {
 
 const navToHelp = () => {
   uni.navigateTo({ url: '/subpkg/mine/help/index' })
+}
+
+const navToOnsiteOrder = () => {
+  uni.navigateTo({ url: '/subpkg/onsite/order-list' })
 }
 
 const navToQrcode = () => {
@@ -643,6 +659,10 @@ page {
 
 .icon-pink {
   background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+}
+
+.icon-blue {
+  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
 }
 
 .icon-gray {

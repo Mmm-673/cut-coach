@@ -3,8 +3,9 @@ export default {
   baseUrl: 'https://qiulem.com/test',
   appInfo: {
     name: '初球裁教版',
-    version: '1.0.0',
+    version: '1.0.1',
     logo: '/static/logo.png',
+    payAppId: 12,
     customerServicePhone: '15900560488',
     customerServiceHours: '9:00-21:00',
     agreements: [

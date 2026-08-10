@@ -223,6 +223,48 @@
       ]
     },
     {
+      "root": "subpkg/onsite",
+      "pages": [
+        {
+          "path": "order-list",
+          "style": {
+            "navigationBarTitleText": "现场订单",
+            "navigationBarBackgroundColor": "#ffffff",
+            "navigationBarTextStyle": "black",
+            "backgroundColor": "#F7F8FA",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "create",
+          "style": {
+            "navigationBarTitleText": "创建订单",
+            "navigationBarBackgroundColor": "#ffffff",
+            "navigationBarTextStyle": "black",
+            "backgroundColor": "#F7F8FA"
+          }
+        },
+        {
+          "path": "detail",
+          "style": {
+            "navigationBarTitleText": "订单详情",
+            "navigationBarBackgroundColor": "#ffffff",
+            "navigationBarTextStyle": "black",
+            "backgroundColor": "#F7F8FA"
+          }
+        },
+        {
+          "path": "qr-pay",
+          "style": {
+            "navigationBarTitleText": "扫码支付",
+            "navigationBarBackgroundColor": "#ffffff",
+            "navigationBarTextStyle": "black",
+            "backgroundColor": "#F7F8FA"
+          }
+        }
+      ]
+    },
+    {
       "root": "subpkg/common",
       "pages": [
         {

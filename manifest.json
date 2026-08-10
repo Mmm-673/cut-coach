@@ -19,7 +19,8 @@
             "Camera" : {},
             "Geolocation" : {},
             "Maps" : {},
-            "Push" : {}
+            "Push" : {},
+            "Payment" : {}
         },
         "distribute" : {
             "android" : {
@@ -89,8 +90,8 @@
                     },
                     "weixin" : {
                         "__platform__" : [ "ios", "android" ],
-                        "appid" : "",
-                        "UniversalLinks" : ""
+                        "appid" : "wxb5303450e809117e",
+                        "UniversalLinks" : "https://qiulem.com/app/"
                     }
                 },
                 "maps" : {
