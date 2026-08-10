@@ -63,7 +63,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { postDeductionAppeal } from '@/api/billiard/wallet'
 
 // 从URL获取参数
@@ -72,10 +73,7 @@ const orderId = ref('')
 const deductReason = ref('')
 const deductAmount = ref(0)
 
-onMounted(() => {
-  const pages = getCurrentPages()
-  const currentPage = pages[pages.length - 1]
-  const options = currentPage.options || {}
+onLoad((options) => {
   recordId.value = options.recordId || ''
   orderId.value = options.orderId || ''
   deductReason.value = decodeURIComponent(options.reason || '')
