@@ -97,7 +97,7 @@
 
 <script setup>
 import { ref, computed, onUnmounted, nextTick } from 'vue'
-import { onLoad, onShow, onHide } from '@dcloudio/uni-app'
+import { onLoad, onShow, onHide, onPageShow, onPageHide } from '@dcloudio/uni-app'
 import { createOnsiteQrCode, getOnsitePaymentStatus } from '@/api/billiard/onsitePayment'
 import {
   PAYMENT_STATUS_MAP,
@@ -295,14 +295,34 @@ onLoad((options) => {
 
 onShow(() => {
   if (orderId.value && paymentStatus.value === 0 && !isExpired.value) {
-    // 回前台立即查一次
+    // 回前台立即刷新剩余时间 + 查一次支付状态
+    updateRemaining()
     fetchPaymentStatus()
+    // 重新启动倒计时和支付状态轮询（onHide 中已停止）
+    startCountdown()
+    startPoll()
   }
 })
 
 onHide(() => {
   stopCountdown()
   stopPoll()
+})
+
+// 应用退到后台（按 Home 键）：停止定时器，避免被系统挂起后时间不准
+onPageHide(() => {
+  stopCountdown()
+  stopPoll()
+})
+
+// 应用从后台切回前台：用当前时间校准剩余秒数，再重启定时器
+onPageShow(() => {
+  if (orderId.value && paymentStatus.value === 0 && !isExpired.value) {
+    updateRemaining()
+    fetchPaymentStatus()
+    startCountdown()
+    startPoll()
+  }
 })
 
 onUnmounted(() => {

@@ -183,7 +183,7 @@
 
 <script setup>
 import { ref, computed, onUnmounted } from 'vue'
-import { onLoad, onShow, onHide } from '@dcloudio/uni-app'
+import { onLoad, onShow, onHide,onPageShow } from '@dcloudio/uni-app'
 import { getCurrentInstance } from 'vue'
 import {
   getOnsiteOrderDetail,
@@ -603,6 +603,13 @@ const navToQrPay = (channelCode) => {
     url: `/subpkg/onsite/qr-pay?orderId=${orderId.value}&channelCode=${channelCode}`
   })
 }
+
+// 应用从后台切回前台：用当前时间校准剩余秒数，再重启定时器
+onPageShow(() => {
+  if (orderId.value) {
+    fetchDetail()
+  }
+})
 
 onLoad((options) => {
   orderId.value = options?.id
