@@ -82,30 +82,13 @@
       </view>
     </view>
 
-    <!-- 返程车费 -->
-    <view class="section-card">
-      <view class="form-item">
-        <view class="form-label">返程车费</view>
-        <view class="amount-input-box">
-          <text class="amount-symbol">¥</text>
-          <input
-            class="amount-input"
-            type="digit"
-            v-model="returnTravelYuan"
-            placeholder="0.00"
-            @blur="onTravelBlur"
-          />
-          <text class="amount-unit">元</text>
-        </view>
-        <view class="amount-tip">
-          <uni-icons type="info" size="14" color="#9ca3af"></uni-icons>
-          <text>范围 0 ~ 50 元，按实际情况填写</text>
-        </view>
-      </view>
+    <!-- 计费规则提示 -->
+    <view class="billing-tip">
+      <uni-icons type="info" size="14" color="#92400e"></uni-icons>
+      <text class="billing-tip-text">{{ billingTipText }}</text>
     </view>
 
     <!-- 底部创建按钮 -->
-    <view class="bottom-bar">
       <button
         class="create-btn"
         :class="{ disabled: !canCreate }"
@@ -114,7 +97,6 @@
       >
         创建订单
       </button>
-    </view>
   </view>
 </template>
 
@@ -122,7 +104,7 @@
 import { ref, computed } from 'vue'
 import { getCoachProfile } from '@/api/billiard/coach'
 import { searchMember, createOnsiteOrder } from '@/api/billiard/onsiteOrder'
-import { SERVICE_TYPE_MAP, generateUUID } from '@/utils/onsiteOrder'
+import { SERVICE_TYPE_MAP, generateUUID, getBillingTip } from '@/utils/onsiteOrder'
 
 // 服务类型选项（uni-data-select 格式）
 const serviceTypeOptions = ref([
@@ -135,7 +117,6 @@ const mobileSuffix = ref('')
 const memberList = ref([])
 const selectedMember = ref(null)
 const searched = ref(false)
-const returnTravelYuan = ref('0')
 const creating = ref(false)
 let currentRequestId = ''
 let searchTimer = null
@@ -210,21 +191,15 @@ const selectMember = (member) => {
   selectedMember.value = member
 }
 
-// 返程车费输入失焦校验
-const onTravelBlur = () => {
-  let val = parseFloat(returnTravelYuan.value)
-  if (isNaN(val) || val < 0) val = 0
-  if (val > 50) val = 50
-  returnTravelYuan.value = val.toFixed(2)
-}
-
 // 是否可以创建
 const canCreate = computed(() => {
   if (!selectedServiceType.value) return false
   if (customerType.value === 1 && !selectedMember.value) return false
-  const travel = parseFloat(returnTravelYuan.value)
-  if (isNaN(travel) || travel < 0 || travel > 50) return false
   return true
+})
+
+const billingTipText = computed(() => {
+  return getBillingTip(selectedServiceType.value)
 })
 
 // 创建订单
@@ -235,13 +210,10 @@ const handleCreate = async () => {
     currentRequestId = generateUUID()
   }
 
-  const returnTravelAmount = Math.round(parseFloat(returnTravelYuan.value) * 100)
-
   const data = {
     requestId: currentRequestId,
     serviceType: selectedServiceType.value,
-    customerType: customerType.value,
-    returnTravelAmount
+    customerType: customerType.value
   }
 
   if (customerType.value === 1 && selectedMember.value) {
@@ -255,7 +227,7 @@ const handleCreate = async () => {
       uni.showToast({ title: '创建成功', icon: 'success' })
       const orderId = res.data?.id
       setTimeout(() => {
-        uni.redirectTo({ url: `/subpkg/onsite/detail?id=${orderId}` })
+        uni.navigateTo({ url: `/subpkg/onsite/detail?id=${orderId}` })
       }, 500)
     }
   } catch (e) {
@@ -427,45 +399,22 @@ fetchCoachServiceTypes()
   font-size: 26rpx;
 }
 
-/* 金额输入框 */
-.amount-input-box {
+/* 计费规则提示 */
+.billing-tip {
   display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 10rpx;
-  padding: 40rpx 32rpx;
-  background: linear-gradient(135deg, #f0f7ff 0%, #e8f0fe 100%);
-  border-radius: 20rpx;
-  border: 2rpx solid #2f6bee22;
-}
-
-.amount-symbol {
-  font-size: 40rpx;
-  font-weight: 600;
-  color: #ef4444;
-}
-
-.amount-input {
-  flex: 1;
-  text-align: center;
-  font-size: 64rpx;
-  font-weight: bold;
-  color: #ef4444;
-  line-height: 1;
-}
-
-.amount-unit {
-  font-size: 28rpx;
-  color: #666;
-}
-
-.amount-tip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
   gap: 8rpx;
+  padding: 20rpx 24rpx;
+  background: #fef9e7;
+  border-radius: 12rpx;
+  margin: 0 24rpx 24rpx;
+}
+
+.billing-tip-text {
+  flex: 1;
   font-size: 24rpx;
-  color: #9ca3af;
+  color: #92400e;
+  line-height: 1.5;
 }
 
 /* 底部按钮 */
@@ -482,6 +431,7 @@ fetchCoachServiceTypes()
 }
 
 .create-btn {
+  margin-top: 40rpx;
   width: 100%;
   height: 90rpx;
   line-height: 90rpx;

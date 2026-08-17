@@ -113,12 +113,12 @@
 
     <!-- 功能菜单 -->
     <view class="section-card">
-      <view class="menu-item" @click="navToOnsiteOrder">
+      <view class="menu-item" @click="navToAllOrders">
         <view class="menu-item-left">
           <view class="icon-box icon-blue">
             <uni-icons type="compose" size="22" color="#fff"></uni-icons>
           </view>
-          <view class="menu-text">现场开单</view>
+          <view class="menu-text">全部订单</view>
         </view>
         <uni-icons type="right" size="18" color="#999"></uni-icons>
       </view>
@@ -321,10 +321,6 @@ const navToWithdrawRecord = () => {
   uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-record/index' })
 }
 
-const navToOrder = () => {
-  uni.switchTab({ url: '/pages/order/index' })
-}
-
 const navToInfo = () => {
   uni.navigateTo({ url: '/subpkg/mine/info/index' })
 }
@@ -337,8 +333,8 @@ const navToHelp = () => {
   uni.navigateTo({ url: '/subpkg/mine/help/index' })
 }
 
-const navToOnsiteOrder = () => {
-  uni.navigateTo({ url: '/subpkg/onsite/order-list' })
+const navToAllOrders = () => {
+  uni.navigateTo({ url: '/pages/order/index' })
 }
 
 const navToQrcode = () => {

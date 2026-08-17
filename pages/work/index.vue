@@ -1530,7 +1530,7 @@
 
 	// 跳转到全部订单
 	const goToAllOrder = () => {
-		uni.switchTab({
+		uni.navigateTo({
 			url: '/pages/order/index'
 		})
 	}

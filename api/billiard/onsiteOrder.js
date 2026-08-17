@@ -36,15 +36,6 @@ export function getOnsiteOrderDetail(id) {
   })
 }
 
-// 修改返程车费
-export function updateReturnTravel(data) {
-  return request({
-    url: '/coach-api/billiard/onsite-order/update-return-travel',
-    method: 'post',
-    data
-  })
-}
-
 // 取消现场订单
 export function cancelOnsiteOrder(orderId) {
   return request({
@@ -64,10 +55,10 @@ export function startOnsiteService(orderId) {
 }
 
 // 结束服务并锁价
-export function finishOnsiteService(orderId) {
+export function finishOnsiteService(data) {
   return request({
     url: '/coach-api/billiard/onsite-order/finish',
     method: 'post',
-    data: { orderId }
+    data
   })
 }

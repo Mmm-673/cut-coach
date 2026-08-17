@@ -59,6 +59,15 @@
       "style": {
         "navigationBarTitleText": "我的"
       }
+    },
+    {
+      "path": "pages/onsite/create",
+      "style": {
+        "navigationBarTitleText": "创建订单",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black",
+        "backgroundColor": "#F7F8FA"
+      }
     }
   ],
   "subPackages": [
@@ -226,25 +235,6 @@
       "root": "subpkg/onsite",
       "pages": [
         {
-          "path": "order-list",
-          "style": {
-            "navigationBarTitleText": "现场订单",
-            "navigationBarBackgroundColor": "#ffffff",
-            "navigationBarTextStyle": "black",
-            "backgroundColor": "#F7F8FA",
-            "enablePullDownRefresh": true
-          }
-        },
-        {
-          "path": "create",
-          "style": {
-            "navigationBarTitleText": "创建订单",
-            "navigationBarBackgroundColor": "#ffffff",
-            "navigationBarTextStyle": "black",
-            "backgroundColor": "#F7F8FA"
-          }
-        },
-        {
           "path": "detail",
           "style": {
             "navigationBarTitleText": "订单详情",
@@ -299,9 +289,9 @@
     }
   ],
   "preloadRule": {
-    "pages/order/index": {
+    "pages/onsite/create": {
       "network": "all",
-      "packages": ["subpkg/order"]
+      "packages": ["subpkg/onsite"]
     },
     "pages/mine/index": {
       "network": "all",
@@ -318,19 +308,19 @@
         "pagePath": "pages/work/index",
         "iconPath": "static/images/tabbar/work.png",
         "selectedIconPath": "static/images/tabbar/work_.png",
-        "text": "工作台"
+        "text": ""
       },
       {
-        "pagePath": "pages/order/index",
-        "iconPath": "static/images/tabbar/order.png",
-        "selectedIconPath": "static/images/tabbar/order_.png",
-        "text": "订单"
+        "pagePath": "pages/onsite/create",
+        "iconPath": "static/images/tabbar/quick.png",
+        "selectedIconPath": "static/images/tabbar/quick_.png",
+        "text": ""
       },
       {
         "pagePath": "pages/mine/index",
         "iconPath": "static/images/tabbar/mine.png",
         "selectedIconPath": "static/images/tabbar/mine_.png",
-        "text": "我的"
+        "text": ""
       }
     ]
   },

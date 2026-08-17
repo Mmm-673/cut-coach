@@ -35,8 +35,8 @@
       <view class="info-item">
         <text class="info-label">返程车费</text>
         <view class="info-value-row">
-          <text class="info-value">¥{{ formatFenToYuan(orderDetail.returnTravelAmount) }}</text>
-          <text class="edit-link" @click="showReturnTravelPopup = true">修改</text>
+          <text class="info-value">¥0.00</text>
+          <text class="travel-tip">待结束时确认</text>
         </view>
       </view>
     </view>
@@ -64,12 +64,15 @@
       <view class="divider"></view>
       <view class="info-item">
         <text class="info-label">返程车费</text>
-        <text class="info-value">¥{{ formatFenToYuan(orderDetail.returnTravelAmount) }}</text>
+        <view class="info-value-row">
+          <text class="info-value">¥{{ formatFenToYuan(orderDetail.returnTravelAmount) }}</text>
+          <text class="travel-tip">待结束确认</text>
+        </view>
       </view>
     </view>
 
     <!-- 待付款/已完成：状态 45/50/60 -->
-    <view v-if="[45, 50, 60].includes(orderDetail.status)" class="amount-card">
+    <view v-if="[45, 50, 60].includes(orderDetail.status)" class="amount-card" :class="{ completed: orderDetail.status === 60  || orderDetail.status === 50 }">
       <view class="amount-label">应付金额</view>
       <view class="amount-value">¥{{ formatFenToYuan(orderDetail.payAmount) }}</view>
       <view class="payment-status" :style="{ color: getPaymentStatusColor() }">
@@ -158,26 +161,37 @@
       </template>
     </view>
 
-    <!-- 修改返程车费弹窗 -->
-    <view v-if="showReturnTravelPopup" class="popup-mask" @click="showReturnTravelPopup = false">
-      <view class="popup-content" @click.stop>
-        <view class="popup-title">修改返程车费</view>
-        <view class="popup-input-wrap">
+    <!-- 结束服务车费确认弹窗（底部弹出） -->
+    <view v-if="showFinishTravelPopup" class="bottom-popup-mask" @click="showFinishTravelPopup = false">
+      <view class="bottom-popup-content" @click.stop>
+        <view class="bottom-popup-header">
+          <view class="bottom-popup-title">确认返程车费</view>
+          <text class="bottom-popup-close" @click="showFinishTravelPopup = false">
+            <uni-icons type="close" size="20" color="#999"></uni-icons>
+          </text>
+        </view>
+        <view class="bottom-popup-desc">请输入实际返程车费（0～50元）</view>
+        <view class="travel-input-box">
+          <text class="travel-input-symbol">¥</text>
           <input
-            class="popup-input"
+            class="travel-input"
             type="digit"
-            v-model="editTravelYuan"
-            placeholder="请输入金额"
+            v-model="finishTravelYuan"
+            placeholder="0.00"
+            @blur="onFinishTravelBlur"
           />
-          <text class="popup-unit">元</text>
+          <text class="travel-input-unit">元</text>
         </view>
-        <view class="popup-tip">范围 0 ~ 50 元</view>
-        <view class="popup-actions">
-          <button class="popup-cancel" @click="showReturnTravelPopup = false">取消</button>
-          <button class="popup-confirm" :loading="travelUpdating" @click="handleUpdateTravel">确认</button>
+        <view class="travel-input-tip">
+          <uni-icons type="info" size="14" color="#9ca3af"></uni-icons>
+          <text>允许输入 0 元，按实际情况填写</text>
         </view>
+        <button class="confirm-finish-btn" :loading="finishSubmitting" @click="confirmFinishService">
+          确认结束服务
+        </button>
       </view>
     </view>
+
   </view>
 </template>
 
@@ -187,7 +201,6 @@ import { onLoad, onShow, onHide,onPageShow } from '@dcloudio/uni-app'
 import { getCurrentInstance } from 'vue'
 import {
   getOnsiteOrderDetail,
-  updateReturnTravel,
   cancelOnsiteOrder,
   startOnsiteService,
   finishOnsiteService
@@ -217,6 +230,11 @@ const orderDetail = ref({})
 const paymentInfo = ref({ paymentStatus: 0, settlementStatus: 0 })
 const enabledChannels = ref([])
 const operating = ref(false)
+
+// 结束服务车费输入弹窗
+const showFinishTravelPopup = ref(false)
+const finishTravelYuan = ref('0')
+const finishSubmitting = ref(false)
 
 // 支付渠道显示配置（图标保持原样）
 const PAY_CHANNEL_CONFIG = {
@@ -253,9 +271,6 @@ const payMethodList = computed(() => {
     .filter(code => enabledChannels.value.includes(code) && PAY_CHANNEL_CONFIG[code])
     .map(code => ({ code, ...PAY_CHANNEL_CONFIG[code] }))
 })
-const showReturnTravelPopup = ref(false)
-const editTravelYuan = ref('0')
-const travelUpdating = ref(false)
 const currentDuration = ref('00:00:00')
 let timerInterval = null
 let pollInterval = null
@@ -443,20 +458,65 @@ const handleStartService = () => {
 // 结束服务
 const handleFinishService = () => {
   if (operating.value) return
-  proxy.$modal.confirm('确定结束服务吗？结束后将锁定服务时长和金额。').then(async () => {
-    operating.value = true
-    try {
-      const res = await finishOnsiteService(orderId.value)
-      if (res.code === 0 || res.code === 200) {
-        uni.showToast({ title: '服务已结束', icon: 'success' })
-        fetchDetail()
-      }
-    } catch (e) {
-      console.error('结束服务失败', e)
-    } finally {
-      operating.value = false
+  // 重置车费输入
+  finishTravelYuan.value = '0'
+  showFinishTravelPopup.value = true
+}
+
+// 车费输入失焦校验
+const onFinishTravelBlur = () => {
+  let val = parseFloat(finishTravelYuan.value)
+  if (isNaN(val) || val < 0) val = 0
+  if (val > 50) val = 50
+  finishTravelYuan.value = val.toFixed(2)
+}
+
+// 确认结束服务（提交车费）
+const confirmFinishService = async () => {
+  let val = parseFloat(finishTravelYuan.value)
+  if (isNaN(val) || val < 0) {
+    uni.showToast({ title: '请输入有效的返程车费', icon: 'none' })
+    return
+  }
+  if (val > 50) {
+    uni.showToast({ title: '返程车费不能超过 50 元', icon: 'none' })
+    return
+  }
+
+  const returnTravelAmount = Math.round(val * 100)
+  if (returnTravelAmount < 0 || returnTravelAmount > 5000) {
+    uni.showToast({ title: '车费范围 0～50 元', icon: 'none' })
+    return
+  }
+
+  finishSubmitting.value = true
+  try {
+    const res = await finishOnsiteService({
+      orderId: orderId.value,
+      returnTravelAmount
+    })
+    if (res.code === 0 || res.code === 200) {
+      uni.showToast({ title: '服务已结束', icon: 'success' })
+      showFinishTravelPopup.value = false
+      // 以服务端返回的金额为准刷新
+      fetchDetail()
     }
-  }).catch(() => {})
+  } catch (e) {
+    console.error('结束服务失败', e)
+    // 失败后先查询订单详情确认状态（幂等处理）
+    try {
+      await fetchDetail()
+      // 如果订单已经是终态（待付款/待评价/已完成），说明首次请求已成功
+      if ([45, 50, 60].includes(orderDetail.value.status)) {
+        uni.showToast({ title: '服务已结束', icon: 'success' })
+        showFinishTravelPopup.value = false
+      }
+    } catch (e2) {
+      console.error('查询订单状态失败', e2)
+    }
+  } finally {
+    finishSubmitting.value = false
+  }
 }
 
 // 取消订单
@@ -476,34 +536,6 @@ const handleCancel = () => {
       operating.value = false
     }
   }).catch(() => {})
-}
-
-// 修改返程车费
-const handleUpdateTravel = async () => {
-  let val = parseFloat(editTravelYuan.value)
-  if (isNaN(val) || val < 0) val = 0
-  if (val > 50) {
-    uni.showToast({ title: '返程车费不能超过 50 元', icon: 'none' })
-    return
-  }
-
-  travelUpdating.value = true
-  try {
-    const amount = Math.round(val * 100)
-    const res = await updateReturnTravel({
-      orderId: orderId.value,
-      returnTravelAmount: amount
-    })
-    if (res.code === 0 || res.code === 200) {
-      uni.showToast({ title: '修改成功', icon: 'success' })
-      showReturnTravelPopup.value = false
-      fetchDetail()
-    }
-  } catch (e) {
-    console.error('修改返程车费失败', e)
-  } finally {
-    travelUpdating.value = false
-  }
 }
 
 // App 支付
@@ -713,6 +745,12 @@ onUnmounted(() => {
   color: #2f6bee;
 }
 
+.travel-tip {
+  font-size: 22rpx;
+  color: #9ca3af;
+  margin-left: 8rpx;
+}
+
 .divider {
   height: 1rpx;
   background: #f3f4f6;
@@ -761,6 +799,11 @@ onUnmounted(() => {
   margin-bottom: 20rpx;
   text-align: center;
   box-shadow: 0 4rpx 16rpx rgba(239, 68, 68, 0.25);
+
+  &.completed {
+    background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
+    box-shadow: 0 4rpx 16rpx rgba(16, 185, 129, 0.25);
+  }
 }
 
 .amount-label {
@@ -993,5 +1036,105 @@ onUnmounted(() => {
 .popup-confirm {
   background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
   color: #fff;
+}
+
+/* 底部弹出层 */
+.bottom-popup-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 999;
+}
+
+.bottom-popup-content {
+  width: 100%;
+  background: #fff;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 40rpx 32rpx;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.bottom-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.bottom-popup-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.bottom-popup-close {
+  padding: 8rpx;
+}
+
+.bottom-popup-desc {
+  font-size: 26rpx;
+  color: #6b7280;
+  margin-bottom: 32rpx;
+}
+
+.travel-input-box {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 36rpx 32rpx;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e8f0fe 100%);
+  border-radius: 20rpx;
+  border: 2rpx solid #2f6bee22;
+  margin-bottom: 16rpx;
+}
+
+.travel-input-symbol {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.travel-input {
+  flex: 1;
+  text-align: center;
+  font-size: 56rpx;
+  font-weight: bold;
+  color: #ef4444;
+  line-height: 1;
+}
+
+.travel-input-unit {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.travel-input-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  font-size: 24rpx;
+  color: #9ca3af;
+  margin-bottom: 40rpx;
+}
+
+.confirm-finish-btn {
+  width: 100%;
+  height: 90rpx;
+  line-height: 90rpx;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+  border-radius: 20rpx;
+  border: none;
+  font-size: 30rpx;
+  font-weight: 600;
+  box-shadow: 0 4rpx 12rpx rgba(239, 68, 68, 0.3);
 }
 </style>

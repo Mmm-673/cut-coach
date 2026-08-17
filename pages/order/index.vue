@@ -32,7 +32,12 @@
             @click="goToDetail(order)"
         >
           <view class="order-header">
-            <text class="order-no">订单编号：{{order.orderNo}}</text>
+            <view class="order-header-left">
+              <text class="order-no">订单编号：{{order.orderNo}}</text>
+              <text class="order-type-tag" :style="{ background: getOrderTypeColor(order.type) + '22', color: getOrderTypeColor(order.type) }">
+                {{ getOrderTypeName(order.type) }}
+              </text>
+            </view>
             <uni-tag
                 :text="getStatusText(order.status)"
                 :type="getStatusType(order.status)"
@@ -45,9 +50,13 @@
               <text class="label">服务类型</text>
               <text class="value">{{getServiceTypeName(order.serviceType)}}</text>
             </view>
-            <view class="order-info-row">
+            <view class="order-info-row" v-if="order.type === 1">
               <text class="label">预约时间</text>
               <text class="value">{{order.bookingTimeText || '-'}}</text>
+            </view>
+            <view class="order-info-row" v-else>
+              <text class="label">开始时间</text>
+              <text class="value">{{formatTime(order.createTime) || '-'}}</text>
             </view>
             <view class="order-info-row">
               <text class="label">订单金额</text>
@@ -78,6 +87,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getOrderPage } from '@/api/billiard/order'
+import { ORDER_TYPE_MAP } from '@/utils/onsiteOrder'
 
 	// 服务类型映射
 	const getServiceTypeName = (serviceType) => {
@@ -92,10 +102,12 @@ import { getOrderPage } from '@/api/billiard/order'
 
 const tabs = [
   { label: '全部', value: 0 },
-  { label: '待付款', value: 10 },
+  { label: '待付款(普通)', value: 10 },
   { label: '待接单', value: 20 },
   { label: '已接单', value: 30 },
+  { label: '待开始', value: 15 },
   { label: '进行中', value: 40 },
+  { label: '待付款(现场)', value: 45 },
   { label: '待评价', value: 50 },
   { label: '已完成', value: 60 },
   { label: '已取消', value: 70 }
@@ -129,6 +141,7 @@ const fetchOrders = async (reset = false) => {
       params.status = currentTab.value
     }
     const res = await getOrderPage(params)
+    console.log('res=-------', res)
     if (res.data) {
       const list = res.data.list || []
       const orders = list.map(item => ({
@@ -185,19 +198,37 @@ const handleTabClick = (value) => {
 
 // 跳转到订单详情
 const goToDetail = (order) => {
-  uni.navigateTo({
-    url: `/subpkg/order/detail?orderId=${order.orderId}&status=${order.status}`
-  })
+  if (order.type === 2) {
+    // 现场订单
+    uni.navigateTo({
+      url: `/subpkg/onsite/detail?id=${order.orderId}`
+    })
+  } else {
+    // 普通订单（type=1 或默认）
+    uni.navigateTo({
+      url: `/subpkg/order/detail?orderId=${order.orderId}&status=${order.status}`
+    })
+  }
+}
+
+const getOrderTypeName = (type) => {
+  return ORDER_TYPE_MAP[type]?.name || '未知'
+}
+
+const getOrderTypeColor = (type) => {
+  return ORDER_TYPE_MAP[type]?.color || '#9ca3af'
 }
 
 // 获取状态文本
 const getStatusText = (status) => {
   const statusMap = {
     10: '待付款',
+    15: '待开始',
     20: '待接单',
     30: '已接单',
     40: '进行中',
-    50: '用户待评价',
+    45: '待付款',
+    50: '待评价',
     60: '已完成',
     70: '已取消'
   }
@@ -208,9 +239,11 @@ const getStatusText = (status) => {
 const getStatusType = (status) => {
   const typeMap = {
     10: 'warning',
+    15: 'warning',
     20: 'warning',
     30: 'primary',
     40: 'primary',
+    45: 'warning',
     50: 'warning',
     60: 'success',
     70: 'default'
@@ -317,6 +350,19 @@ onShow(() => {
   padding-bottom: 20rpx;
   border-bottom: 1rpx solid #f3f4f6;
   margin-bottom: 20rpx;
+}
+
+.order-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.order-type-tag {
+  font-size: 20rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  font-weight: 500;
 }
 
 .order-no {

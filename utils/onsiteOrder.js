@@ -8,6 +8,20 @@ export const SERVICE_TYPE_MAP = {
   4: { name: '影视赏析', color: '#f59e0b' }
 }
 
+// 订单类型
+export const ORDER_TYPE_MAP = {
+  1: { name: '普通订单', color: '#2f6bff' },
+  2: { name: '现场订单', color: '#f59e0b' }
+}
+
+// 各服务起步时长（单位：小时）
+export const SERVICE_MIN_HOURS = {
+  1: 1,   // 台球指导
+  2: 2,   // 潮玩领航
+  3: 4,   // 酒艺品鉴
+  4: 8    // 影视赏析
+}
+
 // 订单状态
 export const ORDER_STATUS_MAP = {
   15: { name: '待开始', color: '#f59e0b' },
@@ -31,6 +45,25 @@ export const SETTLEMENT_STATUS_MAP = {
   10: { name: '处理中', color: '#f59e0b' },
   20: { name: '成功', color: '#10b981' },
   30: { name: '失败待重试', color: '#f59e0b' }
+}
+
+// ============ 计费规则工具 ============
+
+/**
+ * 获取服务计费规则提示文案
+ * @param {number} serviceType 服务类型
+ * @returns {string} 提示文案
+ */
+export function getBillingTip(serviceType) {
+  const typeMap = {
+    1: { name: '台球指导', hours: 1 },
+    2: { name: '潮玩领航', hours: 2 },
+    3: { name: '酒艺品鉴', hours: 4 },
+    4: { name: '影视赏析', hours: 8 }
+  }
+  const info = typeMap[serviceType]
+  if (!info) return ''
+  return `温馨提示：${info.name}起步时长为${info.hours}小时，不足${info.hours}小时按${info.hours}小时计费，超出部分按分钟（单价/60）计费。`
 }
 
 // ============ 金额工具 ============
