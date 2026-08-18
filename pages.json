@@ -4,7 +4,12 @@
       "path": "pages/login/index",
       "style": {
         "navigationBarTitleText": "登录",
-        "navigationStyle": "custom"
+        "navigationStyle": "custom",
+        "app-plus": {
+          "softinput": {
+            "mode": "adjustResize"
+          }
+        }
       }
     },
     {

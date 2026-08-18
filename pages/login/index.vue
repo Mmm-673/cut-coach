@@ -1,5 +1,5 @@
 <template>
-  <view class="normal-login-container" :style="{ paddingBottom: keyboardHeight + 'px' }">
+  <view class="normal-login-container">
     <view class="logo-section">
       <view class="logo-box">
         <image class="logo-img" :src="globalConfig.appInfo.logo" mode="aspectFit"></image>
@@ -30,7 +30,7 @@
             <input class="input" v-model="pwdForm.password" :password="!showPassword"
                    placeholder="请输入密码" :maxlength="20" :focus="focusIndex === 1" @focus="onInputFocus(1)"
                    @blur="onInputBlur" confirm-type="done" @confirm="handlePwdLogin" />
-            <view class="password-toggle" @click="showPassword = !showPassword">
+            <view class="password-toggle" @click="togglePassword">
               <uni-icons :type="showPassword ? 'eye' : 'eye-slash'" size="20" color="#999"></uni-icons>
             </view>
           </view>
@@ -126,7 +126,6 @@ const isAgreed = ref(false)
 const countdown = ref(0)
 const showPassword = ref(false)
 const focusIndex = ref(-1)
-const keyboardHeight = ref(0)
 const isLoggingIn = ref(false)
 const activeTab = ref('sms')
 const privacyDialogRef = ref(null)
@@ -143,11 +142,19 @@ const smsForm = ref({
 })
 
 let countdownTimer = null
-let keyboardHeightListener = null
+let blurTimer = null
 
 function switchTab(tab) {
   activeTab.value = tab
   focusIndex.value = -1
+}
+
+function togglePassword() {
+  showPassword.value = !showPassword.value
+  // 切换密码可见性后，重新让密码框获得焦点，避免 input 重渲染导致的键盘收起
+  nextTick(() => {
+    focusIndex.value = 1
+  })
 }
 
 /** 查询密码登录是否可用 */
@@ -182,9 +189,10 @@ onShow(() => {
 })
 
 onMounted(() => {
+  // #ifdef APP-PLUS-IOS
   fetchPwdLoginEnabled()
+  // #endif
   openPrivacyDialogIfNeeded()
-  keyboardHeightListener = uni.onKeyboardHeightChange(onKeyboardHeightChange)
 })
 
 async function handleGetSmsCode() {
@@ -222,13 +230,21 @@ function startCountdown() {
 }
 
 function onInputFocus(index) {
+  // 聚焦时先清除之前的 blur 定时器，避免竞态导致焦点被意外清除
+  if (blurTimer) {
+    clearTimeout(blurTimer)
+    blurTimer = null
+  }
   focusIndex.value = index
 }
 
 function onInputBlur() {
-  setTimeout(() => {
+  // 失焦时延迟清除，给下一个输入框的 focus 事件留时间取消本定时器
+  if (blurTimer) clearTimeout(blurTimer)
+  blurTimer = setTimeout(() => {
     focusIndex.value = -1
-  }, 100)
+    blurTimer = null
+  }, 150)
 }
 
 function focusNextInput(nextIndex) {
@@ -377,17 +393,14 @@ function handleUserAgrement() {
   openAgreementPage('用户服务协议')
 }
 
-function onKeyboardHeightChange(e) {
-  keyboardHeight.value = e.height || 0
-}
-
 onUnmounted(() => {
   if (countdownTimer) {
     clearInterval(countdownTimer)
     countdownTimer = null
   }
-  if (keyboardHeightListener) {
-    keyboardHeightListener.off()
+  if (blurTimer) {
+    clearTimeout(blurTimer)
+    blurTimer = null
   }
 })
 </script>
