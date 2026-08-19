@@ -17,45 +17,44 @@
 
       <view class="input-group">
         <!-- 密码登录表单 -->
-        <template v-if="isPwdLoginEnabled && activeTab === 'pwd'">
+        <view v-if="isPwdLoginEnabled && activeTab === 'pwd'" class="pwd-form">
           <view class="input-item flex align-center">
             <view class="iconfont icon-user icon"></view>
             <input v-model="pwdForm.username" class="input" type="text"
-                   placeholder="请输入账号" :maxlength="30" :focus="focusIndex === 0"
-                   @focus="onInputFocus(0)" @blur="onInputBlur" confirm-type="next" @confirm="focusNextInput(1)" />
+                   placeholder="请输入账号" :maxlength="30"
+                   confirm-type="next" @confirm="focusNextInput('pwdPassword')" />
           </view>
 
           <view class="input-item flex align-center">
             <view class="iconfont icon-password icon"></view>
             <input class="input" v-model="pwdForm.password" :password="!showPassword"
-                   placeholder="请输入密码" :maxlength="20" :focus="focusIndex === 1" @focus="onInputFocus(1)"
-                   @blur="onInputBlur" confirm-type="done" @confirm="handlePwdLogin" />
+                   placeholder="请输入密码" :maxlength="20" :focus="focusTarget === 'pwdPassword'"
+                   confirm-type="done" @confirm="handlePwdLogin" />
             <view class="password-toggle" @click="togglePassword">
               <uni-icons :type="showPassword ? 'eye' : 'eye-slash'" size="20" color="#999"></uni-icons>
             </view>
           </view>
-
-        </template>
+        </view>
 
         <!-- 短信登录表单 -->
-        <template v-if="activeTab === 'sms'">
+        <view v-if="activeTab === 'sms'" class="sms-form">
           <view class="input-item flex align-center">
             <view class="iconfont icon-user icon"></view>
             <input v-model="smsForm.mobile" class="input" type="number"
-                   placeholder="请输入手机号" :maxlength="11" :focus="focusIndex === 0"
-                   @focus="onInputFocus(0)" @blur="onInputBlur" confirm-type="next" @confirm="focusNextInput(1)" />
+                   placeholder="请输入手机号" :maxlength="11"
+                   confirm-type="next" @confirm="focusNextInput('smsCode')" />
           </view>
 
           <view class="input-item flex align-center">
             <view class="iconfont icon-code icon"></view>
             <input v-model="smsForm.smsCode" type="number" class="input" placeholder="请输入验证码" :maxlength="6"
-                   :focus="focusIndex === 1" @focus="onInputFocus(1)" @blur="onInputBlur" confirm-type="done"
+                   :focus="focusTarget === 'smsCode'" confirm-type="done"
                    @confirm="handleSmsLogin" />
             <view class="sms-code-btn" :class="{ 'disabled': countdown > 0 }" @click="handleGetSmsCode">
               {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
             </view>
           </view>
-        </template>
+        </view>
       </view>
 
       <view class="forget-pwd" v-if="isPwdLoginEnabled && activeTab === 'pwd'" @click="handleForgetPwd">忘记密码？</view>
@@ -125,11 +124,13 @@ const userStore = useUserStore()
 const isAgreed = ref(false)
 const countdown = ref(0)
 const showPassword = ref(false)
-const focusIndex = ref(-1)
+// focusTarget 仅用于"脉冲式"聚焦：设置为目标值 → 下一帧重置为 ''
+// 不能用持续绑定的 :focus，否则每次 v-model 更新都会重新聚焦导致光标乱跳
+const focusTarget = ref('')
 const isLoggingIn = ref(false)
 const activeTab = ref('sms')
 const privacyDialogRef = ref(null)
-const isPwdLoginEnabled = ref(true)
+const isPwdLoginEnabled = ref(false)
 
 const pwdForm = ref({
   username: "",
@@ -142,18 +143,27 @@ const smsForm = ref({
 })
 
 let countdownTimer = null
-let blurTimer = null
+
+/**
+ * 脉冲式聚焦：设置 focusTarget 触发 input 的 :focus，下一帧立即清空
+ * 避免持续为 true 导致每次 v-model 更新都重新聚焦、光标跳位
+ */
+function pulseFocus(target) {
+  focusTarget.value = target
+  nextTick(() => {
+    focusTarget.value = ''
+  })
+}
 
 function switchTab(tab) {
   activeTab.value = tab
-  focusIndex.value = -1
 }
 
 function togglePassword() {
   showPassword.value = !showPassword.value
-  // 切换密码可见性后，重新让密码框获得焦点，避免 input 重渲染导致的键盘收起
+  // 切换密码可见性后，用脉冲式聚焦重新唤起键盘，避免 input 重建导致键盘收起
   nextTick(() => {
-    focusIndex.value = 1
+    pulseFocus('pwdPassword')
   })
 }
 
@@ -189,9 +199,7 @@ onShow(() => {
 })
 
 onMounted(() => {
-  // #ifdef APP-PLUS-IOS
   fetchPwdLoginEnabled()
-  // #endif
   openPrivacyDialogIfNeeded()
 })
 
@@ -229,26 +237,8 @@ function startCountdown() {
   }, 1000)
 }
 
-function onInputFocus(index) {
-  // 聚焦时先清除之前的 blur 定时器，避免竞态导致焦点被意外清除
-  if (blurTimer) {
-    clearTimeout(blurTimer)
-    blurTimer = null
-  }
-  focusIndex.value = index
-}
-
-function onInputBlur() {
-  // 失焦时延迟清除，给下一个输入框的 focus 事件留时间取消本定时器
-  if (blurTimer) clearTimeout(blurTimer)
-  blurTimer = setTimeout(() => {
-    focusIndex.value = -1
-    blurTimer = null
-  }, 150)
-}
-
-function focusNextInput(nextIndex) {
-  focusIndex.value = nextIndex
+function focusNextInput(target) {
+  pulseFocus(target)
 }
 
 function onCheckChange(e) {
@@ -397,10 +387,6 @@ onUnmounted(() => {
   if (countdownTimer) {
     clearInterval(countdownTimer)
     countdownTimer = null
-  }
-  if (blurTimer) {
-    clearTimeout(blurTimer)
-    blurTimer = null
   }
 })
 </script>
