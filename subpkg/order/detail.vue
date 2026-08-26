@@ -5,8 +5,9 @@
       <uni-tag :text="getStatusText(orderStatus)" :type="getStatusType(orderStatus)" size="normal" class="status-tag"  style="font-weight: bold"/>
       <template v-if="orderInfo.orderId">
         <text class="big-time">{{ usedText }}</text>
-        <text class="time-label">已教学时长</text>
-        <text class="left-time">剩余时长：{{ leftText }}</text>
+        <text class="time-label">已服务时长</text>
+        <!-- 剩余时长：仅小时价订单展示 -->
+        <text v-if="!isFixedPricing(orderInfo.pricingMode)" class="left-time">剩余时长：{{ leftText }}</text>
       </template>
     </view>
 
@@ -35,13 +36,21 @@
         <text class="label">教学类型</text>
         <text class="value">{{ getServiceTypeName(orderInfo.serviceType) }}</text>
       </view>
-      <view class="info-row">
+      <!-- 教学/预约时长：固定价不展示预约时长，只展示实际履约时长 -->
+      <view class="info-row" v-if="!isFixedPricing(orderInfo.pricingMode)">
         <text class="label">教学时长</text>
         <text class="value">{{ orderInfo.serviceDuration ? `${orderInfo.serviceDuration}分钟` : '-' }}</text>
       </view>
+      <view class="info-row" v-else-if="orderInfo.actualDurationMinutes">
+        <text class="label">服务时长</text>
+        <text class="value">{{ orderInfo.actualDurationMinutes }}分钟</text>
+      </view>
       <view class="info-row">
         <text class="label">订单金额</text>
-        <text class="value price">¥{{ orderInfo.totalAmount ? (orderInfo.totalAmount / 100).toFixed(2) : '-' }}</text>
+        <text class="value price">
+          ¥{{ orderInfo.totalAmount ? formatFenToYuan(orderInfo.totalAmount) : '-' }}
+          <text class="price-unit">{{ isFixedPricing(orderInfo.pricingMode) ? '（单次价）' : '（小时价）' }}</text>
+        </text>
       </view>
       <view class="info-row">
         <text class="label">预约时间</text>
@@ -204,6 +213,7 @@ import { nextTick, watch, getCurrentInstance } from 'vue'
 import { openMapNavigation, isMockVenue, calculateDistance, makePhoneCall } from '@/utils/platform'
 import { getOrderDetail, finishService, acceptOrder as acceptOrderApi, rejectOrder as rejectOrderApi, confirmDeparture as confirmDepartureApi, arrive as arriveApi, startService as startServiceApi, reportException as reportExceptionApi, startTimer as startTimerApi, endTimer as endTimerApi, getInProgressOrder } from '@/api/billiard/order'
 import { getLocation } from '@/utils/location'
+import { ORDER_PRICING_MODE, isFixedPricing, formatFenToYuan } from '@/utils/onsiteOrder'
 
 	// 服务类型映射
 	const getServiceTypeName = (serviceType) => {
@@ -365,7 +375,7 @@ const getStatusMainText = (status) => {
 const getStatusSubText = (status) => {
   switch (status) {
     case ORDER_STATUS.UNPAID:
-      return `金额 ¥${orderInfo.value.totalAmount ? (orderInfo.value.totalAmount / 100).toFixed(2) : '-'}`
+      return `金额 ¥${orderInfo.value.totalAmount ? formatFenToYuan(orderInfo.value.totalAmount) : '-'}`
     case ORDER_STATUS.PENDING:
       return `预约时间 ${orderInfo.value.bookingTimeText || '-'}`
     case ORDER_STATUS.ACCEPTED:
@@ -436,6 +446,18 @@ const syncOrderInfo = (data) => {
 }
 
 const syncProcessingTimer = (data, isInitial = false) => {
+  // 固定价订单：只展示已服务时长，不计算剩余时间
+  if (isFixedPricing(data.pricingMode ?? orderInfo.value.pricingMode)) {
+    if (data.startTime) {
+      usedSec.value = Math.floor((Date.now() - new Date(data.startTime).getTime()) / 1000)
+    }
+    usedText.value = fmtHHMM(usedSec.value)
+    leftText.value = ''
+    totalDurationSec = 0
+    return
+  }
+
+  // 小时价订单：原有逻辑
   // 保存总教学时长
   if (data.serviceDuration) {
     totalDurationSec = data.serviceDuration * 60
@@ -502,11 +524,19 @@ const fetchOrderDetail = async () => {
 
 const startLocalTimer = () => {
   stopLocalTimer()
-  usedText.value = fmtMM(usedSec.value)
-  leftText.value = fmtHHMM(leftSec.value)
+  const isFixed = isFixedPricing(orderInfo.value.pricingMode)
+  usedText.value = isFixed ? fmtHHMM(usedSec.value) : fmtMM(usedSec.value)
+  leftText.value = isFixed ? '' : fmtHHMM(leftSec.value)
   localTimerStarted = true
 
   localTimer = setInterval(() => {
+    // 固定价：只累加已服务时长，不计算剩余
+    if (isFixed) {
+      usedSec.value++
+      usedText.value = fmtHHMM(usedSec.value)
+      return
+    }
+    // 小时价：原有逻辑
     // 如果有总时长，用总时长来计算，确保已用+剩余=总时长
     if (totalDurationSec > 0) {
       usedSec.value++
@@ -1001,6 +1031,13 @@ onUnload(() => {
     color: #2f6bee;
     font-weight: bold;
     font-size: 32rpx;
+  }
+
+  .price-unit {
+    font-size: 24rpx;
+    font-weight: normal;
+    color: #9ca3af;
+    margin-left: 8rpx;
   }
 }
 

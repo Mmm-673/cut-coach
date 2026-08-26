@@ -47,6 +47,50 @@ export const SETTLEMENT_STATUS_MAP = {
   30: { name: '失败待重试', color: '#f59e0b' }
 }
 
+// 订单计价模式（整数型，用于订单/计时/现场单等业务接口）
+export const ORDER_PRICING_MODE = {
+  HOURLY: 1,  // 小时价
+  FIXED: 2    // 固定价（单次）
+}
+
+// 服务目录计价模式（字符串型，用于 profile.serviceItemList）
+export const CATALOG_PRICING_MODE = {
+  HOURLY: 'HOURLY',
+  FIXED: 'FIXED'
+}
+
+/**
+ * 判断订单是否为固定价
+ * @param {number} pricingMode 订单计价模式（整数）
+ * @returns {boolean}
+ */
+export function isFixedPricing(pricingMode) {
+  return pricingMode === ORDER_PRICING_MODE.FIXED
+}
+
+/**
+ * 格式化价格带单位（根据订单 pricingMode）
+ * @param {number} amount 金额（分）
+ * @param {number} pricingMode 订单计价模式（整数）
+ * @returns {string} 如 "128.00 元/小时" 或 "688.00 元/次"
+ */
+export function formatPriceWithUnit(amount, pricingMode) {
+  const yuan = formatFenToYuan(amount)
+  if (isFixedPricing(pricingMode)) {
+    return `${yuan} 元/次`
+  }
+  return `${yuan} 元/小时`
+}
+
+/**
+ * 根据服务目录计价模式获取单位文本
+ * @param {string} catalogPricingMode 服务目录计价模式（字符串）
+ * @returns {string} "小时" 或 "次"
+ */
+export function getCatalogPriceUnit(catalogPricingMode) {
+  return catalogPricingMode === CATALOG_PRICING_MODE.FIXED ? '次' : '小时'
+}
+
 // ============ 计费规则工具 ============
 
 /**

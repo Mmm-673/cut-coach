@@ -26,17 +26,22 @@
 					<text class="label-on" :class="{ active: isFreeTravel }">开启</text>
 				</view>
 			</view>
-			<view class="status-row">
-				<text class="status-label">更新位置</text>
-				<view class="button-wrapper">
-					<button class="update-location-btn" :class="{ 'is-disabled': updatingLocation }"
-						@click="reportLocationAfterLogin">
-						{{ updatingLocation ? '更新中...' : '更新位置' }}
-					</button>
-				</view>
-			</view>
+<!--			<view class="status-row">-->
+<!--				<text class="status-label">更新位置</text>-->
+<!--				<view class="button-wrapper">-->
+<!--					<button class="update-location-btn" :class="{ 'is-disabled': updatingLocation }"-->
+<!--						@click="reportLocationAfterLogin">-->
+<!--						{{ updatingLocation ? '更新中...' : '更新位置' }}-->
+<!--					</button>-->
+<!--				</view>-->
+<!--			</view>-->
 			<uni-tag :text="isOnline ? '在线接单中' : '已下线，不接收新订单'" :type="isOnline ? 'success' : 'default'" size="normal"
 				class="status-tag" style="font-weight: bold" />
+			<!-- 模拟打赏动效（调试用） -->
+			<view class="debug-trigger" @click="mockRewardHeart">
+				<uni-icons type="heart-filled" size="14" color="#ff4d6d"></uni-icons>
+				<text class="debug-text">模拟收到打赏</text>
+			</view>
 		</uni-card>
 
 		<!-- 空订单状态 -->
@@ -190,13 +195,14 @@
 		<!-- 教学中状态 -->
 		<uni-card v-else-if="orderStatus === 'serving'" title="进行中教学" :is-shadow="true" :border="false">
 			<view class="serving-order">
-				<view class="serve-top">
+				<!-- 剩余时长：仅小时价订单展示 -->
+				<view class="serve-top" v-if="!isFixedPricing(pendingOrder.pricingMode)">
 					<text class="left-time">剩余时长 {{ servingLeftTimeText }}</text>
 				</view>
 
 				<view class="timer-box">
 					<text class="big-time">{{ servingUsedTimeText }}</text>
-					<text class="time-desc">已教学时长</text>
+					<text class="time-desc">已服务时长</text>
 				</view>
 
 				<button class="btn-end" @click="endService">结束教学</button>
@@ -214,10 +220,19 @@
 								</button>
 							</view>
 							<text class="service-name">{{ getServiceTypeName(pendingOrder.serviceType) }}</text>
-							<text class="service-price">¥{{ (pendingOrder.totalAmount / 100).toFixed(2) }}</text>
-							<view class="tip-box">
+							<text class="service-price">
+								¥{{ formatFenToYuan(pendingOrder.totalAmount) }}
+								<text class="price-unit">{{ isFixedPricing(pendingOrder.pricingMode) ? '/次' : '/小时' }}</text>
+							</text>
+							<!-- 加钟提示：仅小时价订单展示 -->
+							<view class="tip-box" v-if="!isFixedPricing(pendingOrder.pricingMode)">
 								<uni-icons type="info" size="14" color="#F59E0B"></uni-icons>
 								<text>支持客户加钟，时长自动更新</text>
+							</view>
+							<!-- 固定价提示 -->
+							<view class="tip-box" v-else>
+								<uni-icons type="info" size="14" color="#10b981"></uni-icons>
+								<text>固定价服务，时长不影响费用</text>
 							</view>
 						</view>
 						<button class="nav-btn" @click.stop="navigate">导航</button>
@@ -267,6 +282,9 @@
 			</view>
 		</uni-card>
 
+		<!-- 霸屏小心心动效组件 -->
+		<fullscreen-heart ref="heartAnimRef" />
+
 	</view>
 </template>
 
@@ -314,10 +332,16 @@
 		calculateDistance
 	} from '@/utils/platform'
 	import { locationPermissionMessages } from '@/utils/permission-messages'
+	import { isFixedPricing, formatFenToYuan } from '@/utils/onsiteOrder'
+	import { getLatestHeartMessage } from '@/api/billiard/message'
+	import fullscreenHeart from '@/components/fullscreen-heart/fullscreen-heart.vue'
 
 	const {
 		proxy
 	} = getCurrentInstance()
+
+	// 霸屏小心心动效组件引用
+	const heartAnimRef = ref(null)
 
 	// ====================== 基础状态 ======================
 	const isOnline = ref(false)
@@ -669,12 +693,7 @@
 					latitude: location.latitude
 				})
 				console.log('位置更新成功', location)
-				uni.showToast({
-					title: '位置更新成功',
-					icon: 'success'
-				})
 			} catch (err) {
-				console.error('位置更新失败', err)
 				uni.showToast({
 					title: err,
 					icon: 'none'
@@ -842,6 +861,7 @@
 
 				// 下线，停止轮询，清空所有状态
 				stopPolling()
+				stopHeartMessagePolling()
 				applyIdleState()
 			}
 
@@ -872,6 +892,8 @@
 
 		// 上线后开始轮询
 		startPolling()
+		// 开启霸屏小心心消息轮询
+		startHeartMessagePolling()
 	}
 
 	// 开始轮询（待接单优先，没有待接单再查询进行中订单）
@@ -959,6 +981,65 @@
 		pendingOrder.value = mergePendingReviewFields(order)
 		orderStatus.value = 'pending'
 		updatePendingCountdown(pendingOrder.value)
+	}
+
+	// ====================== 霸屏小心心动效（后台消息触发） ======================
+	// 播放霸屏小心心动效
+	const playHeartAnimation = (info) => {
+		if (!heartAnimRef.value) return
+		heartAnimRef.value.play(info, { duration: 5000 })
+	}
+
+	// 模拟收到打赏（调试用：点击模拟按钮触发）
+	// 真实场景：由消息轮询接口返回数据后调用
+	const mockRewardHeart = () => {
+		const mockReward = {
+			avatar: '',
+			nickname: '小美同学',
+			content: '教练教得超棒，下次还约！💕',
+			amount: '88.00',
+			tags: ['萌新', '颜值高'],
+		}
+		playHeartAnimation(mockReward)
+	}
+
+	// 后台消息轮询（用于触发霸屏小心心动效）
+	// 后端提供一个接口，轮询是否有新的点赞/好评/打赏等消息
+	let heartMessagePollTimer = null
+	let lastHeartMsgId = null // 记录上一次展示的消息 ID，避免重复播放
+
+	const pollHeartMessage = async () => {
+		try {
+			const res = await getLatestHeartMessage()
+			if (res.code === 200 && res.data && res.data.id !== lastHeartMsgId) {
+				lastHeartMsgId = res.data.id
+				const info = {
+					avatar: res.data.avatar || '',
+					nickname: res.data.nickname || '',
+					content: res.data.content || '',
+					amount: res.data.amount || '0.00',
+					tags: res.data.tags || [],
+				}
+				playHeartAnimation(info)
+			}
+		} catch (err) {
+			console.error('获取心跳消息失败', err)
+		}
+	}
+
+	const startHeartMessagePolling = () => {
+		if (heartMessagePollTimer) return
+		// 每 10 秒轮询一次（上线时开启）
+		heartMessagePollTimer = setInterval(() => {
+			pollHeartMessage()
+		}, 10000)
+	}
+
+	const stopHeartMessagePolling = () => {
+		if (heartMessagePollTimer) {
+			clearInterval(heartMessagePollTimer)
+			heartMessagePollTimer = null
+		}
 	}
 
 	const applyAcceptedOrder = (order) => {
@@ -1332,8 +1413,9 @@
 					...pendingOrder.value,
 					...data
 				}
-				// 更新剩余时长
-				if (data.remainingMinutes !== undefined && data.remainingMinutes !== null) {
+				// 更新剩余时长 - 仅小时价订单
+				if (!isFixedPricing(data.pricingMode ?? pendingOrder.value.pricingMode) &&
+					data.remainingMinutes !== undefined && data.remainingMinutes !== null) {
 					leftSec.value = data.remainingMinutes * 60
 					servingLeftTimeText.value = fmtHHMM(leftSec.value)
 				}
@@ -1359,12 +1441,18 @@
 			usedSec.value = 0
 		}
 
-		if (pendingOrder.value.remainingMinutes !== undefined && pendingOrder.value.remainingMinutes !== null) {
-			leftSec.value = pendingOrder.value.remainingMinutes * 60
-		} else {
-			const totalDurationSeconds = (pendingOrder.value.serviceDuration || 60) * 60
-			leftSec.value = Math.max(0, totalDurationSeconds - usedSec.value)
-		}
+			// 固定价订单：不计算剩余时长
+			if (!isFixedPricing(pendingOrder.value.pricingMode)) {
+				if (pendingOrder.value.remainingMinutes !== undefined && pendingOrder.value.remainingMinutes !== null) {
+					leftSec.value = pendingOrder.value.remainingMinutes * 60
+				} else {
+					const totalDurationSeconds = (pendingOrder.value.serviceDuration || 60) * 60
+					leftSec.value = Math.max(0, totalDurationSeconds - usedSec.value)
+				}
+				servingLeftTimeText.value = fmtHHMM(Math.max(0, leftSec.value))
+			} else {
+				servingLeftTimeText.value = ''
+			}
 
 		servingUsedTimeText.value = fmtMM(usedSec.value)
 		servingLeftTimeText.value = fmtHHMM(Math.max(0, leftSec.value))
@@ -1600,6 +1688,7 @@
 	// 每次页面显示时刷新数据
 	let lastRefreshTime = 0
 	onShow(async () => {
+    await reportLocationAfterLogin()
 		const now = Date.now()
 		// 避免频繁刷新（5秒内只刷新一次）
 		if (now - lastRefreshTime < 5000) return
@@ -1616,6 +1705,7 @@
 		stopTimerPolling()
 		stopPendingCountdown()
 		stopServeTimer()
+		stopHeartMessagePolling()
 	})
 </script>
 
@@ -1673,6 +1763,23 @@
 
 	.status-tag {
 		margin-top: 24rpx;
+	}
+
+	.debug-trigger {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8rpx;
+		margin-top: 20rpx;
+		padding: 12rpx 0;
+		border: 1rpx dashed #ffb3c6;
+		border-radius: 12rpx;
+		background: rgba(255, 77, 109, 0.05);
+
+		.debug-text {
+			font-size: 22rpx;
+			color: #ff4d6d;
+		}
 	}
 
 	.update-location-btn {
@@ -2118,6 +2225,13 @@
 				font-size: 30rpx;
 				color: #2f6bee;
 				font-weight: bold;
+			}
+
+			.price-unit {
+				font-size: 22rpx;
+				color: #9ca3af;
+				font-weight: normal;
+				margin-left: 4rpx;
 			}
 
 			.tip-box {

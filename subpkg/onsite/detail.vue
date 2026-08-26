@@ -28,8 +28,11 @@
     <view v-if="orderDetail.status === 15" class="section-card">
       <view class="section-title">订单信息</view>
       <view class="info-item">
-        <text class="info-label">小时单价</text>
-        <text class="info-value">¥{{ formatFenToYuan(orderDetail.unitPrice) }}/小时</text>
+        <text class="info-label">{{ isFixedPricing(orderDetail.pricingMode) ? '单次服务费' : '小时单价' }}</text>
+        <text class="info-value">
+          ¥{{ formatFenToYuan(orderDetail.unitPrice) }}
+          <text class="unit-suffix">{{ isFixedPricing(orderDetail.pricingMode) ? '/次' : '/小时' }}</text>
+        </text>
       </view>
       <view class="divider"></view>
       <view class="info-item">
@@ -58,10 +61,19 @@
       </view>
       <view class="divider"></view>
       <view class="info-item">
-        <text class="info-label">小时单价</text>
-        <text class="info-value">¥{{ formatFenToYuan(orderDetail.unitPrice) }}/小时</text>
+        <text class="info-label">{{ isFixedPricing(orderDetail.pricingMode) ? '单次服务费' : '小时单价' }}</text>
+        <text class="info-value">
+          ¥{{ formatFenToYuan(orderDetail.unitPrice) }}
+          <text class="unit-suffix">{{ isFixedPricing(orderDetail.pricingMode) ? '/次' : '/小时' }}</text>
+        </text>
       </view>
-      <view class="divider"></view>
+      <!-- 固定价提示：时长不影响费用 -->
+      <view class="divider" v-if="isFixedPricing(orderDetail.pricingMode)"></view>
+      <view class="info-item" v-if="isFixedPricing(orderDetail.pricingMode)">
+        <text class="info-label">计费说明</text>
+        <text class="info-value-note">服务时长仅作履约记录，不影响费用</text>
+      </view>
+      <view class="divider" v-if="!isFixedPricing(orderDetail.pricingMode)"></view>
       <view class="info-item">
         <text class="info-label">返程车费</text>
         <view class="info-value-row">
@@ -86,14 +98,17 @@
         <text class="info-label">实际时长</text>
         <text class="info-value">{{ formatActualDuration() }}</text>
       </view>
+      <!-- 计费分钟：仅小时价展示 -->
+      <template v-if="!isFixedPricing(orderDetail.pricingMode)">
+        <view class="divider"></view>
+        <view class="info-item">
+          <text class="info-label">计费分钟</text>
+          <text class="info-value">{{ orderDetail.billingMinutes || 0 }} 分钟</text>
+        </view>
+      </template>
       <view class="divider"></view>
       <view class="info-item">
-        <text class="info-label">计费分钟</text>
-        <text class="info-value">{{ orderDetail.billingMinutes || 0 }} 分钟</text>
-      </view>
-      <view class="divider"></view>
-      <view class="info-item">
-        <text class="info-label">服务金额</text>
+        <text class="info-label">{{ isFixedPricing(orderDetail.pricingMode) ? '单次服务费' : '服务金额' }}</text>
         <text class="info-value">¥{{ formatFenToYuan(serviceAmount) }}</text>
       </view>
       <view class="divider"></view>
@@ -218,6 +233,8 @@ import {
   SERVICE_TYPE_MAP,
   PAYMENT_STATUS_MAP,
   SETTLEMENT_STATUS_MAP,
+  ORDER_PRICING_MODE,
+  isFixedPricing,
   formatFenToYuan,
   formatDuration,
   diffSeconds
@@ -277,8 +294,13 @@ let pollInterval = null
 let pollCount = 0
 const MAX_POLL = 200
 
-// 服务金额（计算）
+// 服务金额
+// 固定价：直接使用 unitPrice（单次服务费快照）
+// 小时价：payAmount - 返程车费（反推）
 const serviceAmount = computed(() => {
+  if (isFixedPricing(orderDetail.value.pricingMode)) {
+    return Number(orderDetail.value.unitPrice || 0)
+  }
   const pay = Number(orderDetail.value.payAmount || 0)
   const travel = Number(orderDetail.value.returnTravelAmount || 0)
   return Math.max(0, pay - travel)
@@ -749,6 +771,19 @@ onUnmounted(() => {
   font-size: 22rpx;
   color: #9ca3af;
   margin-left: 8rpx;
+}
+
+.unit-suffix {
+  font-size: 24rpx;
+  color: #9ca3af;
+  font-weight: normal;
+  margin-left: 4rpx;
+}
+
+.info-value-note {
+  font-size: 24rpx;
+  color: #f59e0b;
+  font-weight: normal;
 }
 
 .divider {

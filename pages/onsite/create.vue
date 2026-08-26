@@ -2,15 +2,26 @@
   <view class="create-page">
     <!-- 服务类型选择 -->
     <view class="section-card">
-      <view class="form-item">
-        <view class="form-label">服务类型</view>
-        <view class="form-value">
-          <uni-data-select
-            v-model="selectedServiceType"
-            :localdata="serviceTypeOptions"
-            placeholder="请选择服务类型"
-            @change="onServiceTypeChange"
-          ></uni-data-select>
+      <view class="form-label">服务类型</view>
+      <view class="service-list">
+        <view
+          v-for="item in serviceItemList"
+          :key="item.serviceType"
+          class="service-item"
+          :class="{ active: selectedServiceType === item.serviceType, disabled: !item.enabled }"
+          @click="selectService(item)"
+        >
+          <view class="service-left">
+            <view class="service-name">{{ item.serviceName }}</view>
+            <view class="service-price" v-if="item.enabled">
+              <text class="price-num">¥{{ formatFenToYuan(item.price) }}</text>
+              <text class="price-unit">/{{ item.priceUnit }}</text>
+            </view>
+            <view class="service-disabled" v-else>暂不可预约</view>
+          </view>
+          <view class="service-check" v-if="selectedServiceType === item.serviceType">
+            <uni-icons type="checkmarkempty" size="20" color="#2f6bee"></uni-icons>
+          </view>
         </view>
       </view>
     </view>
@@ -104,14 +115,19 @@
 import { ref, computed } from 'vue'
 import { getCoachProfile } from '@/api/billiard/coach'
 import { searchMember, createOnsiteOrder } from '@/api/billiard/onsiteOrder'
-import { SERVICE_TYPE_MAP, generateUUID, getBillingTip } from '@/utils/onsiteOrder'
+import {
+  SERVICE_TYPE_MAP,
+  generateUUID,
+  getBillingTip,
+  CATALOG_PRICING_MODE,
+  formatFenToYuan,
+  getCatalogPriceUnit
+} from '@/utils/onsiteOrder'
 
-// 服务类型选项（uni-data-select 格式）
-const serviceTypeOptions = ref([
-  { value: 1, text: '台球指导' }
-])
+// 服务目录列表（带价格、计价模式等信息）
+const serviceItemList = ref([])
 
-const selectedServiceType = ref(1)
+const selectedServiceType = ref(null)
 const customerType = ref(2) // 默认散客
 const mobileSuffix = ref('')
 const memberList = ref([])
@@ -121,27 +137,28 @@ const creating = ref(false)
 let currentRequestId = ''
 let searchTimer = null
 
-// 从教练档案获取服务类型
-// serviceItems 是逗号分隔的字符串，如 "1,2,3"
+// 从教练档案获取服务目录（含价格和计价模式）
 const fetchCoachServiceTypes = async () => {
   try {
     const res = await getCoachProfile()
     const data = res.data || {}
-    let types = []
+    const list = Array.isArray(data.serviceItemList) ? data.serviceItemList : []
 
-    if (data.serviceItems) {
-      types = String(data.serviceItems)
-        .split(',')
-        .map(t => Number(t.trim()))
-        .filter(t => !isNaN(t) && t > 0)
-    }
-
-    if (types.length > 0) {
-      serviceTypeOptions.value = types.map(typeValue => ({
-        value: typeValue,
-        text: SERVICE_TYPE_MAP[typeValue]?.name || `服务${typeValue}`
+    if (list.length > 0) {
+      serviceItemList.value = list.map(item => ({
+        serviceType: item.serviceType,
+        serviceName: SERVICE_TYPE_MAP[item.serviceType]?.name || `服务${item.serviceType}`,
+        price: item.price,
+        pricingMode: item.pricingMode,
+        priceUnit: item.priceUnit || getCatalogPriceUnit(item.pricingMode),
+        // 固定价且 price 为 null 时不可选
+        enabled: !(item.pricingMode === CATALOG_PRICING_MODE.FIXED && (item.price === null || item.price === undefined))
       }))
-      selectedServiceType.value = serviceTypeOptions.value[0].value
+      // 默认选中第一个可用的服务
+      const firstEnabled = serviceItemList.value.find(item => item.enabled)
+      if (firstEnabled) {
+        selectedServiceType.value = firstEnabled.serviceType
+      }
     }
   } catch (e) {
     console.error('获取教练服务类型失败', e)
@@ -149,10 +166,16 @@ const fetchCoachServiceTypes = async () => {
   }
 }
 
-const onServiceTypeChange = (e) => {
-  // uni-data-select 的 change 事件
-  selectedServiceType.value = typeof e === 'object' ? e.value : e
+const selectService = (item) => {
+  if (!item.enabled) return
+  selectedServiceType.value = item.serviceType
 }
+
+// 获取当前选中服务的计价模式
+const currentPricingMode = computed(() => {
+  const item = serviceItemList.value.find(s => s.serviceType === selectedServiceType.value)
+  return item?.pricingMode
+})
 
 // 手机号输入
 const onMobileInput = (e) => {
@@ -194,13 +217,32 @@ const selectMember = (member) => {
 // 是否可以创建
 const canCreate = computed(() => {
   if (!selectedServiceType.value) return false
+  const item = serviceItemList.value.find(s => s.serviceType === selectedServiceType.value)
+  if (!item || !item.enabled) return false
   if (customerType.value === 1 && !selectedMember.value) return false
   return true
 })
 
 const billingTipText = computed(() => {
+  // 固定价服务不显示起步时长提示
+  if (currentPricingMode.value === CATALOG_PRICING_MODE.FIXED) {
+    return '温馨提示：本服务为固定单次价，服务时长仅供履约记录，不影响最终费用。返程车费将在结束服务时另行结算。'
+  }
   return getBillingTip(selectedServiceType.value)
 })
+
+// 重置表单状态
+const resetForm = () => {
+  // 默认选中第一个可用的服务
+  const firstEnabled = serviceItemList.value.find(item => item.enabled)
+  selectedServiceType.value = firstEnabled ? firstEnabled.serviceType : null
+  customerType.value = 2 // 默认散客
+  mobileSuffix.value = ''
+  memberList.value = []
+  selectedMember.value = null
+  searched.value = false
+  currentRequestId = '' // 重置 requestId，下次创建生成新的
+}
 
 // 创建订单
 const handleCreate = async () => {
@@ -226,6 +268,8 @@ const handleCreate = async () => {
     if (res.code === 0 || res.code === 200) {
       uni.showToast({ title: '创建成功', icon: 'success' })
       const orderId = res.data?.id
+      // 重置表单状态，返回时是干净的初始状态
+      resetForm()
       setTimeout(() => {
         uni.navigateTo({ url: `/subpkg/onsite/detail?id=${orderId}` })
       }, 500)
@@ -270,10 +314,80 @@ fetchCoachServiceTypes()
   font-size: 30rpx;
   font-weight: 600;
   color: #333;
+  margin-bottom: 20rpx;
 }
 
 .form-value {
   width: 100%;
+}
+
+/* 服务列表 */
+.service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.service-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 28rpx;
+  background: #f8f9fb;
+  border-radius: 16rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+
+  &.active {
+    background: rgba(47, 107, 238, 0.06);
+    border-color: #2f6bee;
+  }
+
+  &.disabled {
+    opacity: 0.5;
+  }
+
+  &:active:not(.disabled) {
+    opacity: 0.8;
+  }
+}
+
+.service-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.service-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.service-price {
+  display: flex;
+  align-items: baseline;
+}
+
+.price-num {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #2f6bee;
+}
+
+.price-unit {
+  font-size: 24rpx;
+  color: #6b7280;
+  margin-left: 4rpx;
+}
+
+.service-disabled {
+  font-size: 24rpx;
+  color: #9ca3af;
+}
+
+.service-check {
+  flex-shrink: 0;
 }
 
 /* 客户类型 */

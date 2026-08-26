@@ -58,9 +58,14 @@
               <text class="label">开始时间</text>
               <text class="value">{{formatTime(order.createTime) || '-'}}</text>
             </view>
-            <view class="order-info-row">
+            <!-- 预约时长：仅小时价普通订单展示 -->
+            <view class="order-info-row" v-if="order.type === 1 && order.serviceDuration && !isFixedPricing(order.pricingMode)">
+              <text class="label">预约时长</text>
+              <text class="value">{{order.serviceDuration}}分钟</text>
+            </view>
+            <view class="order-info-row" v-if="order.totalAmount">
               <text class="label">订单金额</text>
-              <text class="value price">¥{{(order.totalAmount / 100).toFixed(2)}}</text>
+              <text class="value price">{{ formatPriceWithUnit(order.totalAmount, order.pricingMode) }}</text>
             </view>
           </view>
           <view class="order-footer">
@@ -87,7 +92,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getOrderPage } from '@/api/billiard/order'
-import { ORDER_TYPE_MAP } from '@/utils/onsiteOrder'
+import { ORDER_TYPE_MAP, formatPriceWithUnit, isFixedPricing } from '@/utils/onsiteOrder'
 
 	// 服务类型映射
 	const getServiceTypeName = (serviceType) => {
@@ -168,6 +173,7 @@ const fetchOrders = async (reset = false) => {
 
 // 格式化时间
 const formatTime = (timestamp) => {
+  if (!timestamp && timestamp !== 0) return ''
   if (!timestamp && timestamp !== 0) return ''
 
   let date
