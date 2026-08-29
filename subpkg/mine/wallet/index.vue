@@ -30,6 +30,12 @@
         </view>
         <text class="action-label">扣款记录</text>
       </view>
+      <view class="action-item" @click="goRewardRecord">
+        <view class="action-icon reward-icon">
+          <uni-icons type="heart-filled" size="32" color="#fff"></uni-icons>
+        </view>
+        <text class="action-label">打赏记录</text>
+      </view>
     </view>
 
     <!-- 最近记录预览 -->
@@ -150,6 +156,10 @@ const goDeduction = () => {
   uni.navigateTo({ url: '/subpkg/mine/wallet/deduct/index' })
 }
 
+const goRewardRecord = () => {
+  uni.navigateTo({ url: '/subpkg/mine/wallet/reward-record/index' })
+}
+
 onShow(() => {
   fetchWalletData()
 })
@@ -251,6 +261,10 @@ onMounted(() => {
 
 .deduct-icon {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.reward-icon {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
 }
 
 .action-label {

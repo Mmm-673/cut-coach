@@ -1,5 +1,12 @@
 <template>
 	<view class="workbench-wrapper">
+		<!-- 通知铃铛 -->
+		<view class="notification-bell" @click="goToNotification">
+			<uni-icons type="chatboxes" size="24" color="#1f2937"></uni-icons>
+			<view class="bell-badge" v-if="notificationStore.unreadCount > 0">
+				{{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
+			</view>
+		</view>
 
 		<!-- 工作状态卡片 -->
 		<uni-card title="工作状态" :is-shadow="true" :border="false">
@@ -14,18 +21,18 @@
 					<text class="label-on" :class="{ active: isOnline }">上线</text>
 				</view>
 			</view>
-			<view class="status-row">
-				<text class="status-label">低碳出行</text>
-				<view class="switch-wrapper">
-					<text class="label-off" :class="{ active: !isFreeTravel }">关闭</text>
-					<view class="custom-switch"
-						:class="{ 'is-checked': isFreeTravel, 'is-disabled': freeTravelLoading }"
-						@click="handleFreeTravelSwitchClick">
-						<view class="switch-knob"></view>
-					</view>
-					<text class="label-on" :class="{ active: isFreeTravel }">开启</text>
-				</view>
-			</view>
+<!--			<view class="status-row">-->
+<!--				<text class="status-label">低碳出行</text>-->
+<!--				<view class="switch-wrapper">-->
+<!--					<text class="label-off" :class="{ active: !isFreeTravel }">关闭</text>-->
+<!--					<view class="custom-switch"-->
+<!--						:class="{ 'is-checked': isFreeTravel, 'is-disabled': freeTravelLoading }"-->
+<!--						@click="handleFreeTravelSwitchClick">-->
+<!--						<view class="switch-knob"></view>-->
+<!--					</view>-->
+<!--					<text class="label-on" :class="{ active: isFreeTravel }">开启</text>-->
+<!--				</view>-->
+<!--			</view>-->
 <!--			<view class="status-row">-->
 <!--				<text class="status-label">更新位置</text>-->
 <!--				<view class="button-wrapper">-->
@@ -37,11 +44,6 @@
 <!--			</view>-->
 			<uni-tag :text="isOnline ? '在线接单中' : '已下线，不接收新订单'" :type="isOnline ? 'success' : 'default'" size="normal"
 				class="status-tag" style="font-weight: bold" />
-			<!-- 模拟打赏动效（调试用） -->
-			<view class="debug-trigger" @click="mockRewardHeart">
-				<uni-icons type="heart-filled" size="14" color="#ff4d6d"></uni-icons>
-				<text class="debug-text">模拟收到打赏</text>
-			</view>
 		</uni-card>
 
 		<!-- 空订单状态 -->
@@ -285,6 +287,12 @@
 		<!-- 霸屏小心心动效组件 -->
 		<fullscreen-heart ref="heartAnimRef" />
 
+		<!-- 全局打赏播报（WebSocket 推送触发） -->
+		<reward-broadcast />
+
+		<!-- 重大公告弹框（WebSocket 推送触发） -->
+		<announce-broadcast />
+
 	</view>
 </template>
 
@@ -335,6 +343,9 @@
 	import { isFixedPricing, formatFenToYuan } from '@/utils/onsiteOrder'
 	import { getLatestHeartMessage } from '@/api/billiard/message'
 	import fullscreenHeart from '@/components/fullscreen-heart/fullscreen-heart.vue'
+	import RewardBroadcast from '@/components/reward-broadcast/index.vue'
+	import AnnounceBroadcast from '@/components/announce-broadcast/index.vue'
+	import { useNotificationStore } from '@/store/modules/notification'
 
 	const {
 		proxy
@@ -342,6 +353,14 @@
 
 	// 霸屏小心心动效组件引用
 	const heartAnimRef = ref(null)
+
+	// 通知 store
+	const notificationStore = useNotificationStore()
+
+	// 跳转到通知列表
+	const goToNotification = () => {
+		uni.navigateTo({ url: '/subpkg/notification/index' })
+	}
 
 	// ====================== 基础状态 ======================
 	const isOnline = ref(false)
@@ -379,6 +398,12 @@
 	let leftTimer = null
 	let fetchingOrders = false
 	let hasCurrentUnfinishedOrder = false
+
+	// 位置定时上报
+	let locationReportTimer = null
+	let lastLocationReportTime = 0
+	const LOCATION_REPORT_INTERVAL = 10 * 60 * 1000 // 定时上报：10 分钟
+	const LOCATION_REPORT_MIN_GAP = 2 * 60 * 1000 // 前台切换最小间隔：2 分钟
 
 	// 待接单数据
 	const pendingOrder = ref({})
@@ -862,6 +887,7 @@
 				// 下线，停止轮询，清空所有状态
 				stopPolling()
 				stopHeartMessagePolling()
+				stopLocationReport()
 				applyIdleState()
 			}
 
@@ -872,6 +898,25 @@
 			proxy.$modal.msgError(err || '操作失败')
 		} finally {
 			switchLoading.value = false
+		}
+	}
+
+	// 启动位置定时上报
+	const startLocationReport = () => {
+		stopLocationReport()
+		locationReportTimer = setInterval(() => {
+			if (isOnline.value) {
+				reportLocationAfterLogin()
+				lastLocationReportTime = Date.now()
+			}
+		}, LOCATION_REPORT_INTERVAL)
+	}
+
+	// 停止位置定时上报
+	const stopLocationReport = () => {
+		if (locationReportTimer) {
+			clearInterval(locationReportTimer)
+			locationReportTimer = null
 		}
 	}
 
@@ -889,11 +934,14 @@
 			longitude: loc.longitude,
 			latitude: loc.latitude
 		})
+		lastLocationReportTime = Date.now()
 
 		// 上线后开始轮询
 		startPolling()
 		// 开启霸屏小心心消息轮询
 		startHeartMessagePolling()
+		// 开启位置定时上报
+		startLocationReport()
 	}
 
 	// 开始轮询（待接单优先，没有待接单再查询进行中订单）
@@ -1001,6 +1049,26 @@
 			tags: ['萌新', '颜值高'],
 		}
 		playHeartAnimation(mockReward)
+	}
+
+	// 模拟 WebSocket 打赏消息（调试全局播报链路）
+	const mockWsReward = () => {
+		const mockPayload = {
+			notificationId: Date.now(),
+			bizType: 'REWARD',
+			rewardId: 9001,
+			city: '苏州市',
+			amount: 2000,
+			memberNickname: '小王',
+			coachName: '小李',
+			title: '初球来电打赏播报',
+			content: '球友小王为初球来电助教小李打赏了20元',
+			voiceText: '',
+			animationType: 'reward',
+			animationExpireTime: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+		}
+		console.log('[调试] 模拟WS打赏消息:', mockPayload)
+		uni.$emit('ws:billiard_reward_broadcast', mockPayload)
 	}
 
 	// 后台消息轮询（用于触发霸屏小心心动效）
@@ -1678,19 +1746,32 @@
 	}
 	// #endif
 
+	// 打赏广播推送处理
+	const onRewardBroadcast = () => {
+		notificationStore.incrementUnread()
+	}
+
 	onMounted(async () => {
 		// #ifdef APP-PLUS
 		uni.$on('jpush:notificationArrived', onJpushNewOrder)
 		// #endif
+		uni.$on('ws:billiard_reward_broadcast', onRewardBroadcast)
 		await refreshPageData()
 	})
 
 	// 每次页面显示时刷新数据
 	let lastRefreshTime = 0
 	onShow(async () => {
-    await reportLocationAfterLogin()
+		// 上线状态下，距上次上报超过 2 分钟才重新上报位置
+		if (isOnline.value && Date.now() - lastLocationReportTime > LOCATION_REPORT_MIN_GAP) {
+			reportLocationAfterLogin().then(() => {
+				lastLocationReportTime = Date.now()
+			}).catch(() => {})
+		}
+		// 刷新通知未读数
+		notificationStore.fetchUnreadCount().catch(() => {})
 		const now = Date.now()
-		// 避免频繁刷新（5秒内只刷新一次）
+		// 避免繁刷新（5秒内只刷新一次）
 		if (now - lastRefreshTime < 5000) return
 		lastRefreshTime = now
 
@@ -1701,11 +1782,13 @@
 		// #ifdef APP-PLUS
 		uni.$off('jpush:notificationArrived', onJpushNewOrder)
 		// #endif
+		uni.$off('ws:billiard_reward_broadcast', onRewardBroadcast)
 		stopPolling()
 		stopTimerPolling()
 		stopPendingCountdown()
 		stopServeTimer()
 		stopHeartMessagePolling()
+		stopLocationReport()
 	})
 </script>
 
@@ -1738,10 +1821,49 @@
 		padding: 0 4rpx 12rpx !important;
 	}
 
+	/* 通知铃铛 */
+	.notification-bell {
+		position: absolute;
+		top: 40rpx;
+		right: 50rpx;
+		width: 72rpx;
+		height: 72rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: #fff;
+		border-radius: 50%;
+		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+		z-index: 100;
+		transition: transform 0.2s;
+
+		&:active {
+			transform: scale(0.92);
+		}
+
+		.bell-badge {
+			position: absolute;
+			top: -6rpx;
+			right: -6rpx;
+			min-width: 32rpx;
+			height: 32rpx;
+			line-height: 32rpx;
+			padding: 0 8rpx;
+			background: #ef4444;
+			color: #fff;
+			font-size: 20rpx;
+			font-weight: 600;
+			border-radius: 16rpx;
+			text-align: center;
+			box-sizing: border-box;
+		}
+	}
+
 	.workbench-wrapper {
 		min-height: 100vh;
 		background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
 		padding: 32rpx;
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		gap: 24rpx;

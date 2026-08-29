@@ -4,6 +4,7 @@ import { getPlatform } from '@/utils/platform'
 import errorCode from '@/utils/errorCode'
 import { toast, showConfirm, tansParams } from '@/utils/common'
 import { refreshToken } from '@/api/login'
+import wsManager from '@/utils/websocket'
 
 let timeout = 10000
 const baseUrl = config.baseUrl
@@ -45,6 +46,12 @@ function doRefreshToken() {
       if (res.code === 0) {
         setAuthInfo(res.data)
         onTokenRefreshed(res.data.accessToken)
+        // Token 刷新后，WebSocket 用新 Token 重连
+        try {
+          wsManager.reconnect()
+        } catch (e) {
+          console.warn('WebSocket Token 刷新重连失败:', e)
+        }
         resolve(res.data.accessToken)
       } else {
         reject(res)

@@ -5,6 +5,7 @@ import { useConfigStore, useUserStore } from '@/store'
 import { onLaunch } from '@dcloudio/uni-app'
 import { initPushService, syncPushForUser } from '@/utils/jpush'
 import { shouldShowIosPrivacy, setPrivacyAgreedCallback } from '@/utils/privacy'
+import wsManager from '@/utils/websocket'
 
 onLaunch(() => {
   console.log('App Launch')
@@ -57,6 +58,13 @@ function checkLogin() {
       syncPushForUser(userId)
     }
     // #endif
+
+    // 已登录时连接 WebSocket，失败不影响主流程
+    try {
+      wsManager.connect()
+    } catch (e) {
+      console.warn('WebSocket 连接失败:', e)
+    }
 
     // 初始化 store
     const userStore = useUserStore()

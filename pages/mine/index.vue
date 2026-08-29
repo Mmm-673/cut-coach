@@ -113,12 +113,41 @@
 
     <!-- 功能菜单 -->
     <view class="section-card">
+      <view class="menu-item" @click="navToNotification">
+        <view class="menu-item-left">
+          <view class="icon-box icon-blue">
+            <uni-icons type="chatboxes" size="22" color="#fff"></uni-icons>
+          </view>
+          <view class="menu-text">消息通知</view>
+        </view>
+        <view class="menu-item-right">
+          <view class="unread-badge" v-if="notificationStore.unreadCount > 0">
+            {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
+          </view>
+          <uni-icons type="right" size="18" color="#999"></uni-icons>
+        </view>
+      </view>
+
+      <view class="divider"></view>
+
       <view class="menu-item" @click="navToAllOrders">
         <view class="menu-item-left">
           <view class="icon-box icon-blue">
             <uni-icons type="compose" size="22" color="#fff"></uni-icons>
           </view>
           <view class="menu-text">全部订单</view>
+        </view>
+        <uni-icons type="right" size="18" color="#999"></uni-icons>
+      </view>
+
+      <view class="divider"></view>
+
+      <view class="menu-item" @click="navToRewardRecord">
+        <view class="menu-item-left">
+          <view class="icon-box icon-pink">
+            <uni-icons type="heart-filled" size="22" color="#fff"></uni-icons>
+          </view>
+          <view class="menu-text">打赏记录</view>
         </view>
         <uni-icons type="right" size="18" color="#999"></uni-icons>
       </view>
@@ -222,9 +251,11 @@ import { onShow } from '@dcloudio/uni-app'
 import { getCoachProfile, cancelAccount } from '@/api/billiard/coach'
 import { getWalletBalance } from '@/api/billiard/wallet'
 import { useUserStore } from '@/store'
+import { useNotificationStore } from '@/store/modules/notification'
 
 
 const { proxy } = getCurrentInstance()
+const notificationStore = useNotificationStore()
 const showCancelAccountPopup = ref(false)
 const cancelReason = ref('')
 const cancelSubmitting = ref(false)
@@ -333,6 +364,14 @@ const navToHelp = () => {
   uni.navigateTo({ url: '/subpkg/mine/help/index' })
 }
 
+const navToNotification = () => {
+  uni.navigateTo({ url: '/subpkg/notification/index' })
+}
+
+const navToRewardRecord = () => {
+  uni.navigateTo({ url: '/subpkg/mine/wallet/reward-record/index' })
+}
+
 const navToAllOrders = () => {
   uni.navigateTo({ url: '/pages/order/index' })
 }
@@ -394,6 +433,7 @@ const navToSetting = () => {
 onShow(() => {
   fetchCoachProfile()
   fetchWalletBalance()
+  notificationStore.fetchUnreadCount().catch(() => {})
 })
 </script>
 
@@ -621,6 +661,26 @@ page {
 .menu-item-left {
   display: flex;
   align-items: center;
+}
+
+.menu-item-right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.unread-badge {
+  min-width: 36rpx;
+  height: 36rpx;
+  line-height: 36rpx;
+  padding: 0 10rpx;
+  background: #ef4444;
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: 600;
+  border-radius: 18rpx;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .icon-box {

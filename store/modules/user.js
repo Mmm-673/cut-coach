@@ -8,6 +8,7 @@ import { getInfo, login, smsLogin, logout } from '@/api/login'
 import { getAccessToken, setAuthInfo, removeAuthInfo, getUserId } from '@/utils/auth'
 import { clearPushAlias } from '@/utils/jpush'
 import { resetAuthExpiredState } from '@/utils/request'
+import wsManager from '@/utils/websocket'
 import defAva from '@/static/images/profile.jpg'
 
 const baseUrl = config.baseUrl
@@ -107,6 +108,12 @@ export const useUserStore = defineStore('user', () => {
       if (res.data.userId) {
         SET_ID(res.data.userId)
       }
+      // 登录成功后连接 WebSocket，失败不影响登录流程
+      try {
+        wsManager.connect()
+      } catch (e) {
+        console.warn('WebSocket 连接失败:', e)
+      }
       return Promise.resolve()
     } else {
       return Promise.reject(res.msg || '登录失败')
@@ -202,6 +209,7 @@ export const useUserStore = defineStore('user', () => {
         removeAuthInfo()
         storage.clean()
         resetAuthExpiredState()
+        wsManager.close()
         resolve()
         clearPushAlias()
       }).catch(() => {
@@ -212,6 +220,7 @@ export const useUserStore = defineStore('user', () => {
         removeAuthInfo()
         storage.clean()
         resetAuthExpiredState()
+        wsManager.close()
         resolve()
       })
     })
