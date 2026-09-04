@@ -62,7 +62,7 @@
 
       <!-- 空状态 -->
       <view v-if="!loading && displayRecords.length === 0" class="empty-state">
-        <uni-icons type="list" size="64" color="#d1d5db"></uni-icons>
+        <uni-icons type="list" size="64" :color="textTertiaryColor"></uni-icons>
         <text class="empty-text">暂无扣款记录</text>
       </view>
 
@@ -77,6 +77,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getDeductionPage } from '@/api/billiard/wallet'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const textTertiaryColor = useThemeColor('textTertiary')
 
 // 标签栏数据
 const tabList = [
@@ -215,17 +221,19 @@ onShow(() => {
 onMounted(() => {
   fetchDeductionRecords(true)
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .deduct-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
 }
 
 /* 顶部统计栏 */
 .stats-header {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, var(--color-danger, #ef4444) 0%, var(--color-red-dark, #dc2626) 100%);
   padding: 50rpx 32rpx;
   box-shadow: 0 4rpx 12rpx rgba(239, 68, 68, 0.2);
 }
@@ -251,23 +259,23 @@ onMounted(() => {
 /* 标签栏 */
 .tab-bar {
   display: flex;
-  background: #fff;
+  background: var(--bg-card, #fff);
   padding: 0 16rpx;
   margin-top: 20rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 8rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .tab-item {
   flex: 1;
   text-align: center;
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   padding: 28rpx 0;
   position: relative;
   transition: all 0.2s;
 
   &.active {
-    color: #2f6bee;
+    color: var(--color-primary, #2f6bee);
     font-weight: 600;
 
     &::after {
@@ -278,7 +286,7 @@ onMounted(() => {
       transform: translateX(-50%);
       width: 48rpx;
       height: 6rpx;
-      background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+      background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
       border-radius: 3rpx;
     }
   }
@@ -291,11 +299,11 @@ onMounted(() => {
 }
 
 .deduct-item {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
   transition: transform 0.2s;
 
   &:active {
@@ -318,45 +326,45 @@ onMounted(() => {
   font-weight: 500;
 
   &.pending {
-    background: #fff7ed;
-    color: #f59e0b;
+    background: var(--color-warning-light, #fff7ed);
+    color: var(--color-warning, #f59e0b);
   }
 
   &.appealing {
-    background: #eff6ff;
-    color: #2f6bee;
+    background: var(--color-primary-light, #eff6ff);
+    color: var(--color-primary, #2f6bee);
   }
 
   &.kept {
     background: #fef2f2;
-    color: #ef4444;
+    color: var(--color-danger, #ef4444);
   }
 
   &.refunded {
-    background: #ecfdf5;
-    color: #10b981;
+    background: var(--color-success-light, #ecfdf5);
+    color: var(--color-success, #10b981);
   }
 }
 
 .amount {
   font-size: 36rpx;
   font-weight: bold;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
 
   &.red {
-    color: #ef4444;
+    color: var(--color-danger, #ef4444);
   }
 }
 
 .order-no {
   font-size: 26rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 8rpx;
 }
 
 .reason {
   font-size: 28rpx;
-  color: #374151;
+  color: var(--text-primary, #374151);
   line-height: 1.5;
   margin-bottom: 16rpx;
 }
@@ -369,14 +377,14 @@ onMounted(() => {
 
 .time {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .appeal-btn {
   padding: 10rpx 28rpx;
   border-radius: 20rpx;
   font-size: 26rpx;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, var(--color-warning, #f59e0b) 0%, var(--color-orange-dark, #d97706) 100%);
   color: #fff;
   font-weight: 500;
   transition: all 0.2s;
@@ -386,25 +394,25 @@ onMounted(() => {
   }
 
   &.disabled {
-    background: #e5e7eb;
-    color: #9ca3af;
+    background: var(--border-color, #e5e7eb);
+    color: var(--text-tertiary, #9ca3af);
   }
 }
 
 .appeal-info {
   margin-top: 20rpx;
   padding-top: 20rpx;
-  border-top: 1rpx solid #f3f4f6;
+  border-top: 1rpx solid var(--border-light, #f3f4f6);
 
   .appeal-label {
     font-size: 24rpx;
-    color: #9ca3af;
+    color: var(--text-tertiary, #9ca3af);
     margin-bottom: 8rpx;
   }
 
   .appeal-content {
     font-size: 26rpx;
-    color: #6b7280;
+    color: var(--text-secondary, #6b7280);
     line-height: 1.5;
   }
 }
@@ -421,7 +429,7 @@ onMounted(() => {
 
 .empty-text {
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 /* 加载状态 */
@@ -430,6 +438,6 @@ onMounted(() => {
   text-align: center;
   padding: 40rpx 0;
   font-size: 26rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 </style>

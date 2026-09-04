@@ -22,7 +22,7 @@
               :key="index"
               :type="index < Math.floor(averageScore) ? 'star-filled' : 'star'"
               size="24"
-              color="#ff9500"
+              :color="warningColor"
               ></uni-icons>
         </view>
         <view class="score-desc">
@@ -79,7 +79,7 @@
                   :key="i"
                   :type="i < item.star ? 'star-filled' : 'star'"
                   size="16"
-                  color="#ff9500"
+                  :color="warningColor"
               ></uni-icons>
             </view>
           </view>
@@ -109,9 +109,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getReviewPage } from '@/api/billiard/coach'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const warningColor = useThemeColor('warning')
 
 // 页面数据
 const totalCount = ref(0)
@@ -291,17 +297,19 @@ onMounted(() => {
 onShow(() => {
   fetchReviewList(true)
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .evaluate-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
 }
 
 /* 顶部评分栏 */
 .score-header {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   padding: 60rpx 40rpx 80rpx;
   padding-top: calc(60rpx + var(--status-bar-height, 0px));
   position: relative;
@@ -351,7 +359,7 @@ onShow(() => {
 
 /* 标签卡片 */
 .tag-card {
-  background: #ffffff;
+  background: var(--bg-card, #ffffff);
   margin: -40rpx 30rpx 30rpx;
   border-radius: 24rpx;
   padding: 36rpx;
@@ -363,7 +371,7 @@ onShow(() => {
 .card-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin-bottom: 28rpx;
 }
 
@@ -406,7 +414,7 @@ onShow(() => {
 .list-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin-bottom: 24rpx;
 }
 
@@ -415,11 +423,11 @@ onShow(() => {
 }
 
 .evaluate-item {
-  background: #ffffff;
+  background: var(--bg-card, #ffffff);
   border-radius: 24rpx;
   padding: 32rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
   transition: transform 0.2s;
 
   &:active {
@@ -438,7 +446,7 @@ onShow(() => {
   height: 88rpx;
   border-radius: 50%;
   margin-right: 20rpx;
-  border: 3rpx solid #f3f4f6;
+  border: 3rpx solid var(--border-light, #f3f4f6);
   &-placeholder {
     background: #f8fafc;
     display: flex;
@@ -457,12 +465,12 @@ onShow(() => {
 .user-name {
   font-size: 32rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
 }
 
 .time {
   font-size: 26rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .user-stars {
@@ -486,7 +494,7 @@ onShow(() => {
 
 .content {
   font-size: 30rpx;
-  color: #4b5563;
+  color: var(--text-secondary, #4b5563);
   line-height: 1.7;
   margin-bottom: 24rpx;
 }
@@ -501,7 +509,7 @@ onShow(() => {
   width: 200rpx;
   height: 200rpx;
   border-radius: 16rpx;
-  border: 2rpx solid #f3f4f6;
+  border: 2rpx solid var(--border-light, #f3f4f6);
 }
 
 /* 加载状态 */
@@ -509,6 +517,6 @@ onShow(() => {
   text-align: center;
   padding: 50rpx 0;
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 </style>

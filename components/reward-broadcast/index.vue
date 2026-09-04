@@ -21,7 +21,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import FullscreenHeart from '@/components/fullscreen-heart/fullscreen-heart.vue'
-import { getNotificationPage, readNotification } from '@/api/billiard/notification'
+import { getNotificationPage, getNotificationDetail, readNotification } from '@/api/billiard/notification'
 import { useNotificationStore } from '@/store/modules/notification'
 
 const heartRef = ref(null)
@@ -177,11 +177,21 @@ const playNext = () => {
 	autoClosed = false
 
 	try {
+		// 头像优先取打赏用户（会员）头像，兜底用默认头像
+		const avatar = current.coachAvatar
+      || current.userAvatar
+			|| '/static/images/profile.jpg'
+		const nickname = current.coachName
+			|| current.memberNickname
+			|| '神秘用户'
+		const amountVal = current.amount ?? 0
+		const content = current?.content || ''
+
 		const info = {
-			avatar: current.coachAvatar || '/static/images/profile.jpg',
-			nickname: current.memberNickname || '神秘用户',
-			content: current?.voiceText?.replace('初球来电播报，','') || current.content || '',
-			amount: current.amount ? (Number(current.amount) / 100).toFixed(2) : '0.00',
+			avatar,
+			nickname,
+			content,
+			amount: amountVal ? (Number(amountVal) / 100).toFixed(2) : '0.00',
 			tags: ['打赏'],
 		}
 
@@ -314,6 +324,7 @@ const doCompensate = () => {
 	try {
 		getNotificationPage({ pageNo: 1, pageSize: 20, readStatus: 0 }).then(res => {
 			if (!(res.code === 0 || res.code === 200)) return
+      console.log('getNotificationPage,====',res)
 			const records = res.data?.records || res.data?.list || []
 			if (!records.length) return
 
@@ -345,19 +356,35 @@ const doCompensate = () => {
 
 			validList.forEach(item => {
 				const id = item.notificationId || item.id
+
+				// 解析 actionParams（通知列表将业务数据放在 JSON 字符串字段里）
+				let actionData = {}
+				try {
+					if (item.actionParams && typeof item.actionParams === 'string') {
+						actionData = JSON.parse(item.actionParams)
+					} else if (item.actionParams && typeof item.actionParams === 'object') {
+						actionData = item.actionParams
+					}
+				} catch (e) {
+					console.warn('[reward-broadcast] 解析 actionParams 失败:', e)
+				}
+
+				// 合并：优先用 actionParams 里的数据，兜底用 item 顶层字段
 				const payload = {
-					notificationId: id,
-					bizType: item.bizType || 'reward',
-					rewardId: item.rewardId,
-					city: item.city,
-					amount: item.amount,
-					memberNickname: item.memberNickname || item.nickname,
-					coachName: item.coachName,
-					title: item.title,
-					content: item.content,
-					voiceText: item.voiceText,
-					animationType: item.animationType,
-					animationExpireTime: item.animationExpireTime,
+					notificationId: actionData.notificationId || id,
+					bizType: actionData.bizType || item.bizType || 'reward',
+					rewardId: actionData.rewardId ?? item.rewardId,
+					city: actionData.city || item.city,
+					amount: actionData.amount ?? item.amount,
+					memberNickname: actionData.memberNickname || item.memberNickname || item.nickname,
+					userAvatar: actionData.userAvatar || item.userAvatar || item.avatar,
+					coachAvatar: actionData.coachAvatar || item.coachAvatar,
+					coachName: actionData.coachName || item.coachName,
+					title: actionData.title || item.title,
+					content: actionData.content || item.content,
+					voiceText: actionData.voiceText || item.voiceText,
+					animationType: actionData.animationType || item.animationType,
+					animationExpireTime: actionData.animationExpireTime || item.animationExpireTime,
 					publishTime: item.publishTime || item.createTime,
 				}
 				enqueue(payload)

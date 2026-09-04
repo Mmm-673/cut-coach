@@ -328,7 +328,7 @@ onUnmounted(() => {
 	position: relative;
 	width: 100%;
 	max-width: 600rpx;
-	background: #ffffff;
+	background: var(--bg-card, #ffffff);
 	border-radius: 28rpx;
 	padding: 0 0 40rpx;
 	box-sizing: border-box;

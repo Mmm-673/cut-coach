@@ -3,7 +3,7 @@
     <!-- 顶部导航栏 -->
     <view class="navbar">
       <view class="nav-back" @click="goBack">
-        <uni-icons type="back" size="22" color="#374151" />
+        <uni-icons type="back" size="22" :color="textColor" />
       </view>
       <view class="nav-title">地图导航</view>
       <view class="nav-placeholder"></view>
@@ -24,7 +24,7 @@
     <!-- 目的地信息卡片 -->
     <view class="dest-card">
       <view class="card-header">
-        <uni-icons type="location" size="20" color="#2f6bee"></uni-icons>
+        <uni-icons type="location" size="20" :color="primaryColor"></uni-icons>
         <text class="card-title">目的地</text>
       </view>
       <view class="dest-info">
@@ -47,6 +47,13 @@
 import { ref, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getLocation } from '@/utils/platform.js'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const primaryColor = useThemeColor('primary')
+const textColor = useThemeColor('text')
 
 const destLat = ref(0)
 const destLon = ref(0)
@@ -160,13 +167,15 @@ const startNavigation = () => {
     }
   })
 }
+
+
 </script>
 
 <style lang="scss" scoped>
 .map-navigation-wrapper {
   width: 100vw;
   height: 100vh;
-  background: #f8fbff;
+  background: var(--bg-page, #f8fbff);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -178,7 +187,7 @@ const startNavigation = () => {
   justify-content: space-between;
   padding: 20rpx 24rpx;
   padding-top: calc(var(--status-bar-height) + 16rpx);
-  background: #fff;
+  background: var(--bg-card, #fff);
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
   z-index: 10;
 
@@ -193,7 +202,7 @@ const startNavigation = () => {
     transition: all 0.2s;
 
     &:active {
-      background: #e5e7eb;
+      background: var(--border-color, #e5e7eb);
       transform: scale(0.95);
     }
   }
@@ -201,7 +210,7 @@ const startNavigation = () => {
   .nav-title {
     font-size: 34rpx;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--text-primary, #1f2937);
   }
 
   .nav-placeholder {
@@ -219,7 +228,7 @@ const startNavigation = () => {
   top: calc(var(--status-bar-height) + 140rpx);
   left: 24rpx;
   right: 24rpx;
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 28rpx;
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
@@ -234,7 +243,7 @@ const startNavigation = () => {
 
   .card-title {
     font-size: 26rpx;
-    color: #9ca3af;
+    color: var(--text-tertiary, #9ca3af);
     font-weight: 500;
   }
 
@@ -247,12 +256,12 @@ const startNavigation = () => {
   .dest-name {
     font-size: 32rpx;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--text-primary, #1f2937);
   }
 
   .dest-address {
     font-size: 26rpx;
-    color: #6b7280;
+    color: var(--text-secondary, #6b7280);
     line-height: 1.5;
   }
 }
@@ -260,7 +269,7 @@ const startNavigation = () => {
 .footer {
   padding: 24rpx 32rpx;
   padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background: #fff;
+  background: var(--bg-card, #fff);
   box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
   z-index: 10;
 
@@ -268,12 +277,12 @@ const startNavigation = () => {
     width: 100%;
     height: 100rpx;
     line-height: 100rpx;
-    background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+    background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
     color: #fff;
     border-radius: 24rpx;
     font-size: 32rpx;
     font-weight: 600;
-    box-shadow: 0 8rpx 24rpx rgba(47, 107, 238, 0.3);
+    box-shadow: 0 8rpx 24rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
     border: none;
     display: flex;
     align-items: center;

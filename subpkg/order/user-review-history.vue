@@ -14,7 +14,7 @@
       <view class="user-avatar-wrapper">
         <image v-if="userAvatar" class="user-avatar" :src="userAvatar" mode="aspectFill"></image>
         <view v-else class="user-avatar user-avatar-placeholder">
-          <uni-icons type="person" size="50" color="#ccc"></uni-icons>
+          <uni-icons type="person" size="50" :color="textTertiaryColor"></uni-icons>
         </view>
       </view>
       <view class="user-info-wrapper">
@@ -46,7 +46,7 @@
           <view class="coach-info">
             <image v-if="item.coachAvatar" class="coach-avatar" :src="item.coachAvatar" mode="aspectFill"></image>
             <view v-else class="coach-avatar coach-avatar-placeholder">
-              <uni-icons type="person" size="36" color="#ccc"></uni-icons>
+              <uni-icons type="person" size="36" :color="textTertiaryColor"></uni-icons>
             </view>
             <view class="coach-detail">
               <view class="coach-name">{{ item.coachStageName || '裁教' }}</view>
@@ -58,7 +58,7 @@
                   :key="i"
                   :type="i < item.star ? 'star-filled' : 'star'"
                   size="16"
-                  color="#ff9500"
+                  :color="warningColor"
               ></uni-icons>
             </view>
           </view>
@@ -81,6 +81,13 @@
 import { ref, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getUserReviewHistoryPage } from '@/api/billiard/coach'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const warningColor = useThemeColor('warning')
+const textTertiaryColor = useThemeColor('textTertiary')
 
 // 路由参数
 const userId = ref(null)
@@ -203,12 +210,14 @@ onLoad((options) => {
 const goBack = () => {
   uni.navigateBack()
 }
+
+
 </script>
 
 <style lang="scss" scoped>
 .user-review-history-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
 }
 
 /* 导航栏 */
@@ -218,7 +227,7 @@ const goBack = () => {
   justify-content: space-between;
   padding: 30rpx 30rpx 20rpx;
   padding-top: calc(30rpx + var(--status-bar-height, 0px));
-  background: #ffffff;
+  background: var(--bg-card, #ffffff);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -235,7 +244,7 @@ const goBack = () => {
 .nav-title {
   font-size: 36rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
 }
 
 .nav-placeholder {
@@ -244,7 +253,7 @@ const goBack = () => {
 
 /* 用户信息头部 */
 .user-header {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   padding: 40rpx 30rpx 50rpx;
   display: flex;
   align-items: center;
@@ -302,11 +311,11 @@ const goBack = () => {
 }
 
 .review-item {
-  background: #ffffff;
+  background: var(--bg-card, #ffffff);
   border-radius: 24rpx;
   padding: 32rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
   transition: transform 0.2s;
 
   &:active {
@@ -325,7 +334,7 @@ const goBack = () => {
   height: 80rpx;
   border-radius: 50%;
   margin-right: 20rpx;
-  border: 3rpx solid #f3f4f6;
+  border: 3rpx solid var(--border-light, #f3f4f6);
   &-placeholder {
     background: #f8fafc;
     display: flex;
@@ -344,12 +353,12 @@ const goBack = () => {
 .coach-name {
   font-size: 30rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
 }
 
 .time {
   font-size: 26rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .coach-stars {
@@ -359,7 +368,7 @@ const goBack = () => {
 
 .content {
   font-size: 30rpx;
-  color: #4b5563;
+  color: var(--text-secondary, #4b5563);
   line-height: 1.7;
 }
 
@@ -368,6 +377,6 @@ const goBack = () => {
   text-align: center;
   padding: 50rpx 0;
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 </style>

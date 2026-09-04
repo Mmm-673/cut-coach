@@ -41,6 +41,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getCoachProfile } from '@/api/billiard/coach'
+import { usePageTheme } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
 
 const coachInfo = ref({})
 
@@ -103,12 +107,14 @@ onShow(() => {
 onMounted(() => {
   fetchCoachInfo()
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .info-container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
   padding: 40rpx 24rpx;
 }
 
@@ -136,18 +142,18 @@ onMounted(() => {
   transform: translateX(45rpx);
   width: 56rpx;
   height: 56rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 4rpx solid #fff;
-  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
 }
 
 /* 信息列表 */
 .info-list {
-  background-color: #fff;
+  background-color: var(--bg-card, #fff);
   border-radius: 24rpx;
   margin-top: 30rpx;
   overflow: hidden;
@@ -159,7 +165,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 32rpx 28rpx;
-  border-bottom: 1rpx solid #f3f4f6;
+  border-bottom: 1rpx solid var(--border-light, #f3f4f6);
 }
 
 .info-item:last-child {
@@ -168,13 +174,13 @@ onMounted(() => {
 
 .info-item .label {
   font-size: 30rpx;
-  color: #374151;
+  color: var(--text-primary, #374151);
   font-weight: 500;
 }
 
 .info-item .value {
   font-size: 28rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   max-width: 420rpx;
   text-align: right;
   word-break: break-all;
@@ -189,12 +195,12 @@ onMounted(() => {
   justify-content: center;
   gap: 12rpx;
   height: 96rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   border-radius: 24rpx;
   font-size: 30rpx;
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 4rpx 16rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 4rpx 16rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
   transition: transform 0.2s;
   &:active {
     transform: scale(0.98);

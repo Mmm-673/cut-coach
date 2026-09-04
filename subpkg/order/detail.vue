@@ -103,7 +103,7 @@
             <uni-icons
                 type="phone"
                 size="18"
-                color="#10B981"
+                :color="successColor"
             />
           </view>
 
@@ -111,7 +111,7 @@
             <uni-icons
                 type="right"
                 size="16"
-                color="#9ca3af"
+                :color="textTertiaryColor"
             />
           </view>
         </view>
@@ -141,7 +141,7 @@
           <!-- 已确认出发，未到达 -->
           <template v-else-if="departureConfirmTime && !arriveTime">
             <view class="status-hint">
-              <uni-icons type="checkmarkempty" size="20" color="#10b981"></uni-icons>
+              <uni-icons type="checkmarkempty" size="20" :color="successColor"></uni-icons>
               <text class="hint-text">已确认出发，请尽快前往约定地点</text>
             </view>
             <view class="btn-single">
@@ -151,7 +151,7 @@
           <!-- 已到达，未开始教学 -->
           <template v-else-if="arriveTime && !startTime">
             <view class="status-hint">
-              <uni-icons type="checkmarkempty" size="20" color="#10b981"></uni-icons>
+              <uni-icons type="checkmarkempty" size="20" :color="successColor"></uni-icons>
               <text class="hint-text">已到达约定地点，开始服务</text>
             </view>
             <view class="btn-row">
@@ -172,7 +172,7 @@
           <!-- 已到达，未开始教学 -->
           <template v-else-if="arriveTime && !startTime">
             <view class="status-hint">
-              <uni-icons type="checkmarkempty" size="20" color="#10b981"></uni-icons>
+              <uni-icons type="checkmarkempty" size="20" :color="successColor"></uni-icons>
               <text class="hint-text">已到达约定地点，开始服务</text>
             </view>
             <view class="btn-row">
@@ -207,13 +207,19 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick, getCurrentInstance } from 'vue'
 import { onLoad, onUnload, onShow } from '@dcloudio/uni-app'
-import { nextTick, watch, getCurrentInstance } from 'vue'
 import { openMapNavigation, isMockVenue, calculateDistance, makePhoneCall } from '@/utils/platform'
 import { getOrderDetail, finishService, acceptOrder as acceptOrderApi, rejectOrder as rejectOrderApi, confirmDeparture as confirmDepartureApi, arrive as arriveApi, startService as startServiceApi, reportException as reportExceptionApi, startTimer as startTimerApi, endTimer as endTimerApi, getInProgressOrder } from '@/api/billiard/order'
 import { getLocation } from '@/utils/location'
 import { ORDER_PRICING_MODE, isFixedPricing, formatFenToYuan } from '@/utils/onsiteOrder'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const successColor = useThemeColor('success')
+const textTertiaryColor = useThemeColor('textTertiary')
 
 	// 服务类型映射
 	const getServiceTypeName = (serviceType) => {
@@ -906,17 +912,19 @@ onUnload(() => {
   stopLocalTimer()
   stopInProgressPolling()
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .order-detail-wrapper {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
   box-sizing: border-box;
 }
 
 .timer-section {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   text-align: center;
   padding: 50rpx 30rpx 60rpx;
   padding-top: calc(50rpx + var(--status-bar-height, 0px));
@@ -950,7 +958,7 @@ onUnload(() => {
 }
 
 .status-section {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   padding: 50rpx 32rpx;
   padding-top: calc(50rpx + var(--status-bar-height, 0px));
   margin-bottom: -20rpx;
@@ -991,16 +999,16 @@ onUnload(() => {
 }
 
 .card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 30rpx;
   margin: 30rpx 24rpx 0;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 
   .card-title {
     font-size: 32rpx;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--text-primary, #1f2937);
     margin-bottom: 28rpx;
   }
 }
@@ -1010,7 +1018,7 @@ onUnload(() => {
   justify-content: space-between;
   align-items: center;
   padding: 18rpx 0;
-  border-bottom: 1rpx solid #f3f4f6;
+  border-bottom: 1rpx solid var(--border-light, #f3f4f6);
 
   &:last-child {
     border-bottom: none;
@@ -1018,17 +1026,17 @@ onUnload(() => {
 
   .label {
     font-size: 28rpx;
-    color: #6b7280;
+    color: var(--text-secondary, #6b7280);
   }
 
   .value {
     font-size: 28rpx;
-    color: #374151;
+    color: var(--text-primary, #374151);
     font-weight: 500;
   }
 
   .price {
-    color: #2f6bee;
+    color: var(--color-primary, #2f6bee);
     font-weight: bold;
     font-size: 32rpx;
   }
@@ -1036,7 +1044,7 @@ onUnload(() => {
   .price-unit {
     font-size: 24rpx;
     font-weight: normal;
-    color: #9ca3af;
+    color: var(--text-tertiary, #9ca3af);
     margin-left: 8rpx;
   }
 }
@@ -1046,7 +1054,7 @@ onUnload(() => {
   height: 320rpx;
   border-radius: 16rpx;
   margin-bottom: 24rpx;
-  border: 2rpx solid #f3f4f6;
+  border: 2rpx solid var(--border-light, #f3f4f6);
 }
 
 .shop-info {
@@ -1063,12 +1071,12 @@ onUnload(() => {
     .shop-name {
       font-size: 30rpx;
       font-weight: 600;
-      color: #1f2937;
+      color: var(--text-primary, #1f2937);
     }
 
     .shop-address {
       font-size: 26rpx;
-      color: #6b7280;
+      color: var(--text-secondary, #6b7280);
     }
   }
 
@@ -1076,13 +1084,13 @@ onUnload(() => {
     width: 84rpx;
     height: 84rpx;
     border-radius: 50%;
-    background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+    background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
     margin: 0;
-    box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+    box-shadow: 0 4rpx 12rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
     transition: transform 0.2s;
 
     &:active {
@@ -1100,7 +1108,7 @@ onUnload(() => {
     width: 92rpx;
     height: 92rpx;
     border-radius: 50%;
-    border: 2rpx solid #f3f4f6;
+    border: 2rpx solid var(--border-light, #f3f4f6);
   }
 
   .customer-left {
@@ -1112,12 +1120,12 @@ onUnload(() => {
     .customer-name {
       font-size: 30rpx;
       font-weight: 600;
-      color: #1f2937;
+      color: var(--text-primary, #1f2937);
     }
 
     .customer-phone {
       font-size: 26rpx;
-      color: #6b7280;
+      color: var(--text-secondary, #6b7280);
     }
   }
   .customer-actions {
@@ -1141,7 +1149,7 @@ onUnload(() => {
     width: 80rpx;
     height: 80rpx;
     border-radius: 50%;
-    background: rgba(16, 185, 129, 0.1);
+    background: var(--color-success-light, rgba(16, 185, 129, 0.1));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1165,7 +1173,7 @@ onUnload(() => {
   backdrop-filter: blur(10px);
   padding: 24rpx 0;
   padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid #f3f4f6;
+  border-top: 1rpx solid var(--border-light, #f3f4f6);
   display: flex;
   flex-direction: column;
   gap: 16rpx;
@@ -1203,39 +1211,39 @@ onUnload(() => {
   }
 
   .btn-danger {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    background: linear-gradient(135deg, var(--color-danger, #ef4444) 0%, var(--color-red-dark, #dc2626) 100%);
     color: #fff;
     box-shadow: 0 8rpx 20rpx rgba(245, 63, 63, 0.25);
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+    background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
     color: #fff;
-    box-shadow: 0 8rpx 20rpx rgba(47, 107, 238, 0.3);
+    box-shadow: 0 8rpx 20rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
   }
 
   .btn-success {
-    background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
+    background: linear-gradient(135deg, var(--color-success, #10b981) 0%, var(--color-green-dark, #0da271) 100%);
     color: #fff;
     box-shadow: 0 8rpx 20rpx rgba(16, 185, 129, 0.25);
   }
 
   .btn-warning {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(135deg, var(--color-warning, #f59e0b) 0%, var(--color-orange-dark, #d97706) 100%);
     color: #fff;
     box-shadow: 0 8rpx 20rpx rgba(245, 158, 11, 0.25);
   }
 
   .btn-end {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    background: linear-gradient(135deg, var(--color-danger, #ef4444) 0%, var(--color-red-dark, #dc2626) 100%);
     color: #fff;
     box-shadow: 0 8rpx 20rpx rgba(245, 63, 63, 0.25);
   }
 
   .btn-service {
-    background: #fff;
-    color: #374151;
-    border: 2rpx solid #e5e7eb;
+    background: var(--bg-card, #fff);
+    color: var(--text-primary, #374151);
+    border: 2rpx solid var(--border-color, #e5e7eb);
     font-weight: 500;
     box-shadow: none;
   }
@@ -1246,13 +1254,13 @@ onUnload(() => {
     justify-content: center;
     gap: 10rpx;
     padding: 24rpx;
-    background: rgba(16, 185, 129, 0.1);
+    background: var(--color-success-light, rgba(16, 185, 129, 0.1));
     border-radius: 16rpx;
     margin: 0 24rpx 16rpx;
 
     .hint-text {
       font-size: 26rpx;
-      color: #10b981;
+      color: var(--color-success, #10b981);
       font-weight: 500;
     }
   }

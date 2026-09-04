@@ -70,11 +70,11 @@
           </view>
           <view class="order-footer">
             <text class="arrow">查看详情</text>
-            <uni-icons type="right" size="16" color="#9ca3af" />
+            <uni-icons type="right" size="16" :color="textTertiaryColor" />
           </view>
         </view>
         <view class="empty-tip" v-if="!displayOrders.length && !loading">
-          <uni-icons type="info" size="48" color="#d1d5db" />
+          <uni-icons type="info" size="48" :color="textTertiaryColor" />
           <text>暂无订单</text>
         </view>
         <view class="loading-tip" v-if="loading">
@@ -93,6 +93,12 @@ import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getOrderPage } from '@/api/billiard/order'
 import { ORDER_TYPE_MAP, formatPriceWithUnit, isFixedPricing } from '@/utils/onsiteOrder'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const textTertiaryColor = useThemeColor('textTertiary')
 
 	// 服务类型映射
 	const getServiceTypeName = (serviceType) => {
@@ -274,12 +280,14 @@ const onLoadMore = () => {
 onShow(() => {
   fetchOrders(true)
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .order-list-wrapper {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
   display: flex;
   flex-direction: column;
 }
@@ -289,12 +297,12 @@ onShow(() => {
   position: sticky;
   top: 0;
   z-index: 99;
-  background: #fff;
+  background: var(--bg-card, #fff);
 }
 
 .tab-bar {
   white-space: nowrap;
-  background: #fff;
+  background: var(--bg-card, #fff);
   padding: 0 24rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
@@ -304,13 +312,13 @@ onShow(() => {
   align-items: center;
   justify-content: center;
   font-size: 28rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   padding: 28rpx 24rpx;
   position: relative;
   transition: color 0.2s;
 
   &.active {
-    color: #2f6bee;
+    color: var(--color-primary, #2f6bee);
     font-weight: bold;
 
     &::after {
@@ -321,7 +329,7 @@ onShow(() => {
       transform: translateX(-50%);
       width: 40rpx;
       height: 6rpx;
-      background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+      background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
       border-radius: 3rpx;
     }
   }
@@ -337,11 +345,11 @@ onShow(() => {
 }
 
 .order-item {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
   transition: transform 0.2s;
 
   &:active {
@@ -354,7 +362,7 @@ onShow(() => {
   justify-content: space-between;
   align-items: center;
   padding-bottom: 20rpx;
-  border-bottom: 1rpx solid #f3f4f6;
+  border-bottom: 1rpx solid var(--border-light, #f3f4f6);
   margin-bottom: 20rpx;
 }
 
@@ -373,7 +381,7 @@ onShow(() => {
 
 .order-no {
   font-size: 26rpx;
-  color: #374151;
+  color: var(--text-primary, #374151);
   font-weight: 500;
 }
 
@@ -390,17 +398,17 @@ onShow(() => {
 
 .label {
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .value {
   font-size: 28rpx;
-  color: #4b5563;
+  color: var(--text-secondary, #4b5563);
   font-weight: 500;
 }
 
 .price {
-  color: #2f6bee;
+  color: var(--color-primary, #2f6bee);
   font-weight: bold;
   font-size: 32rpx;
 }
@@ -410,14 +418,14 @@ onShow(() => {
   justify-content: flex-end;
   align-items: center;
   padding-top: 20rpx;
-  border-top: 1rpx solid #f3f4f6;
+  border-top: 1rpx solid var(--border-light, #f3f4f6);
   margin-top: 20rpx;
   gap: 6rpx;
 }
 
 .arrow {
   font-size: 26rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .empty-tip, .loading-tip {
@@ -428,13 +436,13 @@ onShow(() => {
   gap: 16rpx;
   padding-top: 160rpx;
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .no-more-tip {
   text-align: center;
   font-size: 26rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   padding: 32rpx 0;
 }
 </style>

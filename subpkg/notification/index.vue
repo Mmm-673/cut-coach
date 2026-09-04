@@ -67,7 +67,7 @@
 
         <!-- 空状态 -->
         <view class="empty-tip" v-if="!list.length && !loading">
-          <uni-icons type="info" size="48" color="#d1d5db" />
+          <uni-icons type="info" size="48" :color="textTertiaryColor" />
           <text>暂无通知</text>
         </view>
 
@@ -88,6 +88,12 @@ import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getNotificationPage } from '@/api/billiard/notification'
 import { useNotificationStore } from '@/store/modules/notification'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const notificationStore = useNotificationStore()
 
@@ -179,6 +185,7 @@ const fetchList = () => {
   }
 
   getNotificationPage(params).then(res => {
+    console.log("getNotificationPage====",res)
     if (res.code === 0 || res.code === 200) {
       const records = res.data?.records || res.data?.list || []
       if (pageNo.value === 1) {
@@ -250,16 +257,18 @@ onShow(() => {
 onMounted(() => {
   fetchList()
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 $primary: #2f6bff;
-$text-primary: #1f2937;
-$text-secondary: #6b7280;
-$text-tertiary: #9ca3af;
-$bg-page: #f7f8fa;
+$text-primary: var(--text-primary, #1f2937);
+$text-secondary: var(--text-secondary, #6b7280);
+$text-tertiary: var(--text-tertiary, #9ca3af);
+$bg-page: var(--bg-input, #f7f8fa);
 $bg-card: #ffffff;
-$border-light: #f3f4f6;
+$border-light: var(--border-light, #f3f4f6);
 $radius-base: 16rpx;
 
 .notification-page {
@@ -365,7 +374,7 @@ $radius-base: 16rpx;
   right: 24rpx;
   width: 16rpx;
   height: 16rpx;
-  background: #ef4444;
+  background: var(--color-danger, #ef4444);
   border-radius: 50%;
 }
 

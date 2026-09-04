@@ -60,7 +60,7 @@
           @blur="onInputBlur"
         />
         <view class="password-toggle" @click="showPassword = !showPassword">
-          <uni-icons :type="showPassword ? 'eye' : 'eye-slash'" size="20" color="#999"></uni-icons>
+          <uni-icons :type="showPassword ? 'eye' : 'eye-slash'" size="20" :color="textTertiaryColor"></uni-icons>
         </view>
       </view>
 
@@ -78,7 +78,7 @@
           @blur="onInputBlur"
         />
         <view class="password-toggle" @click="showConfirmPassword = !showConfirmPassword">
-          <uni-icons :type="showConfirmPassword ? 'eye' : 'eye-slash'" size="20" color="#999"></uni-icons>
+          <uni-icons :type="showConfirmPassword ? 'eye' : 'eye-slash'" size="20" :color="textTertiaryColor"></uni-icons>
         </view>
       </view>
     </view>
@@ -87,7 +87,7 @@
     <view class="agreement-section">
       <checkbox-group @change="onCheckChange">
         <label class="flex align-center justify-center">
-          <checkbox value="check" :checked="isAgreed" color="#2f6bee" style="transform: scale(0.6)" />
+          <checkbox value="check" :checked="isAgreed" :color="primaryColor" style="transform: scale(0.6)" />
           <view class="text">
             我已阅读并同意
             <text @click.stop="handleUserAgreement" class="link">《用户协议》</text>
@@ -118,8 +118,15 @@
 </template>
 
 <script setup>
-import { ref, getCurrentInstance, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, getCurrentInstance } from 'vue'
 import { sendSmsCode } from '@/api/login'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const primaryColor = useThemeColor('primary')
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const { proxy } = getCurrentInstance()
 
@@ -294,12 +301,14 @@ onUnmounted(() => {
     keyboardHeightListener.off()
   }
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .forgot-container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
   padding: 80rpx 48rpx 40rpx;
   padding-top: calc(80rpx + var(--status-bar-height));
   padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
@@ -323,13 +332,13 @@ onUnmounted(() => {
 .title {
   font-size: 48rpx;
   font-weight: bold;
-  color: #333;
+  color: var(--text-primary, #333);
   margin-top: 30rpx;
 }
 
 .subtitle {
   font-size: 28rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
   margin-top: 10rpx;
 }
 
@@ -339,27 +348,27 @@ onUnmounted(() => {
 }
 
 .input-item {
-  background-color: #fff;
+  background-color: var(--bg-card, #fff);
   height: 100rpx;
   border-radius: 24rpx;
   margin-bottom: 24rpx;
   padding: 0 30rpx;
   display: flex;
   align-items: center;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 8rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
   border: 2rpx solid transparent;
   transition: border-color 0.2s;
   position: relative;
 }
 
 .input-item:focus-within {
-  border-color: #2f6bee;
+  border-color: var(--color-primary, #2f6bee);
   box-shadow: 0 0 0 6rpx rgba(47, 107, 238, 0.1);
 }
 
 .input-item .icon {
   font-size: 36rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
 }
 
 .input-item .input {
@@ -367,12 +376,12 @@ onUnmounted(() => {
   padding-left: 20rpx;
   font-size: 30rpx;
   height: 100%;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 
 .code-btn {
   font-size: 26rpx;
-  color: #2f6bee;
+  color: var(--color-primary, #2f6bee);
   background: #e6f0ff;
   padding: 14rpx 28rpx;
   border-radius: 40rpx;
@@ -381,7 +390,7 @@ onUnmounted(() => {
 }
 
 .code-btn.disabled {
-  color: #999;
+  color: var(--text-tertiary, #999);
   background: #f5f5f5;
 }
 
@@ -408,11 +417,11 @@ onUnmounted(() => {
 
 .agreement-section .text {
   font-size: 26rpx;
-  color: #666;
+  color: var(--text-secondary, #666);
 }
 
 .agreement-section .link {
-  color: #2f6bee;
+  color: var(--color-primary, #2f6bee);
 }
 
 /* 按钮 */
@@ -424,13 +433,13 @@ onUnmounted(() => {
   width: 100%;
   height: 100rpx;
   line-height: 100rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   color: #fff;
   border-radius: 24rpx;
   font-size: 32rpx;
   font-weight: 600;
   border: none;
-  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
   transition: all 0.2s;
 }
 
@@ -451,7 +460,7 @@ onUnmounted(() => {
 .back-login {
   text-align: center;
   font-size: 28rpx;
-  color: #2f6bee;
+  color: var(--color-primary, #2f6bee);
   margin-top: 30rpx;
 }
 </style>

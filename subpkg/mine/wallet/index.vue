@@ -62,7 +62,7 @@
 
     <!-- 空状态 -->
     <view class="empty-state" v-if="!loading && recentRecords.length === 0">
-      <uni-icons type="list" size="64" color="#d1d5db"></uni-icons>
+      <uni-icons type="list" size="64" :color="textTertiaryColor"></uni-icons>
       <text class="empty-text">暂无记录</text>
     </view>
 
@@ -77,6 +77,12 @@
 import { ref, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getWalletBalance, getWithdrawalPage } from '@/api/billiard/wallet'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const balance = ref(0)
 const frozen = ref(0)
@@ -167,18 +173,20 @@ onShow(() => {
 onMounted(() => {
   fetchWalletData()
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .wallet-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
   padding: 30rpx;
 }
 
 /* 余额卡片 */
 .balance-card {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   border-radius: 32rpx;
   padding: 60rpx 40rpx;
   margin-bottom: 30rpx;
@@ -220,13 +228,13 @@ onMounted(() => {
 
 /* 快捷操作 */
 .action-section {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 40rpx 30rpx;
   margin-bottom: 30rpx;
   display: flex;
   justify-content: space-around;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .action-item {
@@ -252,7 +260,7 @@ onMounted(() => {
 }
 
 .withdraw-icon {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--color-success, #10b981) 0%, #059669 100%);
 }
 
 .record-icon {
@@ -260,25 +268,25 @@ onMounted(() => {
 }
 
 .deduct-icon {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, var(--color-warning, #f59e0b) 0%, var(--color-orange-dark, #d97706) 100%);
 }
 
 .reward-icon {
-  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+  background: linear-gradient(135deg, var(--color-pink, #ec4899) 0%, var(--color-pink-dark, #db2777) 100%);
 }
 
 .action-label {
   font-size: 26rpx;
-  color: #374151;
+  color: var(--text-primary, #374151);
   font-weight: 500;
 }
 
 /* 最近记录 */
 .recent-section {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 30rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .section-header {
@@ -291,12 +299,12 @@ onMounted(() => {
 .section-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
 }
 
 .see-more {
   font-size: 26rpx;
-  color: #2f6bee;
+  color: var(--color-primary, #2f6bee);
 }
 
 .record-list {
@@ -310,7 +318,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 24rpx 0;
-  border-bottom: 1rpx solid #f3f4f6;
+  border-bottom: 1rpx solid var(--border-light, #f3f4f6);
 
   &:last-child {
     border-bottom: none;
@@ -325,13 +333,13 @@ onMounted(() => {
 
 .record-type {
   font-size: 30rpx;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   font-weight: 500;
 }
 
 .record-time {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .record-right {
@@ -344,26 +352,26 @@ onMounted(() => {
 .record-amount {
   font-size: 32rpx;
   font-weight: bold;
-  color: #ef4444;
+  color: var(--color-danger, #ef4444);
 }
 
 .record-status {
   font-size: 24rpx;
 
   &.pending {
-    color: #f59e0b;
+    color: var(--color-warning, #f59e0b);
   }
 
   &.processing {
-    color: #2f6bee;
+    color: var(--color-primary, #2f6bee);
   }
 
   &.success {
-    color: #10b981;
+    color: var(--color-success, #10b981);
   }
 
   &.rejected {
-    color: #ef4444;
+    color: var(--color-danger, #ef4444);
   }
 }
 
@@ -379,7 +387,7 @@ onMounted(() => {
 
 .empty-text {
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 /* 加载状态 */
@@ -389,6 +397,6 @@ onMounted(() => {
   justify-content: center;
   padding: 80rpx 0;
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 </style>

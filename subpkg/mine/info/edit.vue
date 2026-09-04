@@ -2,7 +2,7 @@
   <view class="edit-page">
     <!-- 头部提示 -->
     <view class="header-tip">
-      <uni-icons type="info" size="18" color="#2f6bee"></uni-icons>
+      <uni-icons type="info" size="18" :color="primaryColor"></uni-icons>
       <text>完善您的个人信息，让更多用户了解您</text>
     </view>
 
@@ -64,7 +64,7 @@
             :class="{ active: user.sex === '0' }"
             @click="user.sex = '0'"
           >
-            <uni-icons type="person" :size="20" :color="user.sex === '0' ? '#2f6bee' : '#9ca3af'"></uni-icons>
+            <uni-icons type="person" :size="20" :color="user.sex === '0' ? primaryColor : textTertiaryColor"></uni-icons>
             <text>男</text>
           </view>
           <view
@@ -72,7 +72,7 @@
             :class="{ active: user.sex === '1' }"
             @click="user.sex = '1'"
           >
-            <uni-icons type="person" :size="20" :color="user.sex === '1' ? '#ec4899' : '#9ca3af'"></uni-icons>
+            <uni-icons type="person" :size="20" :color="user.sex === '1' ? '#ec4899' : textTertiaryColor"></uni-icons>
             <text>女</text>
           </view>
         </view>
@@ -98,6 +98,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getUserProfile, updateUserProfile } from '@/api/system/user'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const primaryColor = useThemeColor('primary')
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const user = ref({
   nickName: '',
@@ -184,12 +191,14 @@ onShow(() => {
 onMounted(() => {
   getUserInfo()
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .edit-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
   padding: 24rpx 24rpx 180rpx;
 }
 
@@ -204,17 +213,17 @@ onMounted(() => {
 
   text {
     font-size: 26rpx;
-    color: #2f6bee;
+    color: var(--color-primary, #2f6bee);
     flex: 1;
     line-height: 1.6;
   }
 }
 
 .form-section {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 28rpx;
   padding: 32rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .form-item {
@@ -231,11 +240,11 @@ onMounted(() => {
   gap: 8rpx;
   margin-bottom: 16rpx;
   font-size: 28rpx;
-  color: #374151;
+  color: var(--text-primary, #374151);
   font-weight: 500;
 
   .required {
-    color: #ef4444;
+    color: var(--color-danger, #ef4444);
     font-size: 32rpx;
     line-height: 1;
   }
@@ -248,20 +257,20 @@ onMounted(() => {
   border-radius: 18rpx;
   padding: 0 28rpx;
   font-size: 30rpx;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   box-sizing: border-box;
   border: 2rpx solid transparent;
   transition: all 0.2s;
 
   &:focus {
-    background: #fff;
-    border-color: #2f6bee;
+    background: var(--bg-card, #fff);
+    border-color: var(--color-primary, #2f6bee);
     box-shadow: 0 0 0 6rpx rgba(47, 107, 238, 0.1);
   }
 }
 
 .placeholder {
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .gender-selector {
@@ -279,7 +288,7 @@ onMounted(() => {
   justify-content: center;
   gap: 12rpx;
   font-size: 30rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   border: 2rpx solid transparent;
   transition: all 0.2s;
 
@@ -289,8 +298,8 @@ onMounted(() => {
 
   &.active {
     background: linear-gradient(135deg, #e6f0ff 0%, #f0f7ff 100%);
-    color: #2f6bee;
-    border-color: #2f6bee;
+    color: var(--color-primary, #2f6bee);
+    border-color: var(--color-primary, #2f6bee);
     font-weight: 600;
   }
 }
@@ -302,7 +311,7 @@ onMounted(() => {
   right: 0;
   padding: 24rpx;
   padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background: #fff;
+  background: var(--bg-card, #fff);
   box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 
@@ -310,13 +319,13 @@ onMounted(() => {
   width: 100%;
   height: 100rpx;
   line-height: 100rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   color: #fff;
   border-radius: 24rpx;
   font-size: 32rpx;
   font-weight: 600;
   border: none;
-  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
   transition: all 0.2s;
 
   &::after {
@@ -328,8 +337,8 @@ onMounted(() => {
   }
 
   &.disabled {
-    background: #e5e7eb;
-    color: #9ca3af;
+    background: var(--border-color, #e5e7eb);
+    color: var(--text-tertiary, #9ca3af);
     box-shadow: none;
   }
 }

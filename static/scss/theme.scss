@@ -1,0 +1,232 @@
+// =========================================
+// 主题变量系统 - 默认蓝调 + 暮色柔雾
+// 兼容多端：通过 page 上的 .theme-warm class 切换
+// =========================================
+
+// ========== 默认主题：经典蓝调 ==========
+page {
+  --color-primary: #2f6bee;
+  --color-primary-dark: #1a50d9;
+  --color-primary-light: rgba(47, 107, 238, 0.08);
+  --color-primary-shadow: rgba(47, 107, 238, 0.3);
+
+  // 主渐变
+  --gradient-primary-start: #2f6bee;
+  --gradient-primary-end: #1a50d9;
+  --gradient-primary: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+
+  // 按钮渐变
+  --gradient-btn-start: #2f6bee;
+  --gradient-btn-end: #1a50d9;
+  --gradient-btn: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+
+  // 页面背景
+  --bg-page: #F8FBFF;
+  --bg-page-gradient: linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%);
+  --bg-card: #FFFFFF;
+  --bg-input: #f7f8fa;
+  --bg-tag: #f0f4ff;
+
+  // 文字颜色
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --text-inverse: #ffffff;
+  --text-link: #2f6bee;
+
+  // 边框/分割线
+  --border-color: #e5e7eb;
+  --border-light: #f3f4f6;
+  --border-lighter: #f9fafb;
+
+  // 状态色
+  --color-success: #10b981;
+  --color-success-light: rgba(16, 185, 129, 0.1);
+  --color-warning: #f59e0b;
+  --color-warning-light: #fff7ed;
+  --color-danger: #ef4444;
+  --color-danger-light: rgba(239, 68, 68, 0.1);
+
+  // 图标渐变色
+  --color-blue: #2f6bee;
+  --color-blue-dark: #1a50d9;
+  --color-purple: #8b5cf6;
+  --color-purple-dark: #7c3aed;
+  --color-orange: #f59e0b;
+  --color-orange-dark: #d97706;
+  --color-green: #10b981;
+  --color-green-dark: #0da271;
+  --color-cyan: #06b6d4;
+  --color-cyan-dark: #0891b2;
+  --color-pink: #ec4899;
+  --color-pink-dark: #db2777;
+  --color-gray: #6b7280;
+  --color-gray-dark: #4b5563;
+  --color-red: #ef4444;
+  --color-red-dark: #dc2626;
+
+  // 阴影
+  --shadow-card: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  --shadow-btn: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  --shadow-lg: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+
+  // 过渡
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.3s ease;
+}
+
+// ========== 暮色柔雾主题 ==========
+// H5 端：html[data-theme="warm"] page
+// 小程序/APP：page 根元素 .theme-warm 类
+html[data-theme="warm"] page,
+page.theme-warm {
+  --color-primary: #B86B77;
+  --color-primary-dark: #9a5762;
+  --color-primary-light: rgba(184, 107, 119, 0.1);
+  --color-primary-shadow: rgba(184, 107, 119, 0.3);
+
+  // 主渐变：暮色裸粉 → 柔雾紫
+  --gradient-primary-start: #D88A8A;
+  --gradient-primary-end: #B59EC9;
+  --gradient-primary: linear-gradient(135deg, #D88A8A 0%, #B59EC9 100%);
+
+  // 按钮渐变：干枯玫瑰粉
+  --gradient-btn-start: #B86B77;
+  --gradient-btn-end: #9a5762;
+  --gradient-btn: linear-gradient(135deg, #B86B77 0%, #9a5762 100%);
+
+  // 页面背景：奶油燕麦白
+  --bg-page: #FAF7F5;
+  --bg-page-gradient: linear-gradient(180deg, #FAF7F5 0%, #FFFCFA 100%);
+  --bg-card: #FFFCFA;
+  --bg-input: #F5F0ED;
+  --bg-tag: #FDF0EE;
+
+  // 文字颜色：深紫灰/深暖灰
+  --text-primary: #2D2A32;
+  --text-secondary: #6b6572;
+  --text-tertiary: #9a95a0;
+  --text-inverse: #ffffff;
+  --text-link: #B86B77;
+
+  // 边框/分割线
+  --border-color: #E8E0DC;
+  --border-light: #F0EBE7;
+  --border-lighter: #F7F3F0;
+
+  // 状态色
+  --color-success: #6CA89B;
+  --color-success-light: rgba(108, 168, 155, 0.12);
+  --color-warning: #EEA768;
+  --color-warning-light: #FDF3E6;
+  --color-danger: #D65B5B;
+  --color-danger-light: rgba(214, 91, 91, 0.1);
+
+  // 图标渐变色（柔雾调）
+  --color-blue: #5A5E8C;
+  --color-blue-dark: #484C73;
+  --color-purple: #B59EC9;
+  --color-purple-dark: #9A7FB5;
+  --color-orange: #EEA768;
+  --color-orange-dark: #D98E4C;
+  --color-green: #6CA89B;
+  --color-green-dark: #5A9387;
+  --color-cyan: #7FB5C2;
+  --color-cyan-dark: #639DAE;
+  --color-pink: #D88A8A;
+  --color-pink-dark: #B86B77;
+  --color-gray: #8A858E;
+  --color-gray-dark: #6b6572;
+  --color-red: #D65B5B;
+  --color-red-dark: #B84848;
+
+  // 阴影
+  --shadow-card: 0 2rpx 12rpx rgba(139, 108, 99, 0.08);
+  --shadow-btn: 0 4rpx 12rpx rgba(184, 107, 119, 0.3);
+  --shadow-lg: 0 4rpx 16rpx rgba(139, 108, 99, 0.12);
+
+  // 过渡
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.3s ease;
+}
+
+// 全局过渡（主题切换时平滑过渡）
+page {
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+// ========== 第三方组件主题覆盖 ==========
+// 说明：不直接修改 uni_modules 中的组件，通过全局 CSS 覆盖实现主题适配
+// 注意：全局样式可以覆盖 scoped 组件的内部样式，前提是选择器优先级足够（用 !important）
+
+// uni-card 卡片背景
+.uni-card {
+  background-color: var(--bg-card, #fff) !important;
+}
+
+// uni-list-item 列表项背景
+.uni-list-item {
+  background-color: var(--bg-card, #fff) !important;
+}
+
+// uni-section 标题区域
+.uni-section__header {
+  background-color: var(--bg-card, #fff) !important;
+}
+
+// uni-tag 标签 - 全类型主题化
+// 实心样式
+.uni-tag--primary {
+  background-color: var(--color-primary, #2f6bee) !important;
+  border-color: var(--color-primary, #2f6bee) !important;
+  color: #fff !important;
+}
+.uni-tag--success {
+  background-color: var(--color-success, #10b981) !important;
+  border-color: var(--color-success, #10b981) !important;
+  color: #fff !important;
+}
+.uni-tag--warning {
+  background-color: var(--color-warning, #f59e0b) !important;
+  border-color: var(--color-warning, #f59e0b) !important;
+  color: #fff !important;
+}
+.uni-tag--error {
+  background-color: var(--color-danger, #ef4444) !important;
+  border-color: var(--color-danger, #ef4444) !important;
+  color: #fff !important;
+}
+
+// 空心（inverted）样式
+.uni-tag--primary--inverted,
+.uni-tag--inverted.uni-tag-text--primary {
+  background-color: var(--color-primary-light, rgba(47, 107, 238, 0.08)) !important;
+  border-color: var(--color-primary, #2f6bee) !important;
+  color: var(--color-primary, #2f6bee) !important;
+}
+.uni-tag--success--inverted,
+.uni-tag--inverted.uni-tag-text--success {
+  background-color: var(--color-success-light, rgba(16, 185, 129, 0.1)) !important;
+  border-color: var(--color-success, #10b981) !important;
+  color: var(--color-success, #10b981) !important;
+}
+.uni-tag--warning--inverted,
+.uni-tag--inverted.uni-tag-text--warning {
+  background-color: var(--color-warning-light, #fff7ed) !important;
+  border-color: var(--color-warning, #f59e0b) !important;
+  color: var(--color-warning, #f59e0b) !important;
+}
+.uni-tag--error--inverted,
+.uni-tag--inverted.uni-tag-text--error {
+  background-color: var(--color-danger-light, rgba(239, 68, 68, 0.1)) !important;
+  border-color: var(--color-danger, #ef4444) !important;
+  color: var(--color-danger, #ef4444) !important;
+}
+
+// uni-search-bar 搜索栏
+.uni-searchbar {
+  background-color: var(--bg-card, #fff) !important;
+}
+.uni-searchbar__box {
+  background-color: var(--bg-input, #f7f8fa) !important;
+}

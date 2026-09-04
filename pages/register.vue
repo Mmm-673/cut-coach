@@ -36,9 +36,13 @@
 </template>
 
 <script setup>
+import { ref, getCurrentInstance } from 'vue'
   import { getCodeImg, register } from '@/api/login'
-  import { ref, getCurrentInstance } from "vue"
   import { useConfigStore } from '@/store'
+import { usePageTheme } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
 
   const { proxy } = getCurrentInstance()
   const globalConfig = useConfigStore().config
@@ -108,11 +112,13 @@
   }
 
   getCode()
+
+
 </script>
 
 <style lang="scss" scoped>
   page {
-    background-color: #ffffff;
+    background-color: var(--bg-card, #ffffff);
   }
 
   .normal-login-container {
@@ -148,7 +154,7 @@
         .icon {
           font-size: 38rpx;
           margin-left: 10px;
-          color: #999;
+          color: var(--text-tertiary, #999);
         }
 
         .input {
@@ -167,7 +173,7 @@
       }
 
       .xieyi {
-        color: #333;
+        color: var(--text-primary, #333);
         margin-top: 20px;
       }
       

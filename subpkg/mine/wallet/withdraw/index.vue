@@ -91,7 +91,7 @@
     <!-- 确认提现按钮 -->
     <view class="footer">
       <view class="balance-zero-tip" v-if="parseFloat(usableBalance) <= 0">
-        <uni-icons type="info" size="16" color="#999" />
+        <uni-icons type="info" size="16" :color="textTertiaryColor" />
         <text>您的可提现余额为0元，暂无法发起提现</text>
       </view>
       <view class="btn-row">
@@ -148,6 +148,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { getWalletBalance, getWithdrawalPage, createWithdrawal } from '@/api/billiard/wallet'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const usableBalance = ref('0.00')
 const withdrawAmount = ref('')
@@ -306,12 +312,14 @@ const handleConfirm = async () => {
 }
 
 const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-record/index' })
+
+
 </script>
 
 <style scoped lang="scss">
 .withdraw-page {
   min-height: 100vh;
-  background-color: #f7f8fa;
+  background-color: var(--bg-input, #f7f8fa);
   padding-bottom: 120rpx;
 }
 
@@ -336,7 +344,7 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 }
 
 .balance-card {
-  background-color: #fff;
+  background-color: var(--bg-card, #fff);
   margin: 30rpx;
   border-radius: 20rpx;
   padding: 40rpx 30rpx;
@@ -346,13 +354,13 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 }
 .card-label {
   font-size: 30rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
   text-align: center;
 }
 .balance-amount {
   font-size: 80rpx;
   font-weight: bold;
-  color: #333;
+  color: var(--text-primary, #333);
   line-height: 1.2;
   text-align: center;
 }
@@ -374,7 +382,7 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 /* 【完美修复】提现金额区域               */
 /* ====================================== */
 .input-section {
-  background-color: #fff;
+  background-color: var(--bg-card, #fff);
   margin: 0 30rpx 30rpx;
   border-radius: 20rpx;
   padding: 40rpx 30rpx;
@@ -382,7 +390,7 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 .section-title {
   font-size: 32rpx;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary, #333);
   margin-bottom: 30rpx;
 }
 .input-wrap {
@@ -393,13 +401,13 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 }
 .currency {
   font-size: 56rpx;
-  color: #333;
+  color: var(--text-primary, #333);
   line-height: 1;
   margin-right: 12rpx;
 }
 .amount-input {
   font-size: 56rpx;
-  color: #333;
+  color: var(--text-primary, #333);
   line-height: 1.2;
   padding: 0;
   border: none;
@@ -418,7 +426,7 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 }
 .min-tip {
   font-size: 28rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
 }
 .quota-link {
   font-size: 28rpx;
@@ -426,7 +434,7 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 }
 
 .bank-section {
-  background-color: #fff;
+  background-color: var(--bg-card, #fff);
   margin: 0 30rpx 30rpx;
   border-radius: 20rpx;
   padding: 30rpx;
@@ -463,16 +471,16 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 }
 .bank-name {
   font-size: 34rpx;
-  color: #333;
+  color: var(--text-primary, #333);
   font-weight: 500;
 }
 .bank-arrive-tip {
   font-size: 28rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
 }
 
 .form-section {
-  background-color: #fff;
+  background-color: var(--bg-card, #fff);
   margin: 0 30rpx 30rpx;
   border-radius: 20rpx;
   padding: 30rpx;
@@ -489,12 +497,12 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 .form-label {
   width: 140rpx;
   font-size: 30rpx;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 .form-input {
   flex: 1;
   font-size: 30rpx;
-  color: #333;
+  color: var(--text-primary, #333);
   text-align: right;
   padding: 0;
 }
@@ -503,7 +511,7 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 }
 
 .fee-section {
-  background-color: #fff;
+  background-color: var(--bg-card, #fff);
   margin: 0 30rpx 30rpx;
   border-radius: 20rpx;
   padding: 30rpx;
@@ -518,12 +526,12 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 }
 .fee-label {
   font-size: 32rpx;
-  color: #333;
+  color: var(--text-primary, #333);
   font-weight: 500;
 }
 .fee-value {
   font-size: 34rpx;
-  color: #333;
+  color: var(--text-primary, #333);
   font-weight: 500;
 }
 .actual-value {
@@ -586,7 +594,7 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 }
 
 .notice-section {
-  background-color: #fff;
+  background-color: var(--bg-card, #fff);
   margin: 0 30rpx 30rpx;
   border-radius: 20rpx;
   padding: 30rpx;
@@ -598,12 +606,12 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 }
 .notice-item {
   font-size: 28rpx;
-  color: #666;
+  color: var(--text-secondary, #666);
   line-height: 1.5;
 }
 
 .record-section {
-  background-color: #fff;
+  background-color: var(--bg-card, #fff);
   margin: 0 30rpx 30rpx;
   border-radius: 20rpx;
   padding: 30rpx;
@@ -635,11 +643,11 @@ const viewAllRecord = () => uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-
 }
 .record-desc {
   font-size: 30rpx;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 .record-time {
   font-size: 28rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
 }
 .record-right {
   display: flex;

@@ -341,6 +341,9 @@
     "selectedColor": "#2f6bee",
     "borderStyle": "black",
     "backgroundColor": "#ffffff",
+    "iconWidth": "30px",
+    "spacing": "8px",
+    "height": "58px",
     "list": [
       {
         "pagePath": "pages/work/index",

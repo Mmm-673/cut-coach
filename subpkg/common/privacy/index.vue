@@ -36,6 +36,12 @@
 </template>
 
 <script setup>
+import { usePageTheme } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+
 const goBack = () => {
   uni.navigateBack()
 }
@@ -44,7 +50,7 @@ const goBack = () => {
 <style lang="scss" scoped>
 .privacy-wrapper {
   min-height: 100vh;
-  background: #f8fbff;
+  background: var(--bg-page, #f8fbff);
 }
 
 .header {
@@ -53,14 +59,14 @@ const goBack = () => {
   justify-content: space-between;
   padding: 30rpx;
   padding-top: calc(30rpx + var(--status-bar-height));
-  background: #fff;
-  border-bottom: 1rpx solid #f3f4f6;
+  background: var(--bg-card, #fff);
+  border-bottom: 1rpx solid var(--border-light, #f3f4f6);
 }
 
 .header-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
 }
 
 .placeholder {
@@ -81,13 +87,13 @@ const goBack = () => {
 .section-title {
   font-size: 30rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin-bottom: 10rpx;
 }
 
 .paragraph {
   font-size: 28rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   line-height: 1.8;
 }
 </style>

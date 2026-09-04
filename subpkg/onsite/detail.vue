@@ -49,7 +49,7 @@
       <view class="timer-label">已服务时长</view>
       <view class="timer-value">{{ currentDuration }}</view>
       <view class="timer-tip">
-        <uni-icons type="info" size="14" color="#9ca3af"></uni-icons>
+        <uni-icons type="info" size="14" :color="textTertiaryColor"></uni-icons>
         <text>计时以服务端为准</text>
       </view>
     </view>
@@ -148,14 +148,14 @@
             <view class="pay-name">{{ item.name }}</view>
             <view class="pay-desc">{{ item.desc }}</view>
           </view>
-          <uni-icons type="right" size="18" color="#ccc"></uni-icons>
+          <uni-icons type="right" size="18" :color="textTertiaryColor"></uni-icons>
         </view>
       </view>
     </view>
 
     <!-- 已支付状态提示 -->
     <view v-if="paymentInfo.paymentStatus === 10 && [45, 50].includes(orderDetail.status)" class="pay-success-tip">
-      <uni-icons type="checkmarkempty" size="32" color="#10b981"></uni-icons>
+      <uni-icons type="checkmarkempty" size="32" :color="successColor"></uni-icons>
       <view class="tip-text">
         <view class="tip-title">{{ getPaymentStatusText() }}</view>
         <view class="tip-desc">请稍候，订单状态更新中...</view>
@@ -182,7 +182,7 @@
         <view class="bottom-popup-header">
           <view class="bottom-popup-title">确认返程车费</view>
           <text class="bottom-popup-close" @click="showFinishTravelPopup = false">
-            <uni-icons type="close" size="20" color="#999"></uni-icons>
+            <uni-icons type="close" size="20" :color="textTertiaryColor"></uni-icons>
           </text>
         </view>
         <view class="bottom-popup-desc">请输入实际返程车费（0～50元）</view>
@@ -198,7 +198,7 @@
           <text class="travel-input-unit">元</text>
         </view>
         <view class="travel-input-tip">
-          <uni-icons type="info" size="14" color="#9ca3af"></uni-icons>
+          <uni-icons type="info" size="14" :color="textTertiaryColor"></uni-icons>
           <text>允许输入 0 元，按实际情况填写</text>
         </view>
         <button class="confirm-finish-btn" :loading="finishSubmitting" @click="confirmFinishService">
@@ -211,9 +211,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onUnmounted } from 'vue'
-import { onLoad, onShow, onHide,onPageShow } from '@dcloudio/uni-app'
-import { getCurrentInstance } from 'vue'
+import { ref, computed, onUnmounted, getCurrentInstance } from 'vue'
+import { onLoad, onShow, onHide, onPageShow } from '@dcloudio/uni-app'
+import request from '@/utils/request'
+import config from '@/config'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
 import {
   getOnsiteOrderDetail,
   cancelOnsiteOrder,
@@ -226,8 +228,6 @@ import {
   getOnsitePaymentStatus,
   getEnablePayChannelList
 } from '@/api/billiard/onsitePayment'
-import request from '@/utils/request'
-import config from '@/config'
 import {
   ORDER_STATUS_MAP,
   SERVICE_TYPE_MAP,
@@ -239,6 +239,12 @@ import {
   formatDuration,
   diffSeconds
 } from '@/utils/onsiteOrder'
+
+// 页面主题初始化
+usePageTheme()
+
+const successColor = useThemeColor('success')
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const { proxy } = getCurrentInstance()
 
@@ -685,12 +691,14 @@ onUnmounted(() => {
   stopTimer()
   stopPaymentPoll()
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .detail-page {
   min-height: 100vh;
-  background: #f7f8fa;
+  background: var(--bg-input, #f7f8fa);
   padding: 24rpx;
   padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
@@ -716,7 +724,7 @@ onUnmounted(() => {
 }
 
 .section-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 20rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
@@ -726,12 +734,12 @@ onUnmounted(() => {
 .section-title {
   font-size: 30rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary, #333);
   margin-bottom: 20rpx;
 }
 
 .info-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 20rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
@@ -747,12 +755,12 @@ onUnmounted(() => {
 
 .info-label {
   font-size: 28rpx;
-  color: #666;
+  color: var(--text-secondary, #666);
 }
 
 .info-value {
   font-size: 28rpx;
-  color: #333;
+  color: var(--text-primary, #333);
   font-weight: 500;
 }
 
@@ -764,36 +772,36 @@ onUnmounted(() => {
 
 .edit-link {
   font-size: 24rpx;
-  color: #2f6bee;
+  color: var(--color-primary, #2f6bee);
 }
 
 .travel-tip {
   font-size: 22rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   margin-left: 8rpx;
 }
 
 .unit-suffix {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   font-weight: normal;
   margin-left: 4rpx;
 }
 
 .info-value-note {
   font-size: 24rpx;
-  color: #f59e0b;
+  color: var(--color-warning, #f59e0b);
   font-weight: normal;
 }
 
 .divider {
   height: 1rpx;
-  background: #f3f4f6;
+  background: var(--border-light, #f3f4f6);
 }
 
 /* 计时器卡片 */
 .timer-card {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   color: #fff;
   border-radius: 20rpx;
   padding: 60rpx 32rpx;
@@ -827,7 +835,7 @@ onUnmounted(() => {
 
 /* 金额卡片 */
 .amount-card {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, var(--color-danger, #ef4444) 0%, var(--color-red-dark, #dc2626) 100%);
   color: #fff;
   border-radius: 20rpx;
   padding: 48rpx 32rpx;
@@ -836,7 +844,7 @@ onUnmounted(() => {
   box-shadow: 0 4rpx 16rpx rgba(239, 68, 68, 0.25);
 
   &.completed {
-    background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
+    background: linear-gradient(135deg, var(--color-success, #10b981) 0%, var(--color-green-dark, #0da271) 100%);
     box-shadow: 0 4rpx 16rpx rgba(16, 185, 129, 0.25);
   }
 }
@@ -856,16 +864,16 @@ onUnmounted(() => {
 .payment-status {
   font-size: 26rpx;
   font-weight: 500;
-  background: #fff;
+  background: var(--bg-card, #fff);
   padding: 10rpx 24rpx;
   border-radius: 24rpx;
   display: inline-block;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 
 /* 支付方式 */
 .pay-section {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 20rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
@@ -906,19 +914,19 @@ onUnmounted(() => {
 
 .pay-name {
   font-size: 30rpx;
-  color: #333;
+  color: var(--text-primary, #333);
   font-weight: 500;
 }
 
 .pay-desc {
   font-size: 24rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
 }
 
 /* 支付成功提示 */
 .pay-success-tip {
-  background: #ecfdf5;
-  border: 2rpx solid #10b98133;
+  background: var(--color-success-light, #ecfdf5);
+  border: 2rpx solid var(--color-success, #10b981)33;
   border-radius: 16rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
@@ -933,14 +941,14 @@ onUnmounted(() => {
 
 .tip-title {
   font-size: 30rpx;
-  color: #10b981;
+  color: var(--color-success, #10b981);
   font-weight: 600;
   margin-bottom: 6rpx;
 }
 
 .tip-desc {
   font-size: 24rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
 }
 
 /* 底部操作区 */
@@ -951,7 +959,7 @@ onUnmounted(() => {
   bottom: 0;
   padding: 20rpx 32rpx;
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-  background: #fff;
+  background: var(--bg-card, #fff);
   box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.04);
   display: flex;
   gap: 20rpx;
@@ -971,18 +979,18 @@ onUnmounted(() => {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   color: #fff;
-  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
 }
 
 .btn-secondary {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--border-light, #f3f4f6);
+  color: var(--text-secondary, #6b7280);
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, var(--color-danger, #ef4444) 0%, var(--color-red-dark, #dc2626) 100%);
   color: #fff;
   box-shadow: 0 4rpx 12rpx rgba(239, 68, 68, 0.3);
 }
@@ -1003,7 +1011,7 @@ onUnmounted(() => {
 
 .popup-content {
   width: 80%;
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 20rpx;
   padding: 40rpx;
 }
@@ -1011,7 +1019,7 @@ onUnmounted(() => {
 .popup-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary, #333);
   text-align: center;
   margin-bottom: 32rpx;
 }
@@ -1022,7 +1030,7 @@ onUnmounted(() => {
   justify-content: center;
   gap: 12rpx;
   padding: 24rpx;
-  background: #f7f8fa;
+  background: var(--bg-input, #f7f8fa);
   border-radius: 16rpx;
   margin-bottom: 16rpx;
 }
@@ -1030,19 +1038,19 @@ onUnmounted(() => {
 .popup-input {
   font-size: 40rpx;
   font-weight: 600;
-  color: #ef4444;
+  color: var(--color-danger, #ef4444);
   text-align: right;
   width: 180rpx;
 }
 
 .popup-unit {
   font-size: 28rpx;
-  color: #666;
+  color: var(--text-secondary, #666);
 }
 
 .popup-tip {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   text-align: center;
   margin-bottom: 32rpx;
 }
@@ -1064,12 +1072,12 @@ onUnmounted(() => {
 }
 
 .popup-cancel {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--border-light, #f3f4f6);
+  color: var(--text-secondary, #6b7280);
 }
 
 .popup-confirm {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   color: #fff;
 }
 
@@ -1088,7 +1096,7 @@ onUnmounted(() => {
 
 .bottom-popup-content {
   width: 100%;
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 32rpx 32rpx 0 0;
   padding: 40rpx 32rpx;
   padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
@@ -1105,7 +1113,7 @@ onUnmounted(() => {
 .bottom-popup-title {
   font-size: 34rpx;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 
 .bottom-popup-close {
@@ -1114,7 +1122,7 @@ onUnmounted(() => {
 
 .bottom-popup-desc {
   font-size: 26rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 32rpx;
 }
 
@@ -1126,14 +1134,14 @@ onUnmounted(() => {
   padding: 36rpx 32rpx;
   background: linear-gradient(135deg, #f0f7ff 0%, #e8f0fe 100%);
   border-radius: 20rpx;
-  border: 2rpx solid #2f6bee22;
+  border: 2rpx solid var(--color-primary, #2f6bee)22;
   margin-bottom: 16rpx;
 }
 
 .travel-input-symbol {
   font-size: 36rpx;
   font-weight: 600;
-  color: #ef4444;
+  color: var(--color-danger, #ef4444);
 }
 
 .travel-input {
@@ -1141,13 +1149,13 @@ onUnmounted(() => {
   text-align: center;
   font-size: 56rpx;
   font-weight: bold;
-  color: #ef4444;
+  color: var(--color-danger, #ef4444);
   line-height: 1;
 }
 
 .travel-input-unit {
   font-size: 28rpx;
-  color: #666;
+  color: var(--text-secondary, #666);
 }
 
 .travel-input-tip {
@@ -1156,7 +1164,7 @@ onUnmounted(() => {
   justify-content: center;
   gap: 8rpx;
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   margin-bottom: 40rpx;
 }
 
@@ -1164,7 +1172,7 @@ onUnmounted(() => {
   width: 100%;
   height: 90rpx;
   line-height: 90rpx;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, var(--color-danger, #ef4444) 0%, var(--color-red-dark, #dc2626) 100%);
   color: #fff;
   border-radius: 20rpx;
   border: none;

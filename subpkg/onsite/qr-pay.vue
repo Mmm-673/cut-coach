@@ -19,7 +19,7 @@
       <!-- 支付成功 -->
       <view v-if="paymentStatus === 10" class="qr-success">
         <view class="success-icon">
-          <uni-icons type="checkmarkempty" size="80" color="#10b981"></uni-icons>
+          <uni-icons type="checkmarkempty" size="80" :color="successColor"></uni-icons>
         </view>
         <view class="success-title">支付成功</view>
         <view class="success-desc">{{ settlementText }}</view>
@@ -28,7 +28,7 @@
       <!-- 二维码过期 -->
       <view v-else-if="isExpired && qrContent" class="qr-expired">
         <view class="expired-icon">
-          <uni-icons type="info" size="60" color="#f59e0b"></uni-icons>
+          <uni-icons type="info" size="60" :color="warningColor"></uni-icons>
         </view>
         <view class="expired-title">二维码已过期</view>
         <view class="expired-desc">请点击下方按钮重新生成</view>
@@ -63,7 +63,7 @@
 
     <!-- 过期倒计时 -->
     <view v-if="qrContent && !isExpired && paymentStatus !== 10" class="expire-countdown">
-      <uni-icons type="clock" size="16" color="#9ca3af"></uni-icons>
+      <uni-icons type="clock" size="16" :color="textTertiaryColor"></uni-icons>
       <text>二维码将在 {{ countdownText }} 后过期</text>
     </view>
 
@@ -99,6 +99,7 @@
 import { ref, computed, onUnmounted, nextTick } from 'vue'
 import { onLoad, onShow, onHide, onPageShow, onPageHide } from '@dcloudio/uni-app'
 import { createOnsiteQrCode, getOnsitePaymentStatus } from '@/api/billiard/onsitePayment'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
 import {
   PAYMENT_STATUS_MAP,
   SETTLEMENT_STATUS_MAP,
@@ -106,6 +107,13 @@ import {
   getRemainingSeconds,
   formatDuration
 } from '@/utils/onsiteOrder'
+
+// 页面主题初始化
+usePageTheme()
+
+const successColor = useThemeColor('success')
+const warningColor = useThemeColor('warning')
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const uqrcodeRef = ref(null)
 const orderId = ref(null)
@@ -329,19 +337,21 @@ onUnmounted(() => {
   stopCountdown()
   stopPoll()
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .qr-pay-page {
   min-height: 100vh;
-  background: #f7f8fa;
+  background: var(--bg-input, #f7f8fa);
   padding: 24rpx;
   padding-bottom: calc(240rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
 .pay-info-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 20rpx;
   padding: 32rpx;
   margin-bottom: 24rpx;
@@ -356,7 +366,7 @@ onUnmounted(() => {
   gap: 12rpx;
   font-size: 30rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary, #333);
   margin-bottom: 20rpx;
 }
 
@@ -367,19 +377,19 @@ onUnmounted(() => {
 
 .amount-label {
   font-size: 26rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
   margin-bottom: 12rpx;
 }
 
 .amount-value {
   font-size: 56rpx;
   font-weight: bold;
-  color: #ef4444;
+  color: var(--color-danger, #ef4444);
 }
 
 /* 二维码卡 */
 .qr-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 20rpx;
   padding: 48rpx 32rpx;
   margin-bottom: 24rpx;
@@ -412,7 +422,7 @@ onUnmounted(() => {
   width: 140rpx;
   height: 140rpx;
   border-radius: 50%;
-  background: #ecfdf5;
+  background: var(--color-success-light, #ecfdf5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -421,19 +431,19 @@ onUnmounted(() => {
 .success-title {
   font-size: 36rpx;
   font-weight: bold;
-  color: #10b981;
+  color: var(--color-success, #10b981);
 }
 
 .success-desc {
   font-size: 26rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
 }
 
 .expired-icon {
   width: 120rpx;
   height: 120rpx;
   border-radius: 50%;
-  background: #fff7ed;
+  background: var(--color-warning-light, #fff7ed);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -442,19 +452,19 @@ onUnmounted(() => {
 .expired-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #f59e0b;
+  color: var(--color-warning, #f59e0b);
 }
 
 .expired-desc {
   font-size: 26rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .loading-spinner {
   width: 60rpx;
   height: 60rpx;
-  border: 4rpx solid #e5e7eb;
-  border-top-color: #2f6bee;
+  border: 4rpx solid var(--border-color, #e5e7eb);
+  border-top-color: var(--color-primary, #2f6bee);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -465,7 +475,7 @@ onUnmounted(() => {
 
 .qr-loading text {
   font-size: 26rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 /* 扫码提示 */
@@ -475,7 +485,7 @@ onUnmounted(() => {
   justify-content: center;
   gap: 10rpx;
   font-size: 28rpx;
-  color: #333;
+  color: var(--text-primary, #333);
   font-weight: 500;
   margin-bottom: 20rpx;
 }
@@ -487,13 +497,13 @@ onUnmounted(() => {
   justify-content: center;
   gap: 8rpx;
   font-size: 24rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 24rpx;
 }
 
 /* 状态区 */
 .status-section {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 20rpx;
   padding: 24rpx 28rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
@@ -507,7 +517,7 @@ onUnmounted(() => {
 
 .status-label {
   font-size: 28rpx;
-  color: #666;
+  color: var(--text-secondary, #666);
 }
 
 .status-value {
@@ -523,7 +533,7 @@ onUnmounted(() => {
   bottom: 0;
   padding: 20rpx 32rpx;
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-  background: #fff;
+  background: var(--bg-card, #fff);
   box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
@@ -535,13 +545,13 @@ onUnmounted(() => {
   width: 100%;
   height: 90rpx;
   line-height: 90rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   color: #fff;
   border-radius: 20rpx;
   border: none;
   font-size: 30rpx;
   font-weight: 600;
-  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
 
   &.disabled {
     opacity: 0.6;
@@ -556,8 +566,8 @@ onUnmounted(() => {
   width: 100%;
   height: 76rpx;
   line-height: 76rpx;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--border-light, #f3f4f6);
+  color: var(--text-secondary, #6b7280);
   border-radius: 16rpx;
   border: none;
   font-size: 28rpx;

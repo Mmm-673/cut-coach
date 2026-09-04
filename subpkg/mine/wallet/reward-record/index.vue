@@ -40,7 +40,7 @@
 
       <!-- 空状态 -->
       <view v-if="!loading && recordList.length === 0" class="empty-state">
-        <uni-icons type="gift" size="64" color="#d1d5db"></uni-icons>
+        <uni-icons type="gift" size="64" :color="textTertiaryColor"></uni-icons>
         <text class="empty-text">暂无打赏记录</text>
       </view>
 
@@ -55,6 +55,12 @@
 import { ref, reactive, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getRewardPage, getRewardSummary } from '@/api/billiard/reward'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const defaultAvatar = '/static/images/profile.jpg'
 
@@ -157,17 +163,19 @@ onShow(() => {
 onMounted(() => {
   loadData()
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .reward-record-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
 }
 
 /* 顶部统计栏 */
 .stats-header {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, var(--color-warning, #f59e0b) 0%, var(--color-orange-dark, #d97706) 100%);
   padding: 50rpx 32rpx;
   box-shadow: 0 4rpx 12rpx rgba(245, 158, 11, 0.2);
 }
@@ -216,14 +224,14 @@ onMounted(() => {
 }
 
 .reward-item {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
   transition: transform 0.2s;
 
   &:active {
@@ -242,7 +250,7 @@ onMounted(() => {
   width: 88rpx;
   height: 88rpx;
   border-radius: 50%;
-  background: #f3f4f6;
+  background: var(--border-light, #f3f4f6);
   flex-shrink: 0;
 }
 
@@ -257,7 +265,7 @@ onMounted(() => {
 .nickname {
   font-size: 30rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -265,7 +273,7 @@ onMounted(() => {
 
 .pay-time {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .item-right {
@@ -276,7 +284,7 @@ onMounted(() => {
 .amount {
   font-size: 40rpx;
   font-weight: bold;
-  color: #10b981;
+  color: var(--color-success, #10b981);
 }
 
 /* 空状态 */
@@ -291,7 +299,7 @@ onMounted(() => {
 
 .empty-text {
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 /* 加载状态 */
@@ -300,6 +308,6 @@ onMounted(() => {
   text-align: center;
   padding: 40rpx 0;
   font-size: 26rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 </style>

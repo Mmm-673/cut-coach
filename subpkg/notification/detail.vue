@@ -36,6 +36,10 @@ import { ref, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getNotificationDetail, readNotification } from '@/api/billiard/notification'
 import { useNotificationStore } from '@/store/modules/notification'
+import { usePageTheme } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
 
 const notificationStore = useNotificationStore()
 
@@ -133,15 +137,17 @@ onMounted(() => {
   // 设置导航栏标题
   uni.setNavigationBarTitle({ title: '通知详情' })
 })
+
+
 </script>
 
 <style lang="scss" scoped>
-$text-primary: #1f2937;
-$text-secondary: #6b7280;
-$text-tertiary: #9ca3af;
-$bg-page: #f7f8fa;
+$text-primary: var(--text-primary, #1f2937);
+$text-secondary: var(--text-secondary, #6b7280);
+$text-tertiary: var(--text-tertiary, #9ca3af);
+$bg-page: var(--bg-input, #f7f8fa);
 $bg-card: #ffffff;
-$border-light: #f3f4f6;
+$border-light: var(--border-light, #f3f4f6);
 $radius-xl: 24rpx;
 
 .detail-page {

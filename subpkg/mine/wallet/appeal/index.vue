@@ -3,7 +3,7 @@
     <!-- 扣款信息卡片 -->
     <view class="info-card">
       <view class="card-header">
-        <uni-icons type="info" size="20" color="#2f6bee"></uni-icons>
+        <uni-icons type="info" size="20" :color="primaryColor"></uni-icons>
         <text class="card-title">扣款信息</text>
       </view>
       <view class="card-item">
@@ -27,7 +27,7 @@
     <!-- 申诉表单 -->
     <view class="form-card">
       <view class="form-header">
-        <uni-icons type="compose" size="20" color="#2f6bee"></uni-icons>
+        <uni-icons type="compose" size="20" :color="primaryColor"></uni-icons>
         <text class="form-title">申诉信息</text>
       </view>
 
@@ -66,6 +66,12 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { postDeductionAppeal } from '@/api/billiard/wallet'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const primaryColor = useThemeColor('primary')
 
 // 从URL获取参数
 const recordId = ref('')
@@ -145,23 +151,25 @@ const handleSubmit = async () => {
     submitting.value = false
   }
 }
+
+
 </script>
 
 <style lang="scss" scoped>
 .appeal-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
   padding: 24rpx;
   padding-bottom: 160rpx;
 }
 
 /* 扣款信息卡片 */
 .info-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 30rpx;
   margin-bottom: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .card-header {
@@ -170,13 +178,13 @@ const handleSubmit = async () => {
   gap: 10rpx;
   margin-bottom: 24rpx;
   padding-bottom: 20rpx;
-  border-bottom: 1rpx solid #f3f4f6;
+  border-bottom: 1rpx solid var(--border-light, #f3f4f6);
 }
 
 .card-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
 }
 
 .card-item {
@@ -186,35 +194,35 @@ const handleSubmit = async () => {
   padding: 20rpx 0;
 
   &:not(:last-child) {
-    border-bottom: 1rpx solid #f9fafb;
+    border-bottom: 1rpx solid var(--border-lighter, #f9fafb);
   }
 }
 
 .item-label {
   font-size: 28rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
 }
 
 .item-value {
   font-size: 28rpx;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   font-weight: 500;
   max-width: 400rpx;
   text-align: right;
   word-break: break-all;
 
   &.red {
-    color: #ef4444;
+    color: var(--color-danger, #ef4444);
   }
 }
 
 /* 表单卡片 */
 .form-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 30rpx;
   margin-bottom: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .form-header {
@@ -227,7 +235,7 @@ const handleSubmit = async () => {
 .form-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
 }
 
 .form-item {
@@ -237,7 +245,7 @@ const handleSubmit = async () => {
 .form-label {
   display: block;
   font-size: 28rpx;
-  color: #374151;
+  color: var(--text-primary, #374151);
   margin-bottom: 16rpx;
   font-weight: 500;
 }
@@ -249,22 +257,22 @@ const handleSubmit = async () => {
   border-radius: 16rpx;
   padding: 24rpx;
   font-size: 28rpx;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   line-height: 1.6;
   box-sizing: border-box;
   border: 2rpx solid transparent;
   transition: all 0.2s;
 
   &:focus {
-    background: #fff;
-    border-color: #2f6bee;
+    background: var(--bg-card, #fff);
+    border-color: var(--color-primary, #2f6bee);
   }
 }
 
 .char-count {
   text-align: right;
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   margin-top: 12rpx;
 }
 
@@ -276,21 +284,21 @@ const handleSubmit = async () => {
   right: 0;
   padding: 24rpx;
   padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background: #fff;
-  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.05);
+  background: var(--bg-card, #fff);
+  box-shadow: 0 -4rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .submit-btn {
   width: 100%;
   height: 96rpx;
   line-height: 96rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   color: #fff;
   border-radius: 24rpx;
   font-size: 32rpx;
   font-weight: 600;
   border: none;
-  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
   transition: all 0.2s;
 
   &::after {
@@ -303,8 +311,8 @@ const handleSubmit = async () => {
   }
 
   &.disabled {
-    background: #e5e7eb;
-    color: #9ca3af;
+    background: var(--border-color, #e5e7eb);
+    color: var(--text-tertiary, #9ca3af);
     box-shadow: none;
   }
 }

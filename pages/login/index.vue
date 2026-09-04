@@ -31,7 +31,7 @@
                    placeholder="请输入密码" :maxlength="20" :focus="focusTarget === 'pwdPassword'"
                    confirm-type="done" @confirm="handlePwdLogin" />
             <view class="password-toggle" @click="togglePassword">
-              <uni-icons :type="showPassword ? 'eye' : 'eye-slash'" size="20" color="#999"></uni-icons>
+              <uni-icons :type="showPassword ? 'eye' : 'eye-slash'" size="20" :color="textTertiaryColor"></uni-icons>
             </view>
           </view>
         </view>
@@ -68,7 +68,7 @@
       <view class="xieyi-section">
         <checkbox-group @change="onCheckChange">
           <label class="flex align-center justify-center">
-            <checkbox value="check" :checked="isAgreed" color="#2F6BEE" style="transform:scale(0.6)" />
+            <checkbox value="check" :checked="isAgreed" :color="primaryColor" style="transform:scale(0.6)" />
             <view class="text-grey-dark">
               我已阅读并同意
               <text @click.stop="handleUserAgrement" class="text-blue">《用户协议》</text>
@@ -90,30 +90,22 @@
 </template>
 
 <script setup>
-import {
-  ref,
-  getCurrentInstance,
-  onMounted,
-  onUnmounted, nextTick
-} from "vue"
-import config from '@/config'
-import {
-  getCodeImg,
-  sendSmsCode
-} from '@/api/login'
-import {
-  getPwdSwitch
-} from '@/api/billiard/coach'
-import {
-  useConfigStore,
-  useUserStore
-} from '@/store'
+import { ref, getCurrentInstance, onMounted, onUnmounted, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-
+import config from '@/config'
 import { syncPushForUser } from '@/utils/jpush'
 import { getUserId } from '@/utils/auth'
 import { shouldShowIosPrivacy, hasPrivacyRefused } from '@/utils/privacy'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+import { getCodeImg, sendSmsCode } from '@/api/login'
+import { getPwdSwitch } from '@/api/billiard/coach'
+import { useConfigStore, useUserStore } from '@/store'
 
+// 页面主题初始化
+usePageTheme()
+
+const primaryColor = useThemeColor('primary')
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const {
   proxy
@@ -393,7 +385,7 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 page {
-  background: linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #F8FBFF) 0%, #FFFFFF 100%));
 }
 
 .normal-login-container {
@@ -428,17 +420,17 @@ page {
 
 .app-subtitle {
   font-size: 26rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
   margin-top: 10rpx;
 }
 
 .login-tabs {
   display: flex;
-  background: #fff;
+  background: var(--bg-card, #fff);
   padding: 8rpx;
   border-radius: 24rpx;
   margin-bottom: 40rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 8rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .tab-item {
@@ -447,37 +439,37 @@ page {
   height: 80rpx;
   line-height: 80rpx;
   font-size: 28rpx;
-  color: #666;
+  color: var(--text-secondary, #666);
   border-radius: 20rpx;
   transition: all 0.3s ease;
 }
 
 .tab-item.active {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   color: #fff;
-  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
 }
 
 .input-item {
-  background-color: #fff;
+  background-color: var(--bg-card, #fff);
   height: 100rpx;
   border-radius: 24rpx;
   margin-bottom: 30rpx;
   padding: 0 30rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 8rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
   border: 2rpx solid transparent;
   position: relative;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .input-item:focus-within {
-  border-color: #2f6bee;
+  border-color: var(--color-primary, #2f6bee);
   box-shadow: 0 0 0 6rpx rgba(47, 107, 238, 0.1);
 }
 
 .icon {
   font-size: 38rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
 }
 
 .input {
@@ -486,7 +478,7 @@ page {
   font-size: 28rpx;
   height: 100%;
   line-height: 100rpx;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 
 .password-toggle {
@@ -501,8 +493,8 @@ page {
 
 .sms-code-btn {
   font-size: 24rpx;
-  color: #2f6bee;
-  background: #e6f0ff;
+  color: var(--color-primary, #2f6bee);
+  background: var(--color-primary-light, rgba(47, 107, 238, 0.08));
   padding: 12rpx 24rpx;
   border-radius: 20rpx;
   white-space: nowrap;
@@ -511,26 +503,26 @@ page {
 }
 
 .sms-code-btn.disabled {
-  color: #999;
-  background: #f5f5f5;
+  color: var(--text-tertiary, #999);
+  background: var(--bg-input, #f7f8fa);
 }
 
 .forget-pwd {
   text-align: right;
-  color: #2f6bee;
+  color: var(--color-primary, #2f6bee);
   font-size: 24rpx;
   margin-bottom: 40rpx;
 }
 
 .login-btn {
   height: 100rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%) !important;
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%)) !important;
   border-radius: 24rpx;
   font-size: 32rpx;
   color: #fff;
   border: none;
   font-weight: 600;
-  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
   transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
 }
 
@@ -549,11 +541,11 @@ page {
 }
 
 .text-grey-dark {
-  color: #666;
+  color: var(--text-secondary, #666);
 }
 
 .text-blue {
-  color: #2f6bee;
+  color: var(--color-primary, #2f6bee);
 }
 
 .bottom-footer {
@@ -563,6 +555,6 @@ page {
   width: 100%;
   text-align: center;
   font-size: 26rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
 }
 </style>

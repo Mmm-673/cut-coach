@@ -16,7 +16,7 @@
           @click="handleText(child)"
         >
           <text class="question-text">{{ child.title }}</text>
-          <uni-icons type="right" size="16" color="#d1d5db"></uni-icons>
+          <uni-icons type="right" size="16" :color="textTertiaryColor"></uni-icons>
         </view>
       </view>
     </view>
@@ -25,7 +25,7 @@
     <view class="contact-section">
       <view class="contact-card">
         <view class="contact-icon">
-          <uni-icons type="chatbubble" size="32" color="#2f6bee"></uni-icons>
+          <uni-icons type="chatbubble" size="32" :color="primaryColor"></uni-icons>
         </view>
         <text class="contact-title">仍有问题？</text>
         <text class="contact-desc">联系客服获取更多帮助</text>
@@ -38,6 +38,13 @@
 <script setup>
 import { ref } from 'vue'
 import config from '@/config'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const primaryColor = useThemeColor('primary')
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const list = ref([
   {
@@ -95,23 +102,25 @@ function handleContact() {
     showCancel: false
   })
 }
+
+
 </script>
 
 <style lang="scss" scoped>
 .help-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
   padding: 24rpx;
   padding-bottom: 60rpx;
 }
 
 /* 分类卡片 */
 .section-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 0;
   margin-bottom: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
   overflow: hidden;
 }
 
@@ -133,18 +142,18 @@ function handleContact() {
   justify-content: center;
 
   &.faq-icon {
-    background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+    background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   }
 
   &.other-icon {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--color-success, #10b981) 0%, #059669 100%);
   }
 }
 
 .section-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
 }
 
 /* 问题列表 */
@@ -157,7 +166,7 @@ function handleContact() {
   justify-content: space-between;
   align-items: center;
   padding: 28rpx 0;
-  border-bottom: 1rpx solid #f3f4f6;
+  border-bottom: 1rpx solid var(--border-light, #f3f4f6);
   transition: background 0.2s;
 
   &:last-child {
@@ -171,7 +180,7 @@ function handleContact() {
 
 .question-text {
   font-size: 28rpx;
-  color: #374151;
+  color: var(--text-primary, #374151);
   flex: 1;
 }
 
@@ -181,7 +190,7 @@ function handleContact() {
 }
 
 .contact-card {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   border-radius: 24rpx;
   padding: 48rpx 30rpx;
   display: flex;
@@ -215,8 +224,8 @@ function handleContact() {
 }
 
 .contact-btn {
-  background: #fff;
-  color: #2f6bee;
+  background: var(--bg-card, #fff);
+  color: var(--color-primary, #2f6bee);
   border-radius: 40rpx;
   padding: 16rpx 48rpx;
   font-size: 28rpx;

@@ -583,7 +583,7 @@ defineExpose({
 	align-items: center;
 	gap: 16rpx;
 	padding: 16rpx 20rpx;
-	background: #fff;
+	background: var(--bg-card, #fff);
 	border-radius: 16rpx;
 	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
 	margin-bottom: 16rpx;

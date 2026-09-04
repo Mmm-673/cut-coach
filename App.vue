@@ -1,16 +1,23 @@
 <script setup>
 import config from './config'
 import { getAccessToken, getRefreshToken, getUserId } from '@/utils/auth'
-import { useConfigStore, useUserStore } from '@/store'
-import { onLaunch } from '@dcloudio/uni-app'
+import { useConfigStore, useUserStore, useThemeStore } from '@/store'
+import { onLaunch, onShow } from '@dcloudio/uni-app'
 import { initPushService, syncPushForUser } from '@/utils/jpush'
 import { shouldShowIosPrivacy, setPrivacyAgreedCallback } from '@/utils/privacy'
 import wsManager from '@/utils/websocket'
 
 onLaunch(() => {
   console.log('App Launch')
+  // 初始化主题
+  useThemeStore().initTheme()
   setPrivacyAgreedCallback(continueAppInit)
   initApp()
+})
+
+onShow(() => {
+  // 每次显示时确保主题生效（处理后台切回等场景）
+  useThemeStore().updateTabBar()
 })
 
 // 初始化应用

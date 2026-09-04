@@ -20,7 +20,7 @@
             <view class="service-disabled" v-else>暂不可预约</view>
           </view>
           <view class="service-check" v-if="selectedServiceType === item.serviceType">
-            <uni-icons type="checkmarkempty" size="20" color="#2f6bee"></uni-icons>
+            <uni-icons type="checkmarkempty" size="20" :color="primaryColor"></uni-icons>
           </view>
         </view>
       </view>
@@ -49,7 +49,7 @@
       <!-- 会员查询 -->
       <view v-if="customerType === 1" class="member-search">
         <view class="search-input-wrap">
-          <uni-icons type="search" size="18" color="#999"></uni-icons>
+          <uni-icons type="search" size="18" :color="textTertiaryColor"></uni-icons>
           <input
             class="search-input"
             type="number"
@@ -80,7 +80,7 @@
               <view class="member-mobile">{{ member.maskedMobile }}</view>
             </view>
             <view v-if="selectedMember?.userId === member.userId" class="member-check">
-              <uni-icons type="checkmarkempty" size="18" color="#2f6bee"></uni-icons>
+              <uni-icons type="checkmarkempty" size="18" :color="primaryColor"></uni-icons>
             </view>
           </view>
         </view>
@@ -115,6 +115,7 @@
 import { ref, computed } from 'vue'
 import { getCoachProfile } from '@/api/billiard/coach'
 import { searchMember, createOnsiteOrder } from '@/api/billiard/onsiteOrder'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
 import {
   SERVICE_TYPE_MAP,
   generateUUID,
@@ -123,6 +124,12 @@ import {
   formatFenToYuan,
   getCatalogPriceUnit
 } from '@/utils/onsiteOrder'
+
+// 页面主题初始化
+usePageTheme()
+
+const primaryColor = useThemeColor('primary')
+const textTertiaryColor = useThemeColor('textTertiary')
 
 // 服务目录列表（带价格、计价模式等信息）
 const serviceItemList = ref([])
@@ -284,19 +291,21 @@ const handleCreate = async () => {
 
 // 初始化
 fetchCoachServiceTypes()
+
+
 </script>
 
 <style lang="scss" scoped>
 .create-page {
   min-height: 100vh;
-  background: #f7f8fa;
+  background: var(--bg-input, #f7f8fa);
   padding: 24rpx;
   padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
 .section-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 20rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
@@ -313,7 +322,7 @@ fetchCoachServiceTypes()
 .form-label {
   font-size: 30rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary, #333);
   margin-bottom: 20rpx;
 }
 
@@ -340,7 +349,7 @@ fetchCoachServiceTypes()
 
   &.active {
     background: rgba(47, 107, 238, 0.06);
-    border-color: #2f6bee;
+    border-color: var(--color-primary, #2f6bee);
   }
 
   &.disabled {
@@ -361,7 +370,7 @@ fetchCoachServiceTypes()
 .service-name {
   font-size: 30rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
 }
 
 .service-price {
@@ -372,18 +381,18 @@ fetchCoachServiceTypes()
 .price-num {
   font-size: 32rpx;
   font-weight: bold;
-  color: #2f6bee;
+  color: var(--color-primary, #2f6bee);
 }
 
 .price-unit {
   font-size: 24rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   margin-left: 4rpx;
 }
 
 .service-disabled {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .service-check {
@@ -393,7 +402,7 @@ fetchCoachServiceTypes()
 /* 客户类型 */
 .customer-tabs {
   display: flex;
-  background: #f3f4f6;
+  background: var(--border-light, #f3f4f6);
   border-radius: 16rpx;
   padding: 6rpx;
   margin-bottom: 24rpx;
@@ -404,13 +413,13 @@ fetchCoachServiceTypes()
   text-align: center;
   padding: 18rpx 0;
   font-size: 28rpx;
-  color: #666;
+  color: var(--text-secondary, #666);
   border-radius: 12rpx;
   transition: all 0.2s;
 
   &.active {
-    background: #fff;
-    color: #2f6bee;
+    background: var(--bg-card, #fff);
+    color: var(--color-primary, #2f6bee);
     font-weight: 600;
     box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
   }
@@ -426,20 +435,20 @@ fetchCoachServiceTypes()
   align-items: center;
   gap: 12rpx;
   padding: 20rpx 24rpx;
-  background: #f7f8fa;
+  background: var(--bg-input, #f7f8fa);
   border-radius: 16rpx;
   border: 2rpx solid transparent;
 
   &:focus-within {
-    border-color: #2f6bee;
-    background: #fff;
+    border-color: var(--color-primary, #2f6bee);
+    background: var(--bg-card, #fff);
   }
 }
 
 .search-input {
   flex: 1;
   font-size: 28rpx;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 
 .member-list {
@@ -448,7 +457,7 @@ fetchCoachServiceTypes()
 
 .member-list-title {
   font-size: 26rpx;
-  color: #666;
+  color: var(--text-secondary, #666);
   margin-bottom: 16rpx;
 }
 
@@ -465,7 +474,7 @@ fetchCoachServiceTypes()
 
   &.active {
     background: rgba(47, 107, 238, 0.06);
-    border-color: #2f6bee;
+    border-color: var(--color-primary, #2f6bee);
   }
 
   &:active {
@@ -477,7 +486,7 @@ fetchCoachServiceTypes()
   width: 80rpx;
   height: 80rpx;
   border-radius: 50%;
-  background: #e5e7eb;
+  background: var(--border-color, #e5e7eb);
 }
 
 .member-info {
@@ -489,13 +498,13 @@ fetchCoachServiceTypes()
 
 .member-name {
   font-size: 28rpx;
-  color: #333;
+  color: var(--text-primary, #333);
   font-weight: 500;
 }
 
 .member-mobile {
   font-size: 24rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
 }
 
 .member-empty {
@@ -505,11 +514,11 @@ fetchCoachServiceTypes()
   align-items: center;
   gap: 12rpx;
   font-size: 26rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
 }
 
 .switch-tip {
-  color: #2f6bee;
+  color: var(--color-primary, #2f6bee);
   font-size: 26rpx;
 }
 
@@ -539,7 +548,7 @@ fetchCoachServiceTypes()
   bottom: 0;
   padding: 20rpx 32rpx;
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-  background: #fff;
+  background: var(--bg-card, #fff);
   box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.04);
   z-index: 100;
 }
@@ -549,13 +558,13 @@ fetchCoachServiceTypes()
   width: 100%;
   height: 90rpx;
   line-height: 90rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   color: #fff;
   border-radius: 20rpx;
   border: none;
   font-size: 30rpx;
   font-weight: 600;
-  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
 
   &.disabled {
     opacity: 0.5;

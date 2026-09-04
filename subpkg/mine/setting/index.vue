@@ -13,7 +13,7 @@
             </view>
             <view class="menu-text">修改密码</view>
           </view>
-          <uni-icons type="right" size="18" color="#999"></uni-icons>
+          <uni-icons type="right" size="18" :color="textTertiaryColor"></uni-icons>
         </view>
 
         <view class="divider"></view>
@@ -29,8 +29,14 @@
 </template>
 
 <script setup>
+import { getCurrentInstance } from 'vue'
 import { useUserStore } from '@/store'
-import { getCurrentInstance } from "vue"
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const { proxy } = getCurrentInstance()
 
@@ -45,11 +51,13 @@ function handleLogout() {
     })
   })
 }
+
+
 </script>
 
 <style lang="scss" scoped>
 page {
-  background: linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #F8FBFF) 0%, #FFFFFF 100%));
 }
 
 .setting-container {
@@ -67,13 +75,13 @@ page {
 .title {
   font-size: 48rpx;
   font-weight: bold;
-  color: #333;
+  color: var(--text-primary, #333);
   margin-bottom: 12rpx;
 }
 
 .subtitle {
   font-size: 28rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
 }
 
 .menu-section {
@@ -81,10 +89,10 @@ page {
 }
 
 .menu-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 0 30rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .menu-item {
@@ -120,26 +128,26 @@ page {
 }
 
 .icon-blue {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
 }
 
 .icon-green {
-  background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
+  background: linear-gradient(135deg, var(--color-success, #10b981) 0%, var(--color-green-dark, #0da271) 100%);
 }
 
 .icon-orange {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, var(--color-warning, #f59e0b) 0%, var(--color-orange-dark, #d97706) 100%);
 }
 
 .menu-text {
   font-size: 30rpx;
-  color: #333;
+  color: var(--text-primary, #333);
   font-weight: 500;
 }
 
 .divider {
   height: 1rpx;
-  background: #f0f0f0;
+  background: var(--border-light, #f0f0f0);
   margin: 0;
 }
 
@@ -149,7 +157,7 @@ page {
 
 .logout-btn {
   height: 100rpx;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  background: linear-gradient(135deg, var(--color-danger, #ef4444) 0%, var(--color-red-dark, #dc2626) 100%) !important;
   border-radius: 24rpx;
   font-size: 32rpx;
   color: #fff;

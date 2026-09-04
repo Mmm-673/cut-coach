@@ -2,7 +2,7 @@
 	<view class="workbench-wrapper">
 		<!-- 通知铃铛 -->
 		<view class="notification-bell" @click="goToNotification">
-			<uni-icons type="chatboxes" size="24" color="#1f2937"></uni-icons>
+			<uni-icons type="chatboxes" size="24" :color="textColor"></uni-icons>
 			<view class="bell-badge" v-if="notificationStore.unreadCount > 0">
 				{{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
 			</view>
@@ -49,7 +49,7 @@
 		<!-- 空订单状态 -->
 		<uni-card v-if="!isOnline || orderStatus === 'idle'" :is-shadow="true" :border="false">
 			<view class="empty-order">
-				<uni-icons type="list" size="80" color="#B0B4BC"></uni-icons>
+				<uni-icons type="list" size="80" :color="textTertiaryColor"></uni-icons>
 				<text class="empty-text">暂无新订单邀请</text>
 			</view>
 		</uni-card>
@@ -59,7 +59,7 @@
 			<view class="pending-order">
 				<view class="pending-header">
 					<view class="location">
-						<uni-icons type="location" size="18" color="#2F6BEE" ></uni-icons>
+						<uni-icons type="location" size="18" :color="primaryColor" ></uni-icons>
 						<text class="location-text">{{ pendingOrder.venueName }}</text>
 					</view>
 					<view class="countdown" v-if="pendingOrder.expireAt">
@@ -78,7 +78,7 @@
 				<view class="user-review-section"
 					v-if="pendingOrder.userAverageScore || pendingOrder.latestUserReviewContent">
 					<view class="review-header">
-						<uni-icons type="star-filled" size="16" color="#ff9500"></uni-icons>
+						<uni-icons type="star-filled" size="16" :color="warningColor"></uni-icons>
 						<text class="review-title">用户评价</text>
 					</view>
 					<view class="review-content">
@@ -86,7 +86,7 @@
 							<uni-icons v-for="n in 5" :key="n"
 								:type="n <= Math.round(pendingOrder.userAverageScore) ? 'star-filled' : 'star'"
 								size="14"
-								:color="n <= Math.round(pendingOrder.userAverageScore) ? '#ff9500' : '#d1d5db'"></uni-icons>
+								:color="n <= Math.round(pendingOrder.userAverageScore) ? warningColor : textTertiaryColor"></uni-icons>
 							<text class="score-text">{{ pendingOrder.userAverageScore.toFixed(1) }}分</text>
 							<text class="review-count" v-if="pendingOrder.userReviewCount">
 								({{ pendingOrder.userReviewCount }}次评价)
@@ -147,7 +147,7 @@
 					</view>
 
 					<view class="status-hint" v-if="pendingOrder.departureConfirmTime && !pendingOrder.arriveTime">
-						<uni-icons type="checkmarkempty" size="20" color="#10B981"></uni-icons>
+						<uni-icons type="checkmarkempty" size="20" :color="successColor"></uni-icons>
 						<text class="hint-text">已确认出发，请尽快前往教学地点</text>
 					</view>
 
@@ -156,7 +156,7 @@
 					</view>
 
 					<view class="status-hint" v-if="pendingOrder.arriveTime">
-						<uni-icons type="checkmarkempty" size="20" color="#10B981"></uni-icons>
+						<uni-icons type="checkmarkempty" size="20" :color="successColor"></uni-icons>
 						<text class="hint-text">已到达教学地点，开始教学</text>
 					</view>
 				</template>
@@ -168,7 +168,7 @@
 					</view>
 
 					<view class="status-hint" v-if="pendingOrder.arriveTime">
-						<uni-icons type="checkmarkempty" size="20" color="#10B981"></uni-icons>
+						<uni-icons type="checkmarkempty" size="20" :color="successColor"></uni-icons>
 						<text class="hint-text">已到达约定地点，开始服务</text>
 					</view>
 				</template>
@@ -187,7 +187,7 @@
 						<text>导航</text>
 					</button>
 					<button class="call-btn" @click="makeCall">
-						<uni-icons type="phone" size="16" color="#10B981"></uni-icons>
+						<uni-icons type="phone" size="16" :color="successColor"></uni-icons>
 						<text>联系客户</text>
 					</button>
 				</view>
@@ -218,7 +218,7 @@
 							<view class="contact-row">
 								<text>客户：{{ pendingOrder.userPhone }}</text>
 								<button class="call-btn" @click.stop="makeCall">
-									<uni-icons type="phone" size="16" color="#10B981"></uni-icons>
+									<uni-icons type="phone" size="16" :color="successColor"></uni-icons>
 								</button>
 							</view>
 							<text class="service-name">{{ getServiceTypeName(pendingOrder.serviceType) }}</text>
@@ -228,12 +228,12 @@
 							</text>
 							<!-- 加钟提示：仅小时价订单展示 -->
 							<view class="tip-box" v-if="!isFixedPricing(pendingOrder.pricingMode)">
-								<uni-icons type="info" size="14" color="#F59E0B"></uni-icons>
+								<uni-icons type="info" size="14" :color="warningColor"></uni-icons>
 								<text>支持客户加钟，时长自动更新</text>
 							</view>
 							<!-- 固定价提示 -->
 							<view class="tip-box" v-else>
-								<uni-icons type="info" size="14" color="#10b981"></uni-icons>
+								<uni-icons type="info" size="14" :color="successColor"></uni-icons>
 								<text>固定价服务，时长不影响费用</text>
 							</view>
 						</view>
@@ -264,7 +264,7 @@
 				<text class="view-all-text" @click="goToAllOrder">查看全部</text>
 			</view>
 			<uni-segmented-control :current="historyTabIndex" :values="historyTabs.map(t => t.label)"
-				activeColor="#2F6BEE" style-type="button" class="history-tabs" @clickItem="onHistoryTabClick" />
+				:activeColor="primaryColor" style-type="button" class="history-tabs" @clickItem="onHistoryTabClick" />
 			<view class="history-order-list">
 				<view class="history-order-item" v-for="item in displayHistoryOrders" :key="item.orderId"
 					@click="goToOrderDetail(item)">
@@ -297,16 +297,8 @@
 </template>
 
 <script setup>
-	import {
-		ref,
-		computed,
-		onMounted,
-		onUnmounted,
-		getCurrentInstance
-	} from 'vue'
-	import {
-		onShow
-	} from '@dcloudio/uni-app'
+	import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue'
+	import { onShow } from '@dcloudio/uni-app'
 	import {
 		updateWorkStatus,
 		updateLocation,
@@ -328,17 +320,10 @@
 		reportException as reportExceptionApi,
 		startTimer as startTimerApi,
 		endTimer as endTimerApi,
-			getCountdownEnabled
+		getCountdownEnabled
 	} from '@/api/billiard/order'
-	import {
-		getLocation,
-		showPermissionModal
-	} from '@/utils/location'
-	import {
-		openMapNavigation,
-		makePhoneCall as makePhoneCallUtil,
-		calculateDistance
-	} from '@/utils/platform'
+	import { getLocation, showPermissionModal } from '@/utils/location'
+	import { openMapNavigation, makePhoneCall as makePhoneCallUtil, calculateDistance } from '@/utils/platform'
 	import { locationPermissionMessages } from '@/utils/permission-messages'
 	import { isFixedPricing, formatFenToYuan } from '@/utils/onsiteOrder'
 	import { getLatestHeartMessage } from '@/api/billiard/message'
@@ -346,6 +331,16 @@
 	import RewardBroadcast from '@/components/reward-broadcast/index.vue'
 	import AnnounceBroadcast from '@/components/announce-broadcast/index.vue'
 	import { useNotificationStore } from '@/store/modules/notification'
+	import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+	// 页面主题初始化
+	usePageTheme()
+
+	const primaryColor = useThemeColor('primary')
+	const successColor = useThemeColor('success')
+	const warningColor = useThemeColor('warning')
+	const textColor = useThemeColor('text')
+	const textTertiaryColor = useThemeColor('textTertiary')
 
 	const {
 		proxy
@@ -1802,15 +1797,15 @@
 	:deep(.uni-card) {
 		margin: 0 !important;
 		border-radius: 24rpx !important;
-		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+		box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 		border: none !important;
 	}
 
 	:deep(.uni-card .uni-card__header) {
 		padding: 20rpx 24rpx !important;
-		border-bottom: 1rpx solid #f3f4f6;
+		border-bottom: 1rpx solid var(--border-light, #f3f4f6);
 		font-weight: 600;
-		color: #1f2937;
+		color: var(--text-primary, #1f2937);
 	}
 
 	:deep(.uni-card .uni-card__content) {
@@ -1831,7 +1826,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: #fff;
+		background: var(--bg-card, #fff);
 		border-radius: 50%;
 		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
 		z-index: 100;
@@ -1849,7 +1844,7 @@
 			height: 32rpx;
 			line-height: 32rpx;
 			padding: 0 8rpx;
-			background: #ef4444;
+			background: var(--color-danger, #ef4444);
 			color: #fff;
 			font-size: 20rpx;
 			font-weight: 600;
@@ -1861,7 +1856,7 @@
 
 	.workbench-wrapper {
 		min-height: 100vh;
-		background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+		background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, var(--bg-card, #ffffff) 100%));
 		padding: 32rpx;
 		position: relative;
 		display: flex;
@@ -1874,12 +1869,12 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 0 0 24rpx 0;
-		border-bottom: 1rpx solid #f3f4f6;
+		border-bottom: 1rpx solid var(--border-light, #f3f4f6);
 
 		.status-label {
 			font-size: 30rpx;
 			font-weight: 600;
-			color: #1f2937;
+			color: var(--text-primary, #1f2937);
 		}
 	}
 
@@ -1908,7 +1903,7 @@
 		height: 72rpx;
 		line-height: 72rpx;
 		padding: 0 24rpx;
-		background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
+		background: linear-gradient(135deg, var(--color-success, #10b981) 0%, var(--color-green-dark, #0da271) 100%);
 		color: #fff;
 		font-size: 28rpx;
 		border-radius: 16rpx;
@@ -1942,11 +1937,11 @@
 		.label-off,
 		.label-on {
 			font-size: 26rpx;
-			color: #9ca3af;
+			color: var(--text-tertiary, #9ca3af);
 		}
 
 		.active {
-			color: #10b981;
+			color: var(--color-success, #10b981);
 			font-weight: 600;
 		}
 	}
@@ -1955,7 +1950,7 @@
 		width: 88rpx;
 		height: 48rpx;
 		border-radius: 24rpx;
-		background: #e5e7eb;
+		background: var(--border-color, #e5e7eb);
 		position: relative;
 		transition: all 0.3s ease-out;
 		flex-shrink: 0;
@@ -1968,13 +1963,13 @@
 			width: 40rpx;
 			height: 40rpx;
 			border-radius: 50%;
-			background: #fff;
+			background: var(--bg-card, #fff);
 			transition: all 0.3s ease-out;
 			box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
 		}
 
 		&.is-checked {
-			background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
+			background: linear-gradient(135deg, var(--color-success, #10b981) 0%, var(--color-green-dark, #0da271) 100%);
 
 			.switch-knob {
 				left: calc(100% - 44rpx);
@@ -1997,7 +1992,7 @@
 		.empty-text {
 			margin-top: 24rpx;
 			font-size: 28rpx;
-			color: #6b7280;
+			color: var(--text-secondary, #6b7280);
 		}
 	}
 
@@ -2015,7 +2010,7 @@
 
 			.location-text {
 				font-size: 28rpx;
-				color: #1f2937;
+				color: var(--text-primary, #1f2937);
 			}
 		}
 
@@ -2026,7 +2021,7 @@
 
 			.time-text {
 				font-size: 26rpx;
-				color: #f59e0b;
+				color: var(--color-warning, #f59e0b);
 				font-weight: 600;
 			}
 		}
@@ -2034,7 +2029,7 @@
 		.order-title {
 			font-size: 30rpx;
 			font-weight: 600;
-			color: #1f2937;
+			color: var(--text-primary, #1f2937);
 		}
 	}
 
@@ -2046,12 +2041,12 @@
 			font-weight: 600;
 			display: block;
 			margin-bottom: 8rpx;
-			color: #1f2937;
+			color: var(--text-primary, #1f2937);
 		}
 
 		.order-price {
 			font-size: 36rpx;
-			color: #2f6bee;
+			color: var(--color-primary, #2f6bee);
 			font-weight: bold;
 		}
 	}
@@ -2072,7 +2067,7 @@
 			.review-title {
 				font-size: 28rpx;
 				font-weight: 600;
-				color: #1f2937;
+				color: var(--text-primary, #1f2937);
 			}
 		}
 
@@ -2086,13 +2081,13 @@
 				.score-text {
 					font-size: 26rpx;
 					font-weight: 600;
-					color: #ff9500;
+					color: var(--color-warning, #ff9500);
 					margin-left: 4rpx;
 				}
 
 				.review-count {
 					font-size: 24rpx;
-					color: #9ca3af;
+					color: var(--text-tertiary, #9ca3af);
 				}
 			}
 
@@ -2103,13 +2098,13 @@
 
 				.review-label {
 					font-size: 26rpx;
-					color: #6b7280;
+					color: var(--text-secondary, #6b7280);
 					flex-shrink: 0;
 				}
 
 				.review-text {
 					font-size: 26rpx;
-					color: #4b5563;
+					color: var(--text-secondary, #4b5563);
 					flex: 1;
 					line-height: 1.6;
 				}
@@ -2123,14 +2118,14 @@
 
 		.detail-label {
 			font-size: 26rpx;
-			color: #9ca3af;
+			color: var(--text-tertiary, #9ca3af);
 			width: 160rpx;
 			flex-shrink: 0;
 		}
 
 		.detail-value {
 			font-size: 26rpx;
-			color: #6b7280;
+			color: var(--text-secondary, #6b7280);
 			flex: 1;
 		}
 	}
@@ -2155,26 +2150,26 @@
 		}
 
 		.btn-reject {
-			background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+			background: linear-gradient(135deg, var(--color-danger, #ef4444) 0%, var(--color-red-dark, #dc2626) 100%);
 			color: #fff;
 			box-shadow: 0 4rpx 12rpx rgba(239, 68, 68, 0.25);
 		}
 
 		.btn-accept {
-			background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+			background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
 			color: #fff;
-			box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+			box-shadow: 0 4rpx 12rpx var(--shadow-btn, var(--color-primary-shadow, rgba(47, 107, 238, 0.3)));
 		}
 
 		.btn-exception {
-			background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+			background: linear-gradient(135deg, var(--color-warning, #f59e0b) 0%, var(--color-orange-dark, #d97706) 100%);
 			color: #fff;
 			box-shadow: 0 4rpx 12rpx rgba(245, 158, 11, 0.25);
 		}
 
 		.btn-confirm-depart,
 		.btn-arrive {
-			background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
+			background: linear-gradient(135deg, var(--color-success, #10b981) 0%, var(--color-green-dark, #0da271) 100%);
 			color: #fff;
 			box-shadow: 0 4rpx 12rpx rgba(16, 185, 129, 0.25);
 		}
@@ -2186,13 +2181,13 @@
 		justify-content: center;
 		gap: 8rpx;
 		padding: 22rpx;
-		background: rgba(16, 185, 129, 0.1);
+		background: var(--color-success-light, rgba(16, 185, 129, 0.1));
 		border-radius: 20rpx;
 		margin-top: 24rpx;
 
 		.hint-text {
 			font-size: 26rpx;
-			color: #10b981;
+			color: var(--color-success, #10b981);
 			font-weight: 500;
 		}
 	}
@@ -2223,19 +2218,19 @@
 		}
 
 		.nav-btn {
-			background: linear-gradient(135deg, #1a50d9 0%, #1a40b8 100%);
+			background: linear-gradient(135deg, var(--color-primary-dark, #1a50d9) 0%, var(--color-blue-dark, #1a40b8) 100%);
 			color: #fff;
 			box-shadow: 0 4rpx 12rpx rgba(26, 80, 217, 0.25);
 		}
 
 		.call-btn {
-			background: rgba(16, 185, 129, 0.1);
-			color: #10b981;
+			background: var(--color-success-light, rgba(16, 185, 129, 0.1));
+			color: var(--color-success, #10b981);
 
 			&.nav-btn {
-				background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+				background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
 				color: #fff;
-				box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+				box-shadow: 0 4rpx 12rpx var(--shadow-btn, var(--color-primary-shadow, rgba(47, 107, 238, 0.3)));
 			}
 		}
 	}
@@ -2249,7 +2244,7 @@
 	.serve-top {
 		.left-time {
 			font-size: 26rpx;
-			color: #2f6bee;
+			color: var(--color-primary, #2f6bee);
 			font-weight: 600;
 		}
 	}
@@ -2264,14 +2259,14 @@
 		.big-time {
 			font-size: 60rpx;
 			font-weight: bold;
-			color: #1f2937;
+			color: var(--text-primary, #1f2937);
 			display: block;
 			line-height: 100%;
 		}
 
 		.time-desc {
 			font-size: 24rpx;
-			color: #9ca3af;
+			color: var(--text-tertiary, #9ca3af);
 			margin-top: 10rpx;
 		}
 	}
@@ -2280,7 +2275,7 @@
 		width: 100%;
 		height: 92rpx;
 		line-height: 92rpx;
-		background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+		background: linear-gradient(135deg, var(--color-danger, #ef4444) 0%, var(--color-red-dark, #dc2626) 100%);
 		color: #fff;
 		border-radius: 20rpx;
 		font-size: 30rpx;
@@ -2303,7 +2298,7 @@
 			width: 120rpx;
 			height: 120rpx;
 			border-radius: 20rpx;
-			border: 2rpx solid #f3f4f6;
+			border: 2rpx solid var(--border-light, #f3f4f6);
 		}
 
 		.info {
@@ -2315,7 +2310,7 @@
 			.shop-name {
 				font-size: 30rpx;
 				font-weight: 600;
-				color: #1f2937;
+				color: var(--text-primary, #1f2937);
 			}
 
 			.contact-row {
@@ -2323,7 +2318,7 @@
 				align-items: center;
 				gap: 8rpx;
 				font-size: 24rpx;
-				color: #6b7280;
+				color: var(--text-secondary, #6b7280);
 
 				.call-btn {
 					background: transparent;
@@ -2340,18 +2335,18 @@
 
 			.service-name {
 				font-size: 26rpx;
-				color: #6b7280;
+				color: var(--text-secondary, #6b7280);
 			}
 
 			.service-price {
 				font-size: 30rpx;
-				color: #2f6bee;
+				color: var(--color-primary, #2f6bee);
 				font-weight: bold;
 			}
 
 			.price-unit {
 				font-size: 22rpx;
-				color: #9ca3af;
+				color: var(--text-tertiary, #9ca3af);
 				font-weight: normal;
 				margin-left: 4rpx;
 			}
@@ -2361,13 +2356,13 @@
 				align-items: center;
 				gap: 4rpx;
 				font-size: 22rpx;
-				color: #f59e0b;
+				color: var(--color-warning, #f59e0b);
 				margin-top: 4rpx;
 			}
 		}
 
 		.nav-btn {
-			background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+			background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
 			color: #fff;
 			border-radius: 16rpx;
 			font-size: 24rpx;
@@ -2387,12 +2382,12 @@
 
 	.data-card {
 		flex: 1;
-		background: #fff;
+		background: var(--bg-card, #fff);
 		border-radius: 24rpx;
 		padding: 28rpx 20rpx;
 		text-align: center;
 		position: relative;
-		border: 1rpx solid #f3f4f6;
+		border: 1rpx solid var(--border-light, #f3f4f6);
 		box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 		transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
 
@@ -2416,12 +2411,12 @@
 			font-weight: 600;
 			display: block;
 			margin-bottom: 8rpx;
-			color: #1f2937;
+			color: var(--text-primary, #1f2937);
 		}
 
 		.data-label {
 			font-size: 24rpx;
-			color: #9ca3af;
+			color: var(--text-tertiary, #9ca3af);
 		}
 
 		.real-tag {
@@ -2438,18 +2433,18 @@
 		align-items: center;
 		margin-bottom: 20rpx;
 		padding-bottom: 18rpx;
-		border-bottom: 1rpx solid #f3f4f6;
+		border-bottom: 1rpx solid var(--border-light, #f3f4f6);
 	}
 
 	.card-title {
 		font-size: 32rpx;
 		font-weight: 600;
-		color: #1f2937;
+		color: var(--text-primary, #1f2937);
 	}
 
 	.view-all-text {
 		font-size: 26rpx;
-		color: #2f6bee;
+		color: var(--color-primary, #2f6bee);
 		padding: 8rpx 0;
 
 		&:active {
@@ -2469,12 +2464,12 @@
 
 	.history-order-item {
 		padding: 22rpx;
-		background: #f8fbff;
+		background: var(--bg-page, #f8fbff);
 		border-radius: 20rpx;
 		transition: background 0.2s;
 
 		&:active {
-			background: #f3f4f6;
+			background: var(--border-light, #f3f4f6);
 		}
 
 		.order-top {
@@ -2486,12 +2481,12 @@
 			.order-title {
 				font-size: 28rpx;
 				font-weight: 500;
-				color: #1f2937;
+				color: var(--text-primary, #1f2937);
 			}
 
 			.order-price {
 				font-size: 30rpx;
-				color: #2f6bee;
+				color: var(--color-primary, #2f6bee);
 				font-weight: bold;
 			}
 		}
@@ -2503,7 +2498,7 @@
 
 			.order-time {
 				font-size: 24rpx;
-				color: #9ca3af;
+				color: var(--text-tertiary, #9ca3af);
 			}
 		}
 	}

@@ -56,7 +56,7 @@
     <!-- 常见问题 -->
     <view class="faq-section">
       <view class="section-header">
-        <uni-icons type="help" size="20" color="#2f6bee"></uni-icons>
+        <uni-icons type="help" size="20" :color="primaryColor"></uni-icons>
         <text class="section-title">常见问题</text>
       </view>
       <view class="faq-list">
@@ -65,7 +65,7 @@
             <uni-icons :type="item.icon" size="18" :color="item.iconColor"></uni-icons>
           </view>
           <view class="faq-text">{{ item.title }}</view>
-          <uni-icons type="right" size="16" color="#d1d5db"></uni-icons>
+          <uni-icons type="right" size="16" :color="textTertiaryColor"></uni-icons>
         </view>
       </view>
     </view>
@@ -74,6 +74,13 @@
 
 <script setup>
 import { ref } from 'vue'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const primaryColor = useThemeColor('primary')
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const wechatId = ref('qiuleme_coach')
 const showQrPlaceholder = ref(true)
@@ -118,12 +125,14 @@ const onQrError = () => {
 const goFaq = () => {
   uni.navigateTo({ url: '/subpkg/mine/help/index' })
 }
+
+
 </script>
 
 <style lang="scss" scoped>
 .service-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
   padding: 30rpx 24rpx 60rpx;
 }
 
@@ -144,13 +153,13 @@ const goFaq = () => {
 .title {
   font-size: 40rpx;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin-top: 28rpx;
 }
 
 .subtitle {
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   margin-top: 12rpx;
 }
 
@@ -159,7 +168,7 @@ const goFaq = () => {
 }
 
 .qr-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 28rpx;
   padding: 50rpx 30rpx;
   display: flex;
@@ -178,7 +187,7 @@ const goFaq = () => {
   justify-content: center;
   position: relative;
   overflow: hidden;
-  border: 2rpx dashed #e5e7eb;
+  border: 2rpx dashed var(--border-color, #e5e7eb);
 }
 
 .qr-image {
@@ -196,12 +205,12 @@ const goFaq = () => {
 
 .placeholder-text {
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .qr-tip {
   font-size: 26rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   margin-top: 28rpx;
 }
 
@@ -210,15 +219,15 @@ const goFaq = () => {
 }
 
 .wechat-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 32rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .wechat-label {
   font-size: 26rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   margin-bottom: 20rpx;
 }
 
@@ -227,14 +236,14 @@ const goFaq = () => {
   justify-content: space-between;
   align-items: center;
   padding: 28rpx 24rpx;
-  background: linear-gradient(135deg, #f8fbff 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, var(--bg-page, #f8fbff) 0%, #f1f5f9 100%);
   border-radius: 18rpx;
-  border: 1rpx solid #e5e7eb;
+  border: 1rpx solid var(--border-color, #e5e7eb);
 }
 
 .wechat-id {
   font-size: 32rpx;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   font-weight: 600;
 }
 
@@ -243,7 +252,7 @@ const goFaq = () => {
   align-items: center;
   gap: 8rpx;
   padding: 14rpx 28rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   border-radius: 40rpx;
   font-size: 26rpx;
   color: #fff;
@@ -256,19 +265,19 @@ const goFaq = () => {
 }
 
 .time-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 32rpx;
   display: flex;
   align-items: center;
   gap: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .time-icon {
   width: 80rpx;
   height: 80rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   border-radius: 20rpx;
   display: flex;
   align-items: center;
@@ -282,21 +291,21 @@ const goFaq = () => {
 
 .time-label {
   font-size: 26rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   margin-bottom: 8rpx;
 }
 
 .time-value {
   font-size: 30rpx;
-  color: #374151;
+  color: var(--text-primary, #374151);
   font-weight: 600;
 }
 
 .faq-section {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 32rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .section-header {
@@ -309,7 +318,7 @@ const goFaq = () => {
 .section-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
 }
 
 .faq-list {
@@ -323,7 +332,7 @@ const goFaq = () => {
   align-items: center;
   gap: 20rpx;
   padding: 28rpx 0;
-  border-bottom: 1rpx solid #f3f4f6;
+  border-bottom: 1rpx solid var(--border-light, #f3f4f6);
   transition: background 0.2s;
 
   &:last-child {
@@ -350,7 +359,7 @@ const goFaq = () => {
 .faq-text {
   flex: 1;
   font-size: 30rpx;
-  color: #374151;
+  color: var(--text-primary, #374151);
   font-weight: 500;
 }
 </style>

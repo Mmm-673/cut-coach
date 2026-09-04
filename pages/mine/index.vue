@@ -7,7 +7,7 @@
         <view class="user-detail">
           <view class="user-name">
             <text class="name">{{ coachProfile.stageName || '裁教' }}</text>
-            <uni-tag :text="levelName" type="primary" size="small" :inverted="true" style="font-weight: bold"></uni-tag>
+            <view class="level-tag">{{ levelName }}</view>
           </view>
         </view>
         <view class="qrcode-btn" @click="navToQrcode">
@@ -89,24 +89,24 @@
         <view class="balance-row">
           <view class="balance">{{ showBalance ? `¥${(walletInfo.balance / 100).toFixed(2)}` : '¥******' }}</view>
           <view class="balance-eye" @click="showBalance = !showBalance">
-            <uni-icons :type="showBalance ? 'eye' : 'eye-slash'" size="22" color="#2f6bee"></uni-icons>
+            <uni-icons :type="showBalance ? 'eye' : 'eye-slash'" size="22" :color="primaryColor"></uni-icons>
           </view>
         </view>
       </view>
       <view class="pending-audit" v-if="walletInfo.freezePrice > 0">
-        <uni-icons type="wallet" size="16" color="#F59E0b"></uni-icons>
+        <uni-icons type="wallet" size="16" :color="warningColor"></uni-icons>
         <text>冻结金额：¥{{ (walletInfo.freezePrice / 100).toFixed(2) }}</text>
       </view>
       <button class="withdraw-btn" @click="handleWithdraw">去提现</button>
       <view class="wallet-links">
         <view class="link-item" @click="navToDeduct">
           <text>扣款明细</text>
-          <uni-icons type="right" size="14" color="#999"></uni-icons>
+          <uni-icons type="right" size="14" :color="textTertiaryColor"></uni-icons>
         </view>
         <view class="link-divider"></view>
         <view class="link-item" @click="navToWithdrawRecord">
           <text>提现记录</text>
-          <uni-icons type="right" size="14" color="#999"></uni-icons>
+          <uni-icons type="right" size="14" :color="textTertiaryColor"></uni-icons>
         </view>
       </view>
     </view>
@@ -124,7 +124,7 @@
           <view class="unread-badge" v-if="notificationStore.unreadCount > 0">
             {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
           </view>
-          <uni-icons type="right" size="18" color="#999"></uni-icons>
+          <uni-icons type="right" size="18" :color="textTertiaryColor"></uni-icons>
         </view>
       </view>
 
@@ -137,7 +137,7 @@
           </view>
           <view class="menu-text">全部订单</view>
         </view>
-        <uni-icons type="right" size="18" color="#999"></uni-icons>
+        <uni-icons type="right" size="18" :color="textTertiaryColor"></uni-icons>
       </view>
 
       <view class="divider"></view>
@@ -149,7 +149,7 @@
           </view>
           <view class="menu-text">打赏记录</view>
         </view>
-        <uni-icons type="right" size="18" color="#999"></uni-icons>
+        <uni-icons type="right" size="18" :color="textTertiaryColor"></uni-icons>
       </view>
 
       <view class="divider"></view>
@@ -161,7 +161,7 @@
           </view>
           <view class="menu-text">个人信息</view>
         </view>
-        <uni-icons type="right" size="18" color="#999"></uni-icons>
+        <uni-icons type="right" size="18" :color="textTertiaryColor"></uni-icons>
       </view>
 
       <view class="divider"></view>
@@ -173,7 +173,7 @@
           </view>
           <view class="menu-text">我的评价</view>
         </view>
-        <uni-icons type="right" size="18" color="#999"></uni-icons>
+        <uni-icons type="right" size="18" :color="textTertiaryColor"></uni-icons>
       </view>
 
       <view class="divider"></view>
@@ -185,7 +185,7 @@
           </view>
           <view class="menu-text">常见问题</view>
         </view>
-        <uni-icons type="right" size="18" color="#999"></uni-icons>
+        <uni-icons type="right" size="18" :color="textTertiaryColor"></uni-icons>
       </view>
 
       <view class="divider"></view>
@@ -197,7 +197,22 @@
           </view>
           <view class="menu-text">关于我们</view>
         </view>
-        <uni-icons type="right" size="18" color="#999"></uni-icons>
+        <uni-icons type="right" size="18" :color="textTertiaryColor"></uni-icons>
+      </view>
+
+      <view class="divider"></view>
+
+      <view class="menu-item" @click="showThemePanel = true">
+        <view class="menu-item-left">
+          <view class="icon-box icon-purple">
+            <uni-icons type="image" size="22" color="#fff"></uni-icons>
+          </view>
+          <view class="menu-text">主题设置</view>
+        </view>
+        <view class="menu-item-right">
+          <text class="theme-current">{{ currentThemeLabel }}</text>
+          <uni-icons type="right" size="18" :color="themeTertiary"></uni-icons>
+        </view>
       </view>
 
       <view class="divider"></view>
@@ -209,7 +224,7 @@
           </view>
           <view class="menu-text">注销账号</view>
         </view>
-        <uni-icons type="right" size="18" color="#999"></uni-icons>
+        <uni-icons type="right" size="18" :color="themeTertiary"></uni-icons>
       </view>
 
       <view class="divider"></view>
@@ -221,7 +236,33 @@
           </view>
           <view class="menu-text">退出登录</view>
         </view>
-        <uni-icons type="right" size="18" color="#999"></uni-icons>
+        <uni-icons type="right" size="18" :color="themeTertiary"></uni-icons>
+      </view>
+    </view>
+
+    <!-- 主题选择弹窗 -->
+    <view v-if="showThemePanel" class="popup-mask" @click="showThemePanel = false">
+      <view class="theme-popup" @click.stop>
+        <view class="popup-title">选择主题</view>
+        <view class="theme-option" v-for="theme in themeStore.themeList" :key="theme.name"
+              :class="{ active: themeStore.currentTheme === theme.name }"
+              @click="selectTheme(theme.name)">
+          <view class="theme-preview" :class="'preview-' + theme.name">
+            <view class="preview-header"></view>
+            <view class="preview-body">
+              <view class="preview-card"></view>
+              <view class="preview-card small"></view>
+            </view>
+          </view>
+          <view class="theme-info">
+            <view class="theme-name">{{ theme.label }}</view>
+            <view class="theme-desc">{{ theme.desc }}</view>
+          </view>
+          <view class="theme-check" v-if="themeStore.currentTheme === theme.name">
+            <uni-icons type="checkmarkempty" size="24" color="#fff"></uni-icons>
+          </view>
+        </view>
+        <button class="theme-close-btn" @click="showThemePanel = false">关闭</button>
       </view>
     </view>
 
@@ -246,17 +287,39 @@
 </template>
 
 <script setup>
-import {ref, computed, getCurrentInstance} from 'vue'
+import { ref, computed, getCurrentInstance } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getCoachProfile, cancelAccount } from '@/api/billiard/coach'
 import { getWalletBalance } from '@/api/billiard/wallet'
-import { useUserStore } from '@/store'
+import { useUserStore, useThemeStore } from '@/store'
 import { useNotificationStore } from '@/store/modules/notification'
-
+import { usePageTheme, useThemeColor } from '@/utils/theme'
 
 const { proxy } = getCurrentInstance()
 const notificationStore = useNotificationStore()
+const themeStore = usePageTheme() // 页面主题初始化，自动处理 onShow/onMounted
+
+const primaryColor = useThemeColor('primary')
+const warningColor = useThemeColor('warning')
+const textTertiaryColor = useThemeColor('textTertiary')
 const showCancelAccountPopup = ref(false)
+const showThemePanel = ref(false)
+
+// 主题相关计算属性
+const currentThemeLabel = computed(() => {
+  const info = themeStore.currentThemeInfo()
+  return info ? info.label : '经典蓝调'
+})
+
+const themeTertiary = computed(() => themeStore.currentTheme === 'warm' ? '#9a95a0' : '#999')
+
+// 选择主题
+const selectTheme = (themeName) => {
+  themeStore.setTheme(themeName)
+  setTimeout(() => {
+    showThemePanel.value = false
+  }, 200)
+}
 const cancelReason = ref('')
 const cancelSubmitting = ref(false)
 const showBalance = ref(false)
@@ -439,7 +502,7 @@ onShow(() => {
 
 <style lang="scss" scoped>
 page {
-  background: linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #F8FBFF) 0%, #FFFFFF 100%));
 }
 
 .mine-container {
@@ -449,9 +512,9 @@ page {
 }
 
 .user-header {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   padding: 80rpx 40rpx 60rpx;
-  padding-top: calc(80rpx + var(--status-bar-height));
+  padding-top: calc(var(--status-bar-height));
 }
 
 .user-info {
@@ -490,7 +553,7 @@ page {
 .qr-cell {
   width: 6rpx;
   height: 6rpx;
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 1rpx;
 }
 
@@ -527,6 +590,20 @@ page {
   color: #fff;
 }
 
+// 等级标签：渐变背景上的白色描边标签，两主题下都清晰可见
+.level-tag {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1rpx solid rgba(255, 255, 255, 0.5);
+  border-radius: 20rpx;
+  line-height: 1.4;
+  backdrop-filter: blur(10rpx);
+}
+
 .user-id {
   font-size: 26rpx;
   color: rgba(255, 255, 255, 0.8);
@@ -534,16 +611,16 @@ page {
 
 .section-card {
   margin: 30rpx 40rpx 0;
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 30rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-card, 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05)));
 }
 
 .card-title {
   font-size: 32rpx;
   font-weight: bold;
-  color: #333;
+  color: var(--text-primary, #333);
   margin-bottom: 30rpx;
 }
 
@@ -554,7 +631,7 @@ page {
 
 .balance-label {
   font-size: 26rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
   margin-bottom: 10rpx;
 }
 
@@ -568,7 +645,7 @@ page {
 .balance {
   font-size: 64rpx;
   font-weight: bold;
-  color: #2f6bee;
+  color: var(--color-primary, #2f6bee);
   line-height: 1.2;
 }
 
@@ -579,7 +656,7 @@ page {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(47, 107, 238, 0.08);
+  background: var(--color-primary-light, rgba(47, 107, 238, 0.08));
 }
 
 .balance-eye:active {
@@ -591,11 +668,11 @@ page {
   align-items: center;
   justify-content: center;
   gap: 8rpx;
-  background: #fff7ed;
+  background: var(--color-warning-light, #fff7ed);
   border-radius: 16rpx;
   padding: 16rpx 24rpx;
   font-size: 26rpx;
-  color: #f59e0b;
+  color: var(--color-warning, #f59e0b);
   margin-bottom: 30rpx;
 }
 
@@ -603,13 +680,13 @@ page {
   width: 100%;
   height: 90rpx;
   line-height: 90rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-btn, var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%)));
   color: #fff;
   border-radius: 20rpx;
   border: none;
   font-size: 30rpx;
   font-weight: 600;
-  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  box-shadow: var(--shadow-btn, 0 4rpx 12rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3)));
   transition: transform 0.2s;
 }
 
@@ -622,7 +699,7 @@ page {
   justify-content: space-between;
   padding-top: 28rpx;
   margin-top: 28rpx;
-  border-top: 1rpx solid #f0f0f0;
+  border-top: 1rpx solid var(--border-light, #f0f0f0);
 }
 
 .link-item {
@@ -632,7 +709,7 @@ page {
   justify-content: center;
   gap: 6rpx;
   font-size: 26rpx;
-  color: #666;
+  color: var(--text-secondary, #666);
   padding: 10rpx 0;
   transition: opacity 0.2s;
 }
@@ -643,7 +720,7 @@ page {
 
 .link-divider {
   width: 1rpx;
-  background: #f0f0f0;
+  background: var(--border-light, #f0f0f0);
 }
 
 .menu-item {
@@ -669,12 +746,17 @@ page {
   gap: 12rpx;
 }
 
+.theme-current {
+  font-size: 26rpx;
+  color: var(--text-tertiary, #999);
+}
+
 .unread-badge {
   min-width: 36rpx;
   height: 36rpx;
   line-height: 36rpx;
   padding: 0 10rpx;
-  background: #ef4444;
+  background: var(--color-danger, #ef4444);
   color: #fff;
   font-size: 22rpx;
   font-weight: 600;
@@ -694,54 +776,50 @@ page {
 }
 
 .icon-blue {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: linear-gradient(135deg, var(--color-blue, var(--color-primary, #2f6bee)) 0%, var(--color-blue-dark, var(--color-primary-dark, #1a50d9)) 100%);
 }
 
 .icon-orange {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, var(--color-orange, var(--color-warning, #f59e0b)) 0%, var(--color-orange-dark, #d97706) 100%);
 }
 
 .icon-green {
-  background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
+  background: linear-gradient(135deg, var(--color-green, var(--color-success, #10b981)) 0%, var(--color-green-dark, #0da271) 100%);
 }
 
 .icon-purple {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, var(--color-purple, #8b5cf6) 0%, var(--color-purple-dark, #7c3aed) 100%);
 }
 
 .icon-cyan {
-  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  background: linear-gradient(135deg, var(--color-cyan, #06b6d4) 0%, var(--color-cyan-dark, #0891b2) 100%);
 }
 
 .icon-pink {
-  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
-}
-
-.icon-blue {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: linear-gradient(135deg, var(--color-pink, #ec4899) 0%, var(--color-pink-dark, #db2777) 100%);
 }
 
 .icon-gray {
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  background: linear-gradient(135deg, var(--color-gray, var(--text-secondary, #6b7280)) 0%, var(--color-gray-dark, var(--text-secondary, #4b5563)) 100%);
 }
 
 .icon-red {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, var(--color-red, var(--color-danger, #ef4444)) 0%, var(--color-red-dark, #dc2626) 100%);
 }
 
 .menu-text {
   font-size: 30rpx;
-  color: #333;
+  color: var(--text-primary, #333);
   font-weight: 500;
 }
 
 .danger-text {
-  color: #ef4444;
+  color: var(--color-danger, #ef4444);
 }
 
 .divider {
   height: 1rpx;
-  background: #f0f0f0;
+  background: var(--border-light, #f0f0f0);
   margin: 0;
 }
 
@@ -762,20 +840,20 @@ page {
   box-sizing: border-box;
   padding: 40rpx;
   padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 32rpx 32rpx 0 0;
 }
 
 .popup-title {
   font-size: 36rpx;
   font-weight: 700;
-  color: #333;
+  color: var(--text-primary, #333);
   margin-bottom: 16rpx;
 }
 
 .popup-desc {
   font-size: 26rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
   margin-bottom: 24rpx;
 }
 
@@ -784,10 +862,10 @@ page {
   height: 180rpx;
   box-sizing: border-box;
   padding: 24rpx;
-  background: #f7f8fa;
+  background: var(--bg-input, #f7f8fa);
   border-radius: 20rpx;
   font-size: 28rpx;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 
 .popup-actions {
@@ -806,12 +884,147 @@ page {
 }
 
 .popup-cancel-btn {
-  background: #f3f4f6 !important;
-  color: #666;
+  background: var(--bg-input, var(--border-light, #f3f4f6)) !important;
+  color: var(--text-secondary, #666);
 }
 
 .popup-submit-btn {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  background: linear-gradient(135deg, var(--color-red, var(--color-danger, #ef4444)) 0%, var(--color-red-dark, #dc2626) 100%) !important;
   color: #fff;
+}
+
+// 主题选择弹窗
+.theme-popup {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 40rpx;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+  background: var(--bg-card, #fff);
+  border-radius: 32rpx 32rpx 0 0;
+  animation: slideUpFadeIn 0.3s ease both;
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  margin-bottom: 20rpx;
+  background: var(--bg-input, #f7f8fa);
+  transition: all 0.2s;
+
+  &.active {
+    background: var(--color-primary-light, rgba(47, 107, 238, 0.08));
+    border: 2rpx solid var(--color-primary, #2f6bee);
+  }
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.theme-preview {
+  width: 120rpx;
+  height: 160rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  margin-right: 24rpx;
+  border: 1rpx solid var(--border-color, #e5e7eb);
+  background: var(--bg-card, #fff);
+
+  .preview-header {
+    height: 40rpx;
+  }
+
+  .preview-body {
+    padding: 12rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+
+    .preview-card {
+      height: 20rpx;
+      border-radius: 6rpx;
+
+      &.small {
+        height: 14rpx;
+        width: 60%;
+      }
+    }
+  }
+
+  // 经典蓝调预览：固定蓝色，不受当前主题影响
+  &.preview-default {
+    background: #fff;
+    .preview-header {
+      background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+    }
+    .preview-body .preview-card {
+      background: #f7f8fa;
+    }
+  }
+
+  // 暮色柔雾预览：固定暖粉色，不受当前主题影响
+  &.preview-warm {
+    background: #FFFCFA;
+    .preview-header {
+      background: linear-gradient(135deg, #D88A8A 0%, #B59EC9 100%);
+    }
+    .preview-body .preview-card {
+      background: #F5F0ED;
+    }
+  }
+}
+
+.theme-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.theme-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.theme-desc {
+  font-size: 24rpx;
+  color: var(--text-tertiary, #999);
+}
+
+.theme-check {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: var(--color-primary, #2f6bee);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-close-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 20rpx;
+  background: var(--bg-input, var(--border-light, #f3f4f6));
+  color: var(--text-secondary, #666);
+  font-size: 30rpx;
+  font-weight: 600;
+  margin-top: 16rpx;
+  border: none;
+}
+
+@keyframes slideUpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

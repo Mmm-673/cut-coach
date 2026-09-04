@@ -139,7 +139,7 @@ defineExpose({
   max-width: 86vw;
   padding: 48rpx 40rpx 40rpx;
   border-radius: 24rpx;
-  background: #ffffff;
+  background: var(--bg-card, #ffffff);
   box-sizing: border-box;
   position: relative;
   z-index: 10001;

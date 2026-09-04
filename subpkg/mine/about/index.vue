@@ -19,7 +19,7 @@
           </view>
           <view class="item-right">
             <text class="item-value">初球裁教端</text>
-            <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
+            <uni-icons type="right" size="14" :color="textTertiaryColor"></uni-icons>
           </view>
         </view>
         <view class="info-item" @click="copyVersion">
@@ -31,7 +31,7 @@
           </view>
           <view class="item-right">
             <text class="item-value">v{{ version }}</text>
-            <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
+            <uni-icons type="right" size="14" :color="textTertiaryColor"></uni-icons>
           </view>
         </view>
         <view class="info-item" @click="handleUserAgrement">
@@ -42,7 +42,7 @@
             <text class="item-label">用户协议</text>
           </view>
           <view class="item-right">
-            <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
+            <uni-icons type="right" size="14" :color="textTertiaryColor"></uni-icons>
           </view>
         </view>
         <view class="info-item" @click="handlePrivacy">
@@ -53,7 +53,7 @@
             <text class="item-label">隐私政策</text>
           </view>
           <view class="item-right">
-            <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
+            <uni-icons type="right" size="14" :color="textTertiaryColor"></uni-icons>
           </view>
         </view>
         <view class="info-item" @click="handleCallService">
@@ -65,7 +65,7 @@
           </view>
           <view class="item-right">
             <text class="item-value">159****0488</text>
-            <uni-icons type="right" size="14" color="#d1d5db"></uni-icons>
+            <uni-icons type="right" size="14" :color="textTertiaryColor"></uni-icons>
           </view>
         </view>
       </view>
@@ -75,7 +75,7 @@
     <view class="intro-section">
       <view class="intro-card">
         <view class="intro-header">
-          <uni-icons type="heart" size="18" color="#2f6bee"></uni-icons>
+          <uni-icons type="heart" size="18" :color="primaryColor"></uni-icons>
           <text class="intro-title">关于我们</text>
         </view>
         <view class="intro-content">
@@ -99,6 +99,13 @@ import { ref } from 'vue'
 import { useConfigStore } from '@/store'
 import config from '@/config'
 import { makePhoneCall } from '@/utils/platform'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const primaryColor = useThemeColor('primary')
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const version = ref(useConfigStore().config.appInfo.version || '1.2.0')
 
@@ -144,12 +151,14 @@ const handleCallService = () => {
   // 使用封装好的拨打电话工具函数（包含权限处理）
   makePhoneCall(phoneNumber)
 }
+
+
 </script>
 
 <style lang="scss" scoped>
 .about-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
   padding: 40rpx 24rpx 60rpx;
 }
 
@@ -172,13 +181,13 @@ const handleCallService = () => {
 .app-name {
   font-size: 36rpx;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin-bottom: 12rpx;
 }
 
 .version {
   font-size: 26rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   font-weight: 500;
 }
 
@@ -188,10 +197,10 @@ const handleCallService = () => {
 }
 
 .info-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 0;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
   overflow: hidden;
 }
 
@@ -200,7 +209,7 @@ const handleCallService = () => {
   justify-content: space-between;
   align-items: center;
   padding: 30rpx;
-  border-bottom: 1rpx solid #f3f4f6;
+  border-bottom: 1rpx solid var(--border-light, #f3f4f6);
   transition: background 0.2s;
 
   &:last-child {
@@ -227,37 +236,37 @@ const handleCallService = () => {
   justify-content: center;
 
   &.app-icon {
-    background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+    background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   }
 
   &.version-icon {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--color-success, #10b981) 0%, #059669 100%);
   }
 
   &.website-icon {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(135deg, var(--color-warning, #f59e0b) 0%, var(--color-orange-dark, #d97706) 100%);
   }
 
   &.email-icon {
-    background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+    background: linear-gradient(135deg, var(--color-pink, #ec4899) 0%, #be185d 100%);
   }
 
   &.agreement-icon {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, var(--color-purple, #8b5cf6) 0%, var(--color-purple-dark, #7c3aed) 100%);
   }
 
   &.privacy-icon {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    background: linear-gradient(135deg, var(--color-cyan, #06b6d4) 0%, var(--color-cyan-dark, #0891b2) 100%);
   }
 
   &.phone-icon {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(135deg, var(--color-warning, #f59e0b) 0%, var(--color-orange-dark, #d97706) 100%);
   }
 }
 
 .item-label {
   font-size: 28rpx;
-  color: #374151;
+  color: var(--text-primary, #374151);
   font-weight: 500;
 }
 
@@ -269,7 +278,7 @@ const handleCallService = () => {
 
 .item-value {
   font-size: 26rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
 }
 
 /* 公司介绍 */
@@ -278,10 +287,10 @@ const handleCallService = () => {
 }
 
 .intro-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 30rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 }
 
 .intro-header {
@@ -294,7 +303,7 @@ const handleCallService = () => {
 .intro-title {
   font-size: 30rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
 }
 
 .intro-content {
@@ -304,7 +313,7 @@ const handleCallService = () => {
 
   text {
     font-size: 26rpx;
-    color: #6b7280;
+    color: var(--text-secondary, #6b7280);
     line-height: 1.8;
   }
 }
@@ -317,6 +326,6 @@ const handleCallService = () => {
 
 .copyright-text {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 </style>

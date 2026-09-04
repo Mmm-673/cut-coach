@@ -66,7 +66,7 @@
 
       <!-- 空状态 -->
       <view v-if="!loading && displayRecords.length === 0" class="empty-tip">
-        <uni-icons type="info" size="48" color="#d1d5db" />
+        <uni-icons type="info" size="48" :color="textTertiaryColor" />
         <text>暂无提现记录</text>
       </view>
 
@@ -81,6 +81,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getWithdrawalPage } from '@/api/billiard/wallet'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const textTertiaryColor = useThemeColor('textTertiary')
 
 // 标签栏数据
 const tabList = [
@@ -254,17 +260,19 @@ onShow(() => {
 onMounted(() => {
   fetchWithdrawalRecords(true)
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .withdraw-record-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
 }
 
 /* 顶部统计栏 */
 .stats-header {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   padding: 40rpx 32rpx;
 }
 
@@ -303,7 +311,7 @@ onMounted(() => {
 /* 标签栏 */
 .tab-bar {
   display: flex;
-  background: #fff;
+  background: var(--bg-card, #fff);
   padding: 0 16rpx;
   margin-bottom: 16rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
@@ -313,13 +321,13 @@ onMounted(() => {
   flex: 1;
   text-align: center;
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   padding: 26rpx 0;
   position: relative;
   transition: all 0.3s;
 
   &.active {
-    color: #2f6bee;
+    color: var(--color-primary, #2f6bee);
     font-weight: 600;
     &::after {
       content: '';
@@ -329,7 +337,7 @@ onMounted(() => {
       transform: translateX(-50%);
       width: 48rpx;
       height: 6rpx;
-      background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+      background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
       border-radius: 3rpx;
     }
   }
@@ -342,7 +350,7 @@ onMounted(() => {
 }
 
 .record-item {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 30rpx;
   margin-bottom: 16rpx;
@@ -369,42 +377,42 @@ onMounted(() => {
   margin-bottom: 14rpx;
 
   &.pending {
-    background: #FFF7ED;
-    color: #f59e0b;
+    background: var(--color-warning-light, #FFF7ED);
+    color: var(--color-warning, #f59e0b);
   }
 
   &.processing {
-    background: #EFF6FF;
-    color: #2f6bee;
+    background: var(--color-primary-light, #EFF6FF);
+    color: var(--color-primary, #2f6bee);
   }
 
   &.success {
-    background: #ECFDF5;
-    color: #10b981;
+    background: var(--color-success-light, #ECFDF5);
+    color: var(--color-success, #10b981);
   }
 
   &.rejected {
     background: #FEF2F2;
-    color: #ef4444;
+    color: var(--color-danger, #ef4444);
   }
 }
 
 .item-title {
   font-size: 30rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin-bottom: 8rpx;
 }
 
 .bank-info {
   font-size: 26rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 8rpx;
 }
 
 .create-time {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 .item-right {
@@ -416,24 +424,24 @@ onMounted(() => {
 .amount {
   font-size: 40rpx;
   font-weight: bold;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin-bottom: 6rpx;
 }
 
 .fee-info {
   font-size: 22rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   margin-bottom: 8rpx;
 }
 
 .arrive-time {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   &.success {
-    color: #10b981;
+    color: var(--color-success, #10b981);
   }
   &.rejected {
-    color: #ef4444;
+    color: var(--color-danger, #ef4444);
   }
 }
 
@@ -446,7 +454,7 @@ onMounted(() => {
   padding: 120rpx 0;
   gap: 16rpx;
   font-size: 28rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 /* 加载状态 */
@@ -454,6 +462,6 @@ onMounted(() => {
   text-align: center;
   padding: 40rpx 0;
   font-size: 26rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 </style>

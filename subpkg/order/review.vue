@@ -44,7 +44,7 @@
             <uni-icons
                 :type="index < rating ? 'star-filled' : 'star'"
                 size="48"
-                :color="index < rating ? '#ff9500' : '#d1d5db'"
+                :color="index < rating ? warningColor : textTertiaryColor"
             ></uni-icons>
           </view>
         </view>
@@ -89,6 +89,13 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getOrderDetail } from '@/api/billiard/order'
 import { createUserReview } from '@/api/billiard/coach'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const warningColor = useThemeColor('warning')
+const textTertiaryColor = useThemeColor('textTertiary')
 
 	// 服务类型映射
 	const getServiceTypeName = (serviceType) => {
@@ -186,18 +193,20 @@ onLoad((options) => {
     }, 1500)
   }
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .review-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
   padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
 .header-section {
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   padding: 50rpx 32rpx;
   padding-top: calc(50rpx + var(--status-bar-height, 0px));
   text-align: center;
@@ -234,16 +243,16 @@ onLoad((options) => {
 }
 
 .card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 24rpx;
   padding: 30rpx;
   margin: 30rpx 24rpx 0;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
 
   .card-title {
     font-size: 32rpx;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--text-primary, #1f2937);
     margin-bottom: 28rpx;
   }
 }
@@ -253,7 +262,7 @@ onLoad((options) => {
   justify-content: space-between;
   align-items: center;
   padding: 18rpx 0;
-  border-bottom: 1rpx solid #f3f4f6;
+  border-bottom: 1rpx solid var(--border-light, #f3f4f6);
 
   &:last-child {
     border-bottom: none;
@@ -261,12 +270,12 @@ onLoad((options) => {
 
   .label {
     font-size: 28rpx;
-    color: #6b7280;
+    color: var(--text-secondary, #6b7280);
   }
 
   .value {
     font-size: 28rpx;
-    color: #374151;
+    color: var(--text-primary, #374151);
     font-weight: 500;
   }
 }
@@ -278,7 +287,7 @@ onLoad((options) => {
 
 .star-tip {
   font-size: 28rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 24rpx;
 }
 
@@ -299,7 +308,7 @@ onLoad((options) => {
 
 .star-text {
   font-size: 30rpx;
-  color: #ff9500;
+  color: var(--color-warning, #ff9500);
   font-weight: 500;
 }
 
@@ -314,7 +323,7 @@ onLoad((options) => {
   background: #f8fafc;
   border-radius: 16rpx;
   font-size: 28rpx;
-  color: #374151;
+  color: var(--text-primary, #374151);
   line-height: 1.6;
   box-sizing: border-box;
   display: block;
@@ -323,7 +332,7 @@ onLoad((options) => {
 .char-count {
   text-align: right;
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
   margin-top: 12rpx;
 }
 
@@ -336,7 +345,7 @@ onLoad((options) => {
   backdrop-filter: blur(10px);
   padding: 24rpx;
   padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  border-top: 1rpx solid #f3f4f6;
+  border-top: 1rpx solid var(--border-light, #f3f4f6);
   z-index: 99;
 }
 
@@ -348,9 +357,9 @@ onLoad((options) => {
   font-size: 32rpx;
   font-weight: 600;
   border: none;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   color: #fff;
-  box-shadow: 0 8rpx 20rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 8rpx 20rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
   transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
 
   &:active:not(.disabled) {

@@ -7,6 +7,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getAccessToken, getRefreshToken, getUserId } from '@/utils/auth'
+import { usePageTheme } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
 
 const loadingText = ref('正在加载...')
 
@@ -45,12 +49,14 @@ onMounted(() => {
     }, 300)
   }
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .splash-container {
   min-height: 100vh;
-  background: #f8fbff;
+  background: var(--bg-page, #f8fbff);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -59,6 +65,6 @@ onMounted(() => {
 
 .loading-text {
   font-size: 32rpx;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 </style>

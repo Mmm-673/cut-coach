@@ -26,7 +26,7 @@
 
 <style scoped>
   page {
-    background-color: #ffffff;
+    background-color: var(--bg-card, #ffffff);
   }
 
   .view-title {
@@ -36,7 +36,7 @@
   .view-content {
     font-size: 26rpx;
     padding: 12px 5px 0;
-    color: #333;
+    color: var(--text-primary, #333);
     line-height: 24px;
     font-weight: normal;
   }

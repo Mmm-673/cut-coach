@@ -22,7 +22,7 @@
             @confirm="focusNextInput(1)"
           />
           <view class="password-toggle" @click="showNewPassword = !showNewPassword">
-            <uni-icons :type="showNewPassword ? 'eye' : 'eye-slash'" size="20" color="#999"></uni-icons>
+            <uni-icons :type="showNewPassword ? 'eye' : 'eye-slash'" size="20" :color="textTertiaryColor"></uni-icons>
           </view>
         </view>
 
@@ -41,7 +41,7 @@
             @confirm="submit"
           />
           <view class="password-toggle" @click="showConfirmPassword = !showConfirmPassword">
-            <uni-icons :type="showConfirmPassword ? 'eye' : 'eye-slash'" size="20" color="#999"></uni-icons>
+            <uni-icons :type="showConfirmPassword ? 'eye' : 'eye-slash'" size="20" :color="textTertiaryColor"></uni-icons>
           </view>
         </view>
       </view>
@@ -56,8 +56,14 @@
 </template>
 
 <script setup>
+import { ref, reactive, getCurrentInstance } from 'vue'
 import { updateUserPwd } from "@/api/system/user"
-import { ref, reactive, getCurrentInstance } from "vue"
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const textTertiaryColor = useThemeColor('textTertiary')
 
 const { proxy } = getCurrentInstance()
 const user = reactive({
@@ -121,11 +127,13 @@ async function submit() {
     isSubmitting.value = false
   }
 }
+
+
 </script>
 
 <style lang="scss" scoped>
 page {
-  background: linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #F8FBFF) 0%, #FFFFFF 100%));
 }
 
 .pwd-container {
@@ -141,35 +149,35 @@ page {
 .title {
   font-size: 48rpx;
   font-weight: bold;
-  color: #333;
+  color: var(--text-primary, #333);
   margin-bottom: 16rpx;
 }
 
 .subtitle {
   font-size: 28rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
 }
 
 .input-item {
-  background-color: #fff;
+  background-color: var(--bg-card, #fff);
   height: 100rpx;
   border-radius: 24rpx;
   margin-bottom: 30rpx;
   padding: 0 30rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 8rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
   border: 2rpx solid transparent;
   position: relative;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .input-item:focus-within {
-  border-color: #2f6bee;
+  border-color: var(--color-primary, #2f6bee);
   box-shadow: 0 0 0 6rpx rgba(47, 107, 238, 0.1);
 }
 
 .icon {
   font-size: 38rpx;
-  color: #999;
+  color: var(--text-tertiary, #999);
 }
 
 .input {
@@ -178,7 +186,7 @@ page {
   font-size: 28rpx;
   height: 100%;
   line-height: 100rpx;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 
 .password-toggle {
@@ -187,13 +195,13 @@ page {
 
 .submit-btn {
   height: 100rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%) !important;
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%)) !important;
   border-radius: 24rpx;
   font-size: 32rpx;
   color: #fff;
   border: none;
   font-weight: 600;
-  box-shadow: 0 4rpx 12rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 4rpx 12rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
   transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
 }
 

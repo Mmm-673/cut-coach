@@ -33,7 +33,7 @@
             <image class="avatar-img" :src="coachProfile.avatar" mode="aspectFill"></image>
           </view>
 
-          <view v-else class="loading-placeholder" style="width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; color: #999;">
+          <view v-else class="loading-placeholder" :style="{ width: '200px', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: textTertiaryColor }">
             二维码生成中...
           </view>
         </view>
@@ -42,7 +42,7 @@
         <canvas canvas-id="composite-canvas" style="width: 300px; height: 450px; position: absolute; left: -9999rpx;"></canvas>
 
         <view class="qrcode-tip">
-          <uni-icons type="info" size="16" color="#9ca3af"></uni-icons>
+          <uni-icons type="info" size="16" :color="textTertiaryColor"></uni-icons>
           <text>长按二维码或点击下方按钮保存</text>
         </view>
       </view>
@@ -68,6 +68,12 @@ import { getCoachProfile } from '@/api/billiard/coach'
 import constant from '@/utils/constant'
 import { mediaPermissionMessages } from '@/utils/permission-messages'
 import { isIOS, isAndroid, isHarmony, showPhotoPermissionGuide, isMpWeixin } from '@/utils/platform'
+import { usePageTheme, useThemeColor } from '@/utils/theme'
+
+// 页面主题初始化
+usePageTheme()
+
+const textTertiaryColor = useThemeColor('textTertiary')
 
 // 检查用户是否已同意相机/相册权限说明
 const hasMediaPermissionAgreed = () => {
@@ -466,12 +472,14 @@ const savePoster = () => {
 onMounted(() => {
   fetchCoachProfile()
 })
+
+
 </script>
 
 <style lang="scss" scoped>
 .qrcode-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: var(--bg-page-gradient, linear-gradient(180deg, var(--bg-page, #f8fbff) 0%, #ffffff 100%));
   padding: 40rpx 32rpx 80rpx;
   box-sizing: border-box;
 }
@@ -482,7 +490,7 @@ onMounted(() => {
   align-items: center;
   gap: 24rpx;
   padding: 40rpx 32rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   border-radius: 32rpx;
   margin-bottom: 40rpx;
   box-shadow: 0 8rpx 24rpx rgba(47, 107, 238, 0.2);
@@ -523,7 +531,7 @@ onMounted(() => {
 }
 
 .qrcode-card {
-  background: #fff;
+  background: var(--bg-card, #fff);
   border-radius: 32rpx;
   padding: 48rpx 40rpx;
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
@@ -535,21 +543,21 @@ onMounted(() => {
 .qrcode-title {
   font-size: 36rpx;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin-bottom: 8rpx;
 }
 
 .qrcode-desc {
   font-size: 26rpx;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 48rpx;
 }
 
 .qrcode-wrapper {
-  background: #fff;
+  background: var(--bg-card, #fff);
   padding: 24rpx;
   border-radius: 24rpx;
-  border: 2rpx solid #f3f4f6;
+  border: 2rpx solid var(--border-light, #f3f4f6);
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
@@ -564,7 +572,7 @@ onMounted(() => {
   border-radius: 20%;
   border: 4rpx solid #fff;
   overflow: hidden;
-  background: #fff;
+  background: var(--bg-card, #fff);
 }
 
 .avatar-img {
@@ -579,7 +587,7 @@ onMounted(() => {
   gap: 8rpx;
   margin-top: 32rpx;
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--text-tertiary, #9ca3af);
 }
 
 /* 操作按钮 */
@@ -591,13 +599,13 @@ onMounted(() => {
   width: 100%;
   height: 96rpx;
   line-height: 96rpx;
-  background: linear-gradient(135deg, #2f6bee 0%, #1a50d9 100%);
+  background: var(--gradient-primary, linear-gradient(135deg, var(--color-primary, #2f6bee) 0%, var(--color-primary-dark, #1a50d9) 100%));
   color: #fff;
   border-radius: 24rpx;
   border: none;
   font-size: 30rpx;
   font-weight: 600;
-  box-shadow: 0 8rpx 24rpx rgba(47, 107, 238, 0.3);
+  box-shadow: 0 8rpx 24rpx var(--color-primary-shadow, rgba(47, 107, 238, 0.3));
   display: flex;
   align-items: center;
   justify-content: center;
