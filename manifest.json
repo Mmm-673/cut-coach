@@ -2,8 +2,8 @@
     "name" : "初球裁教版",
     "appid" : "__UNI__1FB2E02",
     "description" : "面向台球专业教练、裁教从业者打造。在线接收用户陪练预约订单，自主接单、管理服务日程、查看收益明细。平台统一合规结算、订单管理与客服协作，助力台球从业者线上接单，灵活增收，高效开展台球教学陪练服务",
-    "versionName" : "1.0.19",
-    "versionCode" : 19,
+    "versionName" : "1.0.20",
+    "versionCode" : 20,
     "transformPx" : false,
     "app-plus" : {
         "usingComponents" : true,
@@ -101,8 +101,8 @@
                 "maps" : {
                     "amap" : {
                         "__platform__" : [ "ios", "android" ],
-                        "appkey_ios" : "adc2a75085763c28cc66d9b7e55afdd5",
-                        "appkey_android" : "e5bc05029f822fcaf4b4e2c50283c049",
+                        "appkey_ios" : "9bcf8973734046be7d95a14689394dc2",
+                        "appkey_android" : "95ac8148dde5a0befaf386704b542f47",
                         "name" : "amapfhUygwdG"
                     }
                 },
@@ -110,8 +110,8 @@
                     "amap" : {
                         "name" : "amapfhUygwdG",
                         "__platform__" : [ "ios", "android" ],
-                        "appkey_ios" : "adc2a75085763c28cc66d9b7e55afdd5",
-                        "appkey_android" : "e5bc05029f822fcaf4b4e2c50283c049"
+                        "appkey_ios" : "9bcf8973734046be7d95a14689394dc2",
+                        "appkey_android" : "95ac8148dde5a0befaf386704b542f47"
                     }
                 },
                 "push" : {}

@@ -14,7 +14,7 @@
     <view class="qrcode-section">
       <view class="qrcode-card">
         <view class="qrcode-title">我的二维码</view>
-        <view class="qrcode-desc">微信扫码进入小程序</view>
+        <view class="qrcode-desc">微信扫码立即预约</view>
 
         <view class="qrcode-wrapper" @longpress="handleLongPress">
           <uqrcode
@@ -126,16 +126,9 @@ const coachProfile = ref({
 // 二维码内容
 const qrcodeValue = computed(() => {
   if (!coachProfile.value.coachId) return ''
-  // 生成普通链接格式
-  const baseUrl = 'https://qiulem.com/scan'
-  const params = {
-    id: coachProfile.value.coachId,
-    name: coachProfile.value.stageName || '教练'
-  }
-  const queryString = Object.keys(params)
-    .map(key => `${key}=${encodeURIComponent(params[key])}`)
-    .join('&')
-  return `${baseUrl}?${queryString}`
+  // H5 教练详情页链接，微信扫码直接打开
+  const baseUrl = 'https://qiulem.com/h5/#/subpkg/coach/detail'
+  return `${baseUrl}?id=${coachProfile.value.coachId}`
 })
 
 // 获取教练档案
@@ -407,7 +400,7 @@ const savePoster = () => {
       ctx.setFillStyle('#6b7280')
       ctx.setFontSize(12)
       ctx.setTextAlign('center')
-      ctx.fillText('微信扫码进入小程序', width / 2, 370)
+      ctx.fillText('微信扫码立即预约', width / 2, 370)
 
       ctx.setFillStyle('#9ca3af')
       ctx.setFontSize(10)
