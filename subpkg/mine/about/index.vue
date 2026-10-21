@@ -146,7 +146,7 @@ function handleUserAgrement() {
 
 // 拨打客服电话
 const handleCallService = () => {
-  const phoneNumber = '15900560488'
+  const phoneNumber = config.appInfo.customerServicePhone
 
   // 使用封装好的拨打电话工具函数（包含权限处理）
   makePhoneCall(phoneNumber)

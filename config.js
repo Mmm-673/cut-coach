@@ -4,7 +4,7 @@ export default {
   wsUrl: 'wss://www.qiulem.com/infra/ws',
   appInfo: {
     name: '初球裁教版',
-    version: '1.0.2',
+    version: '1.0.3',
     logo: '/static/logo.png',
     payAppId: 12,
     customerServicePhone: '15900560488',

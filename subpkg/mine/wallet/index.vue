@@ -10,6 +10,20 @@
       </view>
     </view>
 
+    <!-- 押金入口卡片 -->
+    <view class="deposit-card" @click="goDeposit">
+      <view class="deposit-info">
+        <view class="deposit-title">押金</view>
+        <view class="deposit-sub" :class="{ 'deposit-warning': depositHasShortfall }">
+          {{ depositSummary }}
+        </view>
+      </view>
+      <view class="deposit-right">
+        <text class="deposit-amount">¥{{ formatDepositAmountText(depositOverview && depositOverview.balance) }}</text>
+        <uni-icons type="right" size="16" color="#c0c4cc"></uni-icons>
+      </view>
+    </view>
+
     <!-- 快捷操作区域 -->
     <view class="action-section">
       <view class="action-item" @click="goWithdraw">
@@ -74,9 +88,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getWalletBalance, getWithdrawalPage } from '@/api/billiard/wallet'
+import { getDepositOverview } from '@/api/billiard/deposit'
+import { formatDepositAmount, checkDepositBeforeOnline } from '@/utils/deposit'
 import { usePageTheme, useThemeColor } from '@/utils/theme'
 
 // 页面主题初始化
@@ -88,6 +104,43 @@ const balance = ref(0)
 const frozen = ref(0)
 const recentRecords = ref([])
 const loading = ref(false)
+
+// 押金摘要：独立于钱包余额请求，失败静默降级（只保留入口，不显示摘要）
+const depositOverview = ref(null)
+
+const depositCheckResult = computed(() => checkDepositBeforeOnline(depositOverview.value))
+
+const depositHasShortfall = computed(() => {
+  if (!depositOverview.value || !depositOverview.value.enabled) return false
+  return !depositCheckResult.value.allowed
+})
+
+const depositSummary = computed(() => {
+  if (!depositOverview.value) return '点击查看'
+  if (!depositOverview.value.enabled) return '暂未设置押金要求'
+  if (depositCheckResult.value.allowed) return '已满足上线门槛'
+  return `上线缺口 ¥${formatDepositAmount(depositCheckResult.value.shortfall)}，请联系客服`
+})
+
+// 展示层包装：押金未加载到时显示「—」而不是 0.00
+const formatDepositAmountText = (fen) => {
+  if (depositOverview.value === null) return '—'
+  return formatDepositAmount(fen)
+}
+
+const fetchDepositSummary = async () => {
+  try {
+    const res = await getDepositOverview()
+    depositOverview.value = (res && res.data) || null
+  } catch (err) {
+    // 押金概览失败不影响钱包页其余功能（101000314 功能未启用等场景静默降级）
+    depositOverview.value = null
+  }
+}
+
+const goDeposit = () => {
+  uni.navigateTo({ url: '/subpkg/mine/wallet/deposit/index' })
+}
 
 const formatAmount = (amount) => {
   if (!amount && amount !== 0) return '0.00'
@@ -168,10 +221,12 @@ const goRewardRecord = () => {
 
 onShow(() => {
   fetchWalletData()
+  fetchDepositSummary()
 })
 
 onMounted(() => {
   fetchWalletData()
+  fetchDepositSummary()
 })
 
 
@@ -224,6 +279,51 @@ onMounted(() => {
   font-size: 28rpx;
   color: #fcd34d;
   font-weight: 500;
+}
+
+/* 押金入口卡片 */
+.deposit-card {
+  background: var(--bg-card, #fff);
+  border-radius: 24rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2rpx 12rpx var(--shadow-card, rgba(0, 0, 0, 0.05));
+}
+
+.deposit-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.deposit-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.deposit-sub {
+  font-size: 24rpx;
+  color: var(--text-tertiary, #9ca3af);
+
+  &.deposit-warning {
+    color: var(--color-danger, #ef4444);
+  }
+}
+
+.deposit-right {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.deposit-amount {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: var(--text-primary, #1f2937);
 }
 
 /* 快捷操作 */

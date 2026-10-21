@@ -325,8 +325,11 @@
 	import { getLocation, showPermissionModal } from '@/utils/location'
 	import { openMapNavigation, makePhoneCall as makePhoneCallUtil, calculateDistance } from '@/utils/platform'
 	import { locationPermissionMessages } from '@/utils/permission-messages'
+	import config from '@/config'
 	import { isFixedPricing, formatFenToYuan } from '@/utils/onsiteOrder'
 	import { getLatestHeartMessage } from '@/api/billiard/message'
+	import { getDepositOverview } from '@/api/billiard/deposit'
+	import { checkDepositBeforeOnline, formatDepositAmount } from '@/utils/deposit'
 	import fullscreenHeart from '@/components/fullscreen-heart/fullscreen-heart.vue'
 	import RewardBroadcast from '@/components/reward-broadcast/index.vue'
 	import AnnounceBroadcast from '@/components/announce-broadcast/index.vue'
@@ -856,12 +859,42 @@
 		})
 	}
 
+	// 上线前押金预检：已配置且余额低于门槛时拦截；预检失败不阻塞，最终以后端 POST 结果为准
+	const ensureDepositForOnline = async () => {
+		try {
+			const res = await getDepositOverview()
+			const check = checkDepositBeforeOnline(res && res.data)
+			if (check.allowed) return true
+			uni.showModal({
+				title: '押金不足',
+				content: `当前押金余额低于上线门槛，补缴 ¥${formatDepositAmount(check.shortfall)} 到账后方可上线接单，客服电话 ${config.appInfo.customerServicePhone}`,
+				confirmText: '联系客服',
+				success: (modalRes) => {
+					if (modalRes.confirm) {
+						makePhoneCallUtil(config.appInfo.customerServicePhone)
+					}
+				}
+			})
+			return false
+		} catch (err) {
+			// 预检查询失败不阻塞上线（101000310 由 errorCode 文案在 POST 被拒时兜底）
+			return true
+		}
+	}
+
 	// 开关切换逻辑 - 对接API
 	const onSwitchChange = async (targetStatus) => {
 		switchLoading.value = true
 
 		try {
 			if (targetStatus) {
+				// 上线前押金预检（已配置且余额不足时拦截，不触发位置授权）
+				const depositOk = await ensureDepositForOnline()
+				if (!depositOk) {
+					switchLoading.value = false
+					return
+				}
+
 				// 上线前必须先获取位置
 				let loc
 				try {

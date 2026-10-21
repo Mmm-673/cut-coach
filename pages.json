@@ -172,6 +172,24 @@
           }
         },
         {
+          "path": "wallet/deposit/index",
+          "style": {
+            "navigationBarTitleText": "押金",
+            "navigationBarBackgroundColor": "#fff",
+            "navigationBarTextStyle": "black",
+            "enablePullDownRefresh": false
+          }
+        },
+        {
+          "path": "wallet/deposit-flow/index",
+          "style": {
+            "navigationBarTitleText": "押金流水",
+            "navigationBarBackgroundColor": "#fff",
+            "navigationBarTextStyle": "black",
+            "enablePullDownRefresh": false
+          }
+        },
+        {
           "path": "wallet/deduct/index",
           "style": {
             "navigationBarTitleText": "扣款记录",

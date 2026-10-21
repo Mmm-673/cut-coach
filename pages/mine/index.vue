@@ -108,6 +108,11 @@
           <text>提现记录</text>
           <uni-icons type="right" size="14" :color="textTertiaryColor"></uni-icons>
         </view>
+        <view class="link-divider"></view>
+        <view class="link-item" @click="navToDeposit">
+          <text>押金管理</text>
+          <uni-icons type="right" size="14" :color="textTertiaryColor"></uni-icons>
+        </view>
       </view>
     </view>
 
@@ -413,6 +418,10 @@ const navToDeduct = () => {
 
 const navToWithdrawRecord = () => {
   uni.navigateTo({ url: '/subpkg/mine/wallet/withdraw-record/index' })
+}
+
+const navToDeposit = () => {
+  uni.navigateTo({ url: '/subpkg/mine/wallet/deposit/index' })
 }
 
 const navToInfo = () => {
